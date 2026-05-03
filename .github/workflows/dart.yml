@@ -6,41 +6,55 @@ on:
 jobs:
   build-ios:
     name: 🎉 iOS Build
-    runs-on: macos-14  # Use macOS 14 for Apple Silicon speed
+    # Using macos-14 ensures we are on Apple Silicon runners (faster & modern)
+    runs-on: macos-14
+    
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Select Xcode 16.0
-        # This is the fix. Xcode 16.0 contains the SDK needed for isUltraConstrained.
-        run: sudo xcode-select -s /Applications/Xcode_16.0.app/Contents/Developer
+      - name: Select Newest Xcode
+        run: |
+          # This finds the highest version of Xcode installed on the runner
+          LATEST_XCODE=$(ls -d /Applications/Xcode_*.app | sort -V | tail -n 1)
+          echo "Selecting Xcode at: $LATEST_XCODE"
+          sudo xcode-select -s "$LATEST_XCODE/Contents/Developer"
+          xcodebuild -version
 
-      - uses: subosito/flutter-action@v2
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          # No architecture specified lets it auto-detect ARM64 for macOS 14
 
-      - name: Install Dependencies
+      - name: Install Dependencies & Clean
         run: |
+          flutter clean
           flutter pub get
           cd ios
-          pod repo update
-          pod install
+          # Removing Pods and Lock file ensures a fresh compile with the new SDK
+          rm -rf Pods
+          rm -rf Podfile.lock
+          pod install --repo-update
+          cd ..
 
-      - name: Build iOS
-        # This will now succeed because the compiler understands connectivity_plus 7.x
+      - name: Build iOS App
+        # Building for device (iphoneos) without codesigning for IPA creation
         run: flutter build ios --release --no-codesign
 
-      - name: Create IPA
+      - name: Create IPA Structure
         working-directory: build/ios/iphoneos
         run: |
-          mkdir Payload
-          mv Runner.app/ Payload
+          # The IPA is essentially a zipped 'Payload' folder containing the .app
+          mkdir -p Payload
+          mv Runner.app Payload/
           zip -qq -r -9 FlutterIpaExport.ipa Payload
 
-      - name: Upload binaries to release
+      - name: Upload IPA to GitHub Releases
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: build/ios/iphoneos/FlutterIpaExport.ipa
-          tag: v1.0
+          tag: v1.0.${{ github.run_number }}
           overwrite: true
-          body: "Build fixed by targeting Xcode 16 SDK."
+          body: "Premium Islamic App Build - Generated via GitHub Actions"
