@@ -1,0 +1,57 @@
+name: as_salah
+description: "A premium Islamic prayer and Quran app."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # State management
+  provider: ^6.1.1
+  # Local storage for progress and settings
+  shared_preferences: ^2.2.2
+  # Audio for Quran recitation
+  just_audio: ^0.9.36
+  # Networking
+  http: ^1.1.0
+  dio: ^5.3.3
+  # Path for downloads
+  path_provider: ^2.1.1
+  permission_handler: ^11.0.1
+  # HTML rendering for surah info
+  flutter_widget_from_html: ^0.15.1
+  flutter_markdown: ^0.7.7+1
+  connectivity_plus: ^7.1.1
+  geolocator: ^14.0.1
+  geocoding: ^4.0.0
+  intl: ^0.20.2
+  share_plus: ^12.0.2
+  file_picker: ^11.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/data/duas/
+    - assets/data/names/asmaulhusna.json
+    - assets/data/quran/
+    - assets/icons/
+    - assets/fonts/
+
+  fonts:
+    - family: QPC Hafs
+      fonts:
+        - asset: assets/fonts/UthmanicHafs_V22.ttf
+    - family: IndoPak
+      fonts:
+        - asset: assets/fonts/indopak-nastaleeq.ttf
