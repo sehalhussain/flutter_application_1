@@ -6,55 +6,38 @@ on:
 jobs:
   build-ios:
     name: 🎉 iOS Build
-    # Using macos-14 ensures we are on Apple Silicon runners (faster & modern)
-    runs-on: macos-14
-    
+    runs-on: macos-latest # Standard is fine now
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Select Newest Xcode
-        run: |
-          # This finds the highest version of Xcode installed on the runner
-          LATEST_XCODE=$(ls -d /Applications/Xcode_*.app | sort -V | tail -n 1)
-          echo "Selecting Xcode at: $LATEST_XCODE"
-          sudo xcode-select -s "$LATEST_XCODE/Contents/Developer"
-          xcodebuild -version
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          # No architecture specified lets it auto-detect ARM64 for macOS 14
 
-      - name: Install Dependencies & Clean
+      - name: Clean and Get Dependencies
         run: |
           flutter clean
           flutter pub get
           cd ios
-          # Removing Pods and Lock file ensures a fresh compile with the new SDK
           rm -rf Pods
-          rm -rf Podfile.lock
+          rm -f Podfile.lock
           pod install --repo-update
           cd ..
 
-      - name: Build iOS App
-        # Building for device (iphoneos) without codesigning for IPA creation
+      - name: Build iOS
         run: flutter build ios --release --no-codesign
 
-      - name: Create IPA Structure
+      - name: Create IPA
         working-directory: build/ios/iphoneos
         run: |
-          # The IPA is essentially a zipped 'Payload' folder containing the .app
           mkdir -p Payload
           mv Runner.app Payload/
           zip -qq -r -9 FlutterIpaExport.ipa Payload
 
-      - name: Upload IPA to GitHub Releases
+      - name: Upload Release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: build/ios/iphoneos/FlutterIpaExport.ipa
           tag: v1.0.${{ github.run_number }}
           overwrite: true
-          body: "Premium Islamic App Build - Generated via GitHub Actions"
