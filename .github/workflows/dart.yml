@@ -6,43 +6,42 @@ on:
 jobs:
   build-ios:
     name: 🎉 iOS Build
-    # Explicitly use macOS 14 (Sonoma) which supports newer Xcode versions
-    runs-on: macos-14 
+    # Using macos-14 is critical for accessing newer Xcode versions
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v3
 
-      - name: Select Xcode Version
-        # Xcode 15.4 contains the iOS 17.5 SDK, which fixes the NWPath error
+      # This is the most important step to fix the 'isUltraConstrained' error
+      - name: Set Xcode Version
         run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
 
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          # architecture: x64  <-- Note: macOS 14+ runners are ARM64 (M1/M2). 
-          # You can usually remove the architecture line or change it to arm64.
+          # Removed architecture: x64 to allow native arm64 build on M1 runner
 
-      - run: flutter pub get
-
-      - name: Install Pods
+      - name: Install Dependencies
         run: |
+          flutter pub get
           cd ios
-          pod repo update
-          pod install
+          pod install --repo-update
 
-      - run: flutter build ios --release --no-codesign
+      - name: Build iOS
+        # Using --no-codesign as per your original workflow
+        run: flutter build ios --release --no-codesign
 
-      - name: Create IPA Structure
+      - name: Create IPA
         working-directory: build/ios/iphoneos
         run: |
           mkdir Payload
           mv Runner.app/ Payload
           zip -qq -r -9 FlutterIpaExport.ipa Payload
 
-      - name: Upload binaries to release
+      - name: Upload Release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: build/ios/iphoneos/FlutterIpaExport.ipa
           tag: v1.0
           overwrite: true
-          body: "This is first release"
+          body: "This is a successful build using Xcode 15.4"
