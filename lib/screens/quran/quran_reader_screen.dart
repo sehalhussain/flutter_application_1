@@ -4,6 +4,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '/models/quran_models.dart';
 import '/services/quran_service.dart';
@@ -42,13 +43,16 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   int? _highlightedAyah; // temporary highlight for jump-to-ayah
   SurahAudio? _surahAudioData;
   double? _downloadProgress;
+  bool _isSurahDownloaded = false;
+  bool _isAutoContinuing = false;
 
   bool get _isAnyPlaying => _isPlaying || _playingAyah != null;
 
-  final _scrollCtrl = ScrollController();
+  final ItemScrollController _itemScrollController = ItemScrollController();
+  final ItemPositionsListener _itemPositionsListener =
+      ItemPositionsListener.create();
   final _ayahAudio = AudioPlayer();
   final _surahAudio = AudioPlayer();
-  final Map<int, GlobalKey> _ayahKeys = {};
 
   // ── Derived ───────────────────────────────────────────────────────────────
   SurahInfo? get _surahInfo =>
@@ -84,7 +88,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
   @override
   void dispose() {
-    _scrollCtrl.dispose();
     _ayahAudio.dispose();
     _surahAudio.dispose();
     super.dispose();
@@ -98,10 +101,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     if (!mounted) return;
     setState(() {
       _ayahs = ayahs;
-      // Pre-populate keys for all ayahs so we can reference them
-      for (var a in ayahs) {
-        _ayahKeys[a.ayahNumber] = GlobalKey();
-      }
       _loading = false;
     });
 
@@ -110,6 +109,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       final audioData =
           await QuranService.instance.getSurahAudio(widget.surahNumber);
       if (mounted) setState(() => _surahAudioData = audioData);
+      // Check if surah is downloaded
+      final downloaded = await _checkSurahDownloaded();
+      if (mounted) setState(() => _isSurahDownloaded = downloaded);
     } catch (e) {
       debugPrint("Error fetching surah audio: $e");
     }
@@ -138,45 +140,28 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   }
 
   // ── Scroll to ayah ────────────────────────────────────────────────────────
-  void _scrollToAyah(int ayahNumber) async {
-    if (!mounted || !_scrollCtrl.hasClients) return;
+  Future<void> _scrollToAyah(int ayahNumber) async {
+    if (!mounted) return;
+    final targetIndex = _ayahs.indexWhere((a) => a.ayahNumber == ayahNumber);
+    if (targetIndex < 0) return;
 
-    // 1. Initial aggressive jump (Ayahs are roughly 400-600px)
-    // We stay 5 ayahs behind the target to be safe.
-    double currentPos = ((ayahNumber - 5) * 400.0)
-        .clamp(0.0, _scrollCtrl.position.maxScrollExtent);
-    _scrollCtrl.jumpTo(currentPos);
-    await Future.delayed(const Duration(milliseconds: 50));
-
-    // 2. Dynamic Seeker: Scan the list in chunks until the GlobalKey is built
-    int attempts = 0;
-    while (attempts < 60 && mounted) {
-      // Increased attempts for very long surahs
-      final key = _ayahKeys[ayahNumber];
-      if (key?.currentContext != null) {
-        // FOUND! Centering it now.
-        Scrollable.ensureVisible(
-          key!.currentContext!,
-          duration: const Duration(milliseconds: 1000),
-          curve: Curves.easeOutCubic,
-          alignment: 0.5, // Center it!
-        );
-        return;
-      }
-
-      // Not found yet, jump further down
-      currentPos += 1200.0;
-      if (currentPos > _scrollCtrl.position.maxScrollExtent + 2000) break;
-
-      _scrollCtrl
-          .jumpTo(currentPos.clamp(0.0, _scrollCtrl.position.maxScrollExtent));
-      await Future.delayed(const Duration(milliseconds: 80));
-      attempts++;
+    final listIndex = targetIndex + 1; // +1 for the Bismillah header
+    for (var attempt = 0; attempt < 10 && mounted; attempt++) {
+      if (_itemScrollController.isAttached) break;
+      await Future.delayed(const Duration(milliseconds: 40));
     }
+    if (!mounted || !_itemScrollController.isAttached) return;
+
+    await _itemScrollController.scrollTo(
+      index: listIndex,
+      duration: const Duration(milliseconds: 520),
+      curve: Curves.easeOutCubic,
+      alignment: 0.0,
+    );
   }
 
   // ── Audio: per-ayah ───────────────────────────────────────────────────────
-  Future<void> _playAyah(int ayahNumber) async {
+  Future<void> _playAyah(int ayahNumber, {bool scroll = true}) async {
     final ayah = _ayahs.firstWhere((a) => a.ayahNumber == ayahNumber,
         orElse: () => _ayahs.first);
     if (ayah.audioUrl == null) return;
@@ -200,7 +185,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     });
 
     // Scroll to ayah being played
-    _scrollToAyah(ayahNumber);
+    if (scroll) _scrollToAyah(ayahNumber);
 
     try {
       // Stop surah audio
@@ -222,19 +207,30 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     } catch (e) {
       debugPrint("Audio playback error: $e");
     }
+
+    _isAutoContinuing = false;
   }
 
   void _onAyahComplete() {
+    if (_isAutoContinuing) return; // Prevent multiple auto-continues
+
     final settings = QuranSettingsProvider.of(context, listen: false);
     final current = _playingAyah;
 
     if (settings.ayahAutoContinue && current != null) {
       final surahInfo = _surahInfo;
-      if (surahInfo != null && current < surahInfo.totalAyahs) {
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted) _playAyah(current + 1);
-        });
-        return;
+      if (surahInfo != null) {
+        int nextAyah = current + 1;
+        while (nextAyah <= surahInfo.totalAyahs) {
+          final candidates = _ayahs.where((a) => a.ayahNumber == nextAyah);
+          final ayah = candidates.isNotEmpty ? candidates.first : null;
+          if (ayah != null && ayah.audioUrl != null) {
+            _isAutoContinuing = true;
+            if (mounted) _playAyah(nextAyah);
+            return;
+          }
+          nextAyah++;
+        }
       }
     }
 
@@ -250,7 +246,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   // ── Audio: full surah ─────────────────────────────────────────────────────
   Future<void> _toggleSurahPlay() async {
     if (_playingAyah != null) {
-      await _ayahAudio.stop();
+      if (_ayahAudio.playing) await _ayahAudio.stop();
       setState(() => _playingAyah = null);
     }
 
@@ -326,6 +322,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               'Downloaded Surah ${widget.surahNumber} by ${reciterAudio.reciterName}'),
           backgroundColor: qt.emeraldDeep,
         ));
+        setState(() => _isSurahDownloaded = true);
       }
     } catch (e) {
       if (mounted) {
@@ -337,6 +334,21 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     } finally {
       if (mounted) setState(() => _downloadProgress = null);
     }
+  }
+
+  Future<bool> _checkSurahDownloaded() async {
+    if (_surahAudioData == null) return false;
+    final settings = QuranSettingsProvider.of(context, listen: false);
+    String reciterId = settings.selectedReciterId;
+    ReciterAudio? reciterAudio = _surahAudioData!.reciters[reciterId];
+    if (reciterAudio == null) {
+      reciterId = _surahAudioData!.reciters.keys.first;
+      reciterAudio = _surahAudioData!.reciters[reciterId];
+    }
+    if (reciterAudio == null) return false;
+    final path = await QuranService.instance
+        .getDownloadedSurahPath(widget.surahNumber, reciterId);
+    return path != null;
   }
 
   Future<void> _stopSurahPlay() async {
@@ -648,8 +660,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   Widget _buildReaderList(
       QuranSettings settings, QuranProgress progress, QuranTheme qt) {
     final surahNum = widget.surahNumber;
-    return ListView.builder(
-      controller: _scrollCtrl,
+    return ScrollablePositionedList.builder(
+      itemScrollController: _itemScrollController,
+      itemPositionsListener: _itemPositionsListener,
       padding: EdgeInsets.only(
         top: 0,
         bottom: MediaQuery.of(context).padding.bottom + 100,
@@ -663,9 +676,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         if (index == _ayahs.length + 1) return _buildNavFooter(qt);
 
         final ayah = _ayahs[index - 1];
-        // Don't recreate the key, use the pre-populated one
-        final key = _ayahKeys[ayah.ayahNumber];
-
         final isBookmarked = progress.isBookmarked(surahNum, ayah.ayahNumber);
         final isLastRead = progress.isLastRead(surahNum, ayah.ayahNumber);
         final isMenuOpen = _openMenuAyah == ayah.ayahNumber;
@@ -674,7 +684,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         final isSelected = _selectedAyah == ayah.ayahNumber;
 
         return _AyahCard(
-          key: key,
+          key: ValueKey<int>(ayah.ayahNumber),
           ayah: ayah,
           settings: settings,
           isBookmarked: isBookmarked,
@@ -741,8 +751,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   // ── Bismillah ─────────────────────────────────────────────────────────────
   Widget _buildBismillah(QuranTheme qt) {
     // No bismillah for At-Tawbah (9) and Al-Fatihah already contains it
-    if (widget.surahNumber == 9 || widget.surahNumber == 1)
+    if (widget.surahNumber == 9 || widget.surahNumber == 1) {
       return const SizedBox(height: 16);
+    }
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
@@ -1036,13 +1047,22 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                           valueColor: AlwaysStoppedAnimation(qt.emeraldLight),
                         ),
                       )
-                    : _pillBtn(
-                        icon: Icons.download_for_offline_rounded,
-                        label: 'Download',
-                        active: false,
-                        onTap: _downloadSurah,
-                        qt: qt,
-                      ),
+                    : _isSurahDownloaded
+                        ? _pillBtn(
+                            icon: Icons.download_done,
+                            label: 'Downloaded',
+                            active: false,
+                            onTap: () {},
+                            qt: qt,
+                            iconColor: qt.emeraldLight,
+                          )
+                        : _pillBtn(
+                            icon: Icons.download_for_offline_rounded,
+                            label: 'Download',
+                            active: false,
+                            onTap: _downloadSurah,
+                            qt: qt,
+                          ),
               ],
             ]),
           ),
@@ -1057,6 +1077,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     required bool active,
     required VoidCallback onTap,
     required QuranTheme qt,
+    Color? iconColor,
   }) {
     final bool isDark = qt.brightness == Brightness.dark || _isAnyPlaying;
     return GestureDetector(
@@ -1069,11 +1090,14 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon,
-              color: active
-                  ? (qt.brightness == Brightness.dark
-                      ? qt.emeraldGlow
-                      : Colors.white)
-                  : (isDark ? Colors.white.withOpacity(0.8) : qt.textMuted),
+              color: iconColor ??
+                  (active
+                      ? (qt.brightness == Brightness.dark
+                          ? qt.emeraldGlow
+                          : Colors.white)
+                      : (isDark
+                          ? Colors.white.withOpacity(0.8)
+                          : qt.textMuted)),
               size: 18),
           const SizedBox(height: 2),
           Text(label,
@@ -1475,11 +1499,20 @@ class _SettingsSheet extends StatelessWidget {
             decoration: BoxDecoration(
                 color: qt.textMuted, borderRadius: BorderRadius.circular(2)),
           )),
-          Text('Reading Preferences',
-              style: TextStyle(
-                  color: qt.textPrimary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 18)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Reading Preferences',
+                  style: TextStyle(
+                      color: qt.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18)),
+              IconButton(
+                icon: Icon(Icons.close, color: qt.textMuted),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
           const SizedBox(height: 20),
 
           // Theme Toggle
