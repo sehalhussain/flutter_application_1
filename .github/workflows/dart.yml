@@ -6,28 +6,27 @@ on:
 jobs:
   build-ios:
     name: 🎉 iOS Build
-    # Using macos-14 is critical for accessing newer Xcode versions
-    runs-on: macos-14
+    runs-on: macos-14  # Use macOS 14 for Apple Silicon speed
     steps:
       - uses: actions/checkout@v3
 
-      # This is the most important step to fix the 'isUltraConstrained' error
-      - name: Set Xcode Version
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+      - name: Select Xcode 16.0
+        # This is the fix. Xcode 16.0 contains the SDK needed for isUltraConstrained.
+        run: sudo xcode-select -s /Applications/Xcode_16.0.app/Contents/Developer
 
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          # Removed architecture: x64 to allow native arm64 build on M1 runner
 
       - name: Install Dependencies
         run: |
           flutter pub get
           cd ios
-          pod install --repo-update
+          pod repo update
+          pod install
 
       - name: Build iOS
-        # Using --no-codesign as per your original workflow
+        # This will now succeed because the compiler understands connectivity_plus 7.x
         run: flutter build ios --release --no-codesign
 
       - name: Create IPA
@@ -37,11 +36,11 @@ jobs:
           mv Runner.app/ Payload
           zip -qq -r -9 FlutterIpaExport.ipa Payload
 
-      - name: Upload Release
+      - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: build/ios/iphoneos/FlutterIpaExport.ipa
           tag: v1.0
           overwrite: true
-          body: "This is a successful build using Xcode 15.4"
+          body: "Build fixed by targeting Xcode 16 SDK."
