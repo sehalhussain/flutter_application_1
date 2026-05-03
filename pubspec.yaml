@@ -25,7 +25,6 @@ dependencies:
   # HTML rendering for surah info
   flutter_widget_from_html: ^0.15.1
   flutter_markdown: ^0.7.7+1
-  connectivity_plus: dependencies:
   connectivity_plus: 6.0.5
   geolocator: ^14.0.1
   geocoding: ^4.0.0
