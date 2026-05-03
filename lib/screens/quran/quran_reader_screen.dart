@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -71,6 +72,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   @override
   void initState() {
     super.initState();
+    _configureAudioSession();
     _loadAyahs();
     _ayahAudio.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
@@ -137,6 +139,32 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         .reloadTranslation(_ayahs, settings.translation);
     if (!mounted) return;
     setState(() => _ayahs = updated);
+  }
+
+  // ── Audio Session Configuration ────────────────────────────────────────────
+  Future<void> _configureAudioSession() async {
+    try {
+      final session = await AudioSession.instance;
+      // Configure audio session for background playback
+      await session.configure(
+        AudioSessionConfiguration(
+          avAudioSessionCategory: AVAudioSessionCategory.playback,
+          avAudioSessionCategoryOptions:
+              AVAudioSessionCategoryOptions.duckOthers,
+          avAudioSessionMode: AVAudioSessionMode.spokenAudio,
+          avAudioSessionRouteSharingPolicy:
+              AVAudioSessionRouteSharingPolicy.defaultPolicy,
+          androidAudioAttributes: const AndroidAudioAttributes(
+            contentType: AndroidAudioContentType.music,
+            usage: AndroidAudioUsage.media,
+          ),
+          androidWillPauseWhenDucked: true,
+        ),
+      );
+      debugPrint('Audio session configured for background playback');
+    } catch (e) {
+      debugPrint('Error configuring audio session: $e');
+    }
   }
 
   // ── Scroll to ayah ────────────────────────────────────────────────────────
