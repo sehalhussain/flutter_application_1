@@ -113,8 +113,7 @@ class _DuasScreenState extends State<DuasScreen>
                       unselectedLabelColor: qt.textMuted,
                       indicatorColor: qt.emeraldDeep,
                       indicatorWeight: 3,
-                      labelStyle:
-                          const TextStyle(fontWeight: FontWeight.bold),
+                      labelStyle: const TextStyle(fontWeight: FontWeight.bold),
                       tabs: const [
                         Tab(text: 'Morning'),
                         Tab(text: 'Evening'),
@@ -247,12 +246,10 @@ class _DuaList extends StatelessWidget {
           return Center(
               child: CircularProgressIndicator(color: qt.emeraldDeep));
         }
-        if (snapshot.hasError ||
-            !snapshot.hasData ||
-            snapshot.data!.isEmpty) {
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
           return Center(
-              child: Text('No duas found',
-                  style: TextStyle(color: qt.textMuted)));
+              child:
+                  Text('No duas found', style: TextStyle(color: qt.textMuted)));
         }
 
         final list = filter(snapshot.data!);
@@ -334,9 +331,7 @@ class _AccordionCardState extends State<_AccordionCard>
         color: qt.cardBg,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: _expanded
-              ? qt.emeraldDeep.withOpacity(0.45)
-              : qt.borderGlass,
+          color: _expanded ? qt.emeraldDeep.withOpacity(0.45) : qt.borderGlass,
           width: _expanded ? 1.5 : 1,
         ),
         boxShadow: _expanded
@@ -356,8 +351,7 @@ class _AccordionCardState extends State<_AccordionCard>
             onTap: _toggle,
             borderRadius: BorderRadius.circular(18),
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
               child: Row(
                 children: [
                   Container(
@@ -439,7 +433,9 @@ class _AccordionCardState extends State<_AccordionCard>
                           style: TextStyle(
                             fontSize: 13,
                             fontStyle: FontStyle.italic,
-                            color: qt.emeraldDeep.withOpacity(0.85),
+                            color: qt.brightness == Brightness.dark
+                                ? qt.emeraldGlow
+                                : qt.emeraldDeep,
                             height: 1.6,
                           ),
                         ),
@@ -470,8 +466,7 @@ class _AccordionCardState extends State<_AccordionCard>
                       ],
 
                       // Benefits
-                      if (dua.benefits != null &&
-                          dua.benefits!.isNotEmpty) ...[
+                      if (dua.benefits != null && dua.benefits!.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         Container(
                           padding: const EdgeInsets.all(12),
@@ -489,8 +484,7 @@ class _AccordionCardState extends State<_AccordionCard>
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       'Benefit',

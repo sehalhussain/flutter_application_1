@@ -9,7 +9,7 @@
 import 'dart:convert';
 import 'dart:math';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb, compute;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:dio/dio.dart';
@@ -187,6 +187,46 @@ class QuranService {
     return ayahs;
   }
 
+  Future<AyahData?> loadAyah(
+    int surahNumber,
+    int ayahNumber,
+    TranslationId translation,
+  ) async {
+    final results = await Future.wait([
+      _getQpcHafs(),
+      _getIndoPak(),
+      _getLiteration(),
+      _getAyahAudio(),
+      _getTranslation(translation),
+    ]);
+
+    final qpcMap = results[0];
+    final ipMap = results[1];
+    final litMap = results[2];
+    final audioMap = results[3];
+    final transMap = results[4];
+
+    final key = '$surahNumber:$ayahNumber';
+    if (!qpcMap.containsKey(key)) return null;
+
+    final uthmani = (qpcMap[key]?['text'] as String?) ?? '';
+    final indoPak = (ipMap[key]?['text'] as String?) ?? '';
+    final literation = (litMap[key]?['t'] as String?) ?? '';
+    final trans = (transMap[key]?['t'] as String?) ?? '';
+    final audioUrl = (audioMap[key]?['audio_url'] as String?);
+
+    return AyahData(
+      surahNumber: surahNumber,
+      ayahNumber: ayahNumber,
+      verseKey: key,
+      uthmani: uthmani,
+      indoPak: indoPak,
+      transliteration: literation,
+      translation: trans,
+      audioUrl: audioUrl,
+    );
+  }
+
   /// Reload translation only (re-uses cached arabic/audio data).
   Future<List<AyahData>> reloadTranslation(
     List<AyahData> existing,
@@ -215,10 +255,10 @@ class QuranService {
     final surahs = await loadSurahList();
     final random = Random();
     final surah = surahs[random.nextInt(surahs.length)];
-    
+
     // Handle edge case if surah has no ayahs
     if (surah.totalAyahs == 0) return getRandomAyah();
-    
+
     final ayahNum = random.nextInt(surah.totalAyahs) + 1;
     final verseKey = '${surah.number}:$ayahNum';
 
@@ -354,28 +394,32 @@ class QuranService {
     }
   }
 
-  Future<void> saveTafsirOffline(int surahNumber, int ayahNumber, TafsirResponse response) async {
+  Future<void> saveTafsirOffline(
+      int surahNumber, int ayahNumber, TafsirResponse response) async {
     if (kIsWeb) return;
     final dir = await getApplicationDocumentsDirectory();
     final tafsirDir = Directory('${dir.path}/tafsirs');
     if (!await tafsirDir.exists()) await tafsirDir.create();
-    
-    final file = File('${tafsirDir.path}/tafsir_${surahNumber}_$ayahNumber.json');
+
+    final file =
+        File('${tafsirDir.path}/tafsir_${surahNumber}_$ayahNumber.json');
     final jsonStr = json.encode(response.toJson());
     await file.writeAsString(jsonStr);
   }
 
-  Future<TafsirResponse?> getOfflineTafsir(int surahNumber, int ayahNumber) async {
+  Future<TafsirResponse?> getOfflineTafsir(
+      int surahNumber, int ayahNumber) async {
     if (kIsWeb) return null;
     final dir = await getApplicationDocumentsDirectory();
-    final file = File('${dir.path}/tafsirs/tafsir_${surahNumber}_$ayahNumber.json');
+    final file =
+        File('${dir.path}/tafsirs/tafsir_${surahNumber}_$ayahNumber.json');
     if (await file.exists()) {
       final jsonStr = await file.readAsString();
       return TafsirResponse.fromJson(json.decode(jsonStr));
     }
     return null;
   }
-  
+
   Future<List<File>> getDownloadedTafsirs() async {
     if (kIsWeb) return [];
     final dir = await getApplicationDocumentsDirectory();

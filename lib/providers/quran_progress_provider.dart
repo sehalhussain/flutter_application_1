@@ -9,11 +9,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/quran_models.dart';
 
 class QuranProgress extends ChangeNotifier {
-  List<QuranBookmark> _bookmarks   = [];
-  LastReadPosition?   _lastRead;
+  List<QuranBookmark> _bookmarks = [];
+  LastReadPosition? _lastRead;
 
   List<QuranBookmark> get bookmarks => List.unmodifiable(_bookmarks);
-  LastReadPosition?   get lastRead  => _lastRead;
+  LastReadPosition? get lastRead => _lastRead;
 
   // ── Init ──────────────────────────────────────────────────────────────────
   Future<void> load() async {
@@ -21,13 +21,14 @@ class QuranProgress extends ChangeNotifier {
 
     final bmRaw = prefs.getStringList('quran_bookmarks') ?? [];
     _bookmarks = bmRaw
-        .map((s) => QuranBookmark.fromJson(json.decode(s) as Map<String, dynamic>))
+        .map((s) =>
+            QuranBookmark.fromJson(json.decode(s) as Map<String, dynamic>))
         .toList();
 
     final lrRaw = prefs.getString('quran_last_read');
     if (lrRaw != null) {
-      _lastRead = LastReadPosition.fromJson(
-          json.decode(lrRaw) as Map<String, dynamic>);
+      _lastRead =
+          LastReadPosition.fromJson(json.decode(lrRaw) as Map<String, dynamic>);
     }
 
     notifyListeners();
@@ -41,8 +42,8 @@ class QuranProgress extends ChangeNotifier {
     if (isBookmarked(surah, ayah)) {
       _bookmarks.removeWhere((b) => b.surah == surah && b.ayah == ayah);
     } else {
-      _bookmarks.add(
-          QuranBookmark(surah: surah, ayah: ayah, surahName: surahName));
+      _bookmarks
+          .add(QuranBookmark(surah: surah, ayah: ayah, surahName: surahName));
     }
     notifyListeners();
     await _persistBookmarks();
@@ -67,7 +68,8 @@ class QuranProgress extends ChangeNotifier {
       _lastRead?.surah == surah && _lastRead?.ayah == ayah;
 
   Future<void> setLastRead(int surah, int ayah, String surahName) async {
-    _lastRead = LastReadPosition(surah: surah, ayah: ayah, surahName: surahName);
+    _lastRead =
+        LastReadPosition(surah: surah, ayah: ayah, surahName: surahName);
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     prefs.setString('quran_last_read', json.encode(_lastRead!.toJson()));

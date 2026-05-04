@@ -9,13 +9,13 @@ class AyahData {
   final String verseKey; // "1:1"
 
   // Arabic scripts
-  final String uthmani;       // qpc-hafs.json  (default)
-  final String indoPak;       // indopak-nastaleek.json
+  final String uthmani; // qpc-hafs.json  (default)
+  final String indoPak; // indopak-nastaleek.json
 
   // Extras
   final String transliteration; // en.literation.json → "t"
-  final String translation;     // active translation file → "t"
-  final String? audioUrl;       // ayah-recitation-mishari.json → "audio_url"
+  final String translation; // active translation file → "t"
+  final String? audioUrl; // ayah-recitation-mishari.json → "audio_url"
 
   const AyahData({
     required this.surahNumber,
@@ -44,12 +44,12 @@ class AyahData {
 // ─────────────────────────────────────────────────────────────────────────────
 class SurahInfo {
   final int number;
-  final String nameArabic;   // Arabic name from surah-info.json
-  final String nameEnglish;  // e.g. "Al-Fatihah"
-  final String nameMeaning;  // e.g. "The Opening"
+  final String nameArabic; // Arabic name from surah-info.json
+  final String nameEnglish; // e.g. "Al-Fatihah"
+  final String nameMeaning; // e.g. "The Opening"
   final String revelationType; // "Meccan" | "Medinan"
   final int totalAyahs;
-  final int juzNumber;       // starting juz
+  final int juzNumber; // starting juz
 
   const SurahInfo({
     required this.number,
@@ -276,12 +276,24 @@ class PopularSection {
 
 const kPopularSections = [
   PopularSection(surahNumber: 67, title: 'Surah Al-Mulk', arabicTitle: 'الملك'),
-  PopularSection(surahNumber: 56, title: "Surah Al-Waqi'ah", arabicTitle: 'الواقعة'),
-  PopularSection(surahNumber: 2,  title: 'Ayat al-Kursi',  arabicTitle: 'آية الكرسي', startAyah: 255, endAyah: 255),
-  PopularSection(surahNumber: 2,  title: 'Al-Baqarah (285–286)', arabicTitle: 'البقرة', startAyah: 285, endAyah: 286),
-  PopularSection(surahNumber: 55, title: 'Surah Ar-Rahman', arabicTitle: 'الرحمن'),
-  PopularSection(surahNumber: 36, title: 'Surah Yaseen',    arabicTitle: 'يس'),
-  PopularSection(surahNumber: 18, title: 'Surah Al-Kahf',   arabicTitle: 'الكهف'),
+  PopularSection(
+      surahNumber: 56, title: "Surah Al-Waqi'ah", arabicTitle: 'الواقعة'),
+  PopularSection(
+      surahNumber: 2,
+      title: 'Ayat al-Kursi',
+      arabicTitle: 'آية الكرسي',
+      startAyah: 255,
+      endAyah: 255),
+  PopularSection(
+      surahNumber: 2,
+      title: 'Al-Baqarah (285–286)',
+      arabicTitle: 'البقرة',
+      startAyah: 285,
+      endAyah: 286),
+  PopularSection(
+      surahNumber: 55, title: 'Surah Ar-Rahman', arabicTitle: 'الرحمن'),
+  PopularSection(surahNumber: 36, title: 'Surah Yaseen', arabicTitle: 'يس'),
+  PopularSection(surahNumber: 18, title: 'Surah Al-Kahf', arabicTitle: 'الكهف'),
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────

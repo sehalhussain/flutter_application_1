@@ -1,8 +1,9 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import '/models/quran_models.dart';
-import '/services/quran_service.dart';
 import '/providers/quran_progress_provider.dart';
+import '/providers/quran_settings_provider.dart';
+import '/services/quran_service.dart';
 import '/constants/juz_data.dart';
 import '/constants/quran_theme.dart';
 import 'quran_reader_screen.dart';
@@ -113,16 +114,18 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
         Row(children: [
           GestureDetector(
             onTap: () => Navigator.of(context).maybePop(),
-            child: _glassButton(Icon(Icons.arrow_back_ios_new_rounded,
-                color: qt.textPrimary, size: 18), qt),
+            child: _glassButton(
+                Icon(Icons.arrow_back_ios_new_rounded,
+                    color: qt.textPrimary, size: 18),
+                qt),
           ),
           const Spacer(),
           Text('AL-QURAN',
-            style: TextStyle(
-                fontSize: 12,
-                color: qt.textMuted,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 3.0)),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: qt.textMuted,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 3.0)),
           const Spacer(),
           _glassButton(
               Icon(Icons.search_rounded, color: qt.textPrimary, size: 20), qt),
@@ -133,7 +136,9 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
             style: TextStyle(
                 fontFamily: 'QPC Hafs',
                 fontSize: 32,
-                color: qt.brightness == Brightness.dark ? qt.emeraldGlow : qt.emeraldDeep,
+                color: qt.brightness == Brightness.dark
+                    ? qt.emeraldGlow
+                    : qt.emeraldDeep,
                 height: 1.2)),
         const SizedBox(height: 4),
         Text('The Holy Quran',
@@ -163,12 +168,15 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
   Widget _buildBody(QuranTheme qt) {
     // We use a single ListView.builder for all tabs to ensure lazy loading
     // and maximum performance.
-    
+
     // Calculate total items based on current tab
     int itemCount = 0;
-    if (_tabIndex == 0) itemCount = _filtered.length + 2; // +2 for Banner & Search
-    else if (_tabIndex == 1) itemCount = kJuzData.length + 2;
-    else if (_tabIndex == 2) itemCount = QuranProgressProvider.of(context).bookmarks.length + 2;
+    if (_tabIndex == 0)
+      itemCount = _filtered.length + 2; // +2 for Banner & Search
+    else if (_tabIndex == 1)
+      itemCount = kJuzData.length + 2;
+    else if (_tabIndex == 2)
+      itemCount = QuranProgressProvider.of(context).bookmarks.length + 2;
     else if (_tabIndex == 3) itemCount = kPopularSections.length + 2;
 
     return ListView.builder(
@@ -176,13 +184,14 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
       itemCount: itemCount,
       itemBuilder: (context, index) {
         if (index == 0) return _buildLastReadBanner(qt);
-        if (index == 1) return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: _buildSearchBar(qt),
-        );
-        
+        if (index == 1)
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: _buildSearchBar(qt),
+          );
+
         final listIndex = index - 2;
-        
+
         switch (_tabIndex) {
           case 0:
             if (_filtered.isEmpty) return _emptyState('No surahs found', qt);
@@ -198,13 +207,20 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
               child: _buildJuzTile(j, qt),
             );
           case 2:
+            final settings = QuranSettingsProvider.of(context);
             final bms = QuranProgressProvider.of(context).bookmarks;
             if (bms.isEmpty) return _emptyState('No bookmarks yet', qt);
             final bm = bms[listIndex];
-            final s = _surahList.firstWhere((s) => s.number == bm.surah, orElse: () => _surahList.first);
+            final s = _surahList.firstWhere((s) => s.number == bm.surah,
+                orElse: () => _surahList.first);
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _SurahTile(surah: s, onTap: () => _openReader(bm.surah, initialAyah: bm.ayah)),
+              child: _BookmarkCard(
+                bookmark: bm,
+                surah: s,
+                translation: settings.translation,
+                onOpen: () => _openReader(bm.surah, initialAyah: bm.ayah),
+              ),
             );
           case 3:
             final item = kPopularSections[listIndex];
@@ -272,9 +288,7 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
                         fontSize: 18,
                         fontWeight: FontWeight.bold)),
                 Text('Ayah ${lr.ayah}',
-                    style: TextStyle(
-                        color: qt.textMuted,
-                        fontSize: 13)),
+                    style: TextStyle(color: qt.textMuted, fontSize: 13)),
               ],
             )),
             Icon(Icons.chevron_right_rounded, color: qt.textMuted),
@@ -299,10 +313,11 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
         decoration: InputDecoration(
           hintText: 'Search surah name, number…',
           hintStyle: TextStyle(color: qt.textMuted, fontSize: 14),
-          prefixIcon: Icon(Icons.search_rounded,
-              color: qt.textSecondary, size: 20),
+          prefixIcon:
+              Icon(Icons.search_rounded, color: qt.textSecondary, size: 20),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),
     );
@@ -366,10 +381,13 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [qt.emeraldDeep, qt.emeraldMid]),
+                gradient:
+                    LinearGradient(colors: [qt.emeraldDeep, qt.emeraldMid]),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Center(child: Icon(Icons.star_rounded, color: Colors.white, size: 22))),
+              child: const Center(
+                  child:
+                      Icon(Icons.star_rounded, color: Colors.white, size: 22))),
           const SizedBox(width: 14),
           Expanded(
               child: Column(
@@ -401,7 +419,8 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
       (Icons.star_border_rounded, Icons.star_rounded, 'Popular'),
     ];
     return Container(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom + 4, top: 4),
+      padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).padding.bottom + 4, top: 4),
       decoration: BoxDecoration(
         color: qt.cardBg,
         border: Border(top: BorderSide(color: qt.borderGlass)),
@@ -415,14 +434,275 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(active ? tabs[i].$2 : tabs[i].$1, color: active ? qt.emeraldDeep : qt.textMuted),
-                  Text(tabs[i].$3, style: TextStyle(color: active ? qt.emeraldDeep : qt.textMuted, fontSize: 10, fontWeight: active ? FontWeight.bold : FontWeight.normal)),
+                  Icon(active ? tabs[i].$2 : tabs[i].$1,
+                      color: active ? qt.emeraldDeep : qt.textMuted),
+                  Text(tabs[i].$3,
+                      style: TextStyle(
+                          color: active ? qt.emeraldDeep : qt.textMuted,
+                          fontSize: 10,
+                          fontWeight:
+                              active ? FontWeight.bold : FontWeight.normal)),
                 ],
               ),
             ),
           );
         }),
       ),
+    );
+  }
+}
+
+class _BookmarkCard extends StatefulWidget {
+  final QuranBookmark bookmark;
+  final SurahInfo surah;
+  final TranslationId translation;
+  final VoidCallback onOpen;
+
+  const _BookmarkCard({
+    required this.bookmark,
+    required this.surah,
+    required this.translation,
+    required this.onOpen,
+  });
+
+  @override
+  State<_BookmarkCard> createState() => _BookmarkCardState();
+}
+
+class _BookmarkCardState extends State<_BookmarkCard> {
+  bool _expanded = false;
+  Future<AyahData?>? _ayahFuture;
+  late final AudioPlayer _player;
+  bool _isPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _player = AudioPlayer();
+    _player.playerStateStream.listen((state) {
+      bool isPlaying = false;
+      if (state.processingState == ProcessingState.ready ||
+          state.processingState == ProcessingState.buffering ||
+          state.processingState == ProcessingState.loading) {
+        isPlaying = state.playing;
+      } else if (state.processingState == ProcessingState.completed) {
+        isPlaying = false;
+      }
+      if (mounted) setState(() => _isPlaying = isPlaying);
+    });
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  void _toggleExpanded() {
+    setState(() => _expanded = !_expanded);
+    if (_expanded && _ayahFuture == null) {
+      _ayahFuture = QuranService.instance.loadAyah(
+        widget.bookmark.surah,
+        widget.bookmark.ayah,
+        widget.translation,
+      );
+    }
+  }
+
+  Future<void> _togglePlayback(String? url) async {
+    if (url == null) return;
+    try {
+      if (_isPlaying) {
+        await _player.pause();
+      } else {
+        if (_player.audioSource == null) {
+          await _player.setUrl(url);
+        }
+        await _player.play();
+      }
+    } catch (e) {
+      debugPrint('Bookmark audio error: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final qt = QuranTheme.of(context);
+    final settings = QuranSettingsProvider.of(context);
+    final bm = widget.bookmark;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: qt.cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: qt.borderGlass),
+      ),
+      child: Column(children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: _toggleExpanded,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              child: Row(children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient:
+                        LinearGradient(colors: [qt.emeraldDeep, qt.emeraldMid]),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Center(
+                      child: Text('${bm.ayah}',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14))),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(widget.surah.nameEnglish,
+                            style: TextStyle(
+                                color: qt.textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15)),
+                        const SizedBox(height: 4),
+                        Text('Ayah ${bm.ayah} • ${widget.surah.nameArabic}',
+                            style: TextStyle(
+                                color: qt.textSecondary, fontSize: 11)),
+                      ]),
+                ),
+                Icon(
+                  _expanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  color: qt.textMuted,
+                ),
+              ]),
+            ),
+          ),
+        ),
+        if (_expanded)
+          FutureBuilder<AyahData?>(
+            future: _ayahFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation(qt.emeraldLight),
+                        strokeWidth: 2),
+                  ),
+                );
+              }
+
+              final ayah = snapshot.data;
+              if (ayah == null) {
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text('Unable to load ayah details.',
+                      style: TextStyle(color: qt.textMuted)),
+                );
+              }
+
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      ayah.uthmani,
+                      textDirection: TextDirection.rtl,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        fontFamily: settings.script == ArabicScript.indoPak
+                            ? 'IndoPak'
+                            : 'QPC Hafs',
+                        fontSize: settings.arabicFontSize,
+                        color: qt.textPrimary,
+                        height: 2.0,
+                      ),
+                    ),
+                    if (settings.showTransliteration &&
+                        ayah.transliteration.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text(ayah.transliteration,
+                          style: TextStyle(
+                              color: qt.brightness == Brightness.dark
+                                  ? qt.emeraldGlow
+                                  : qt.emeraldDeep,
+                              fontSize: settings.translationFontSize,
+                              fontStyle: FontStyle.italic,
+                              height: 1.6)),
+                    ],
+                    const SizedBox(height: 10),
+                    Text(ayah.translation,
+                        style: TextStyle(color: qt.textSecondary, height: 1.6)),
+                    const SizedBox(height: 14),
+                    Row(children: [
+                      if (ayah.audioUrl != null) ...[
+                        GestureDetector(
+                          onTap: () => _togglePlayback(ayah.audioUrl),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: qt.emeraldDeep.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(children: [
+                              Icon(
+                                _isPlaying
+                                    ? Icons.pause_rounded
+                                    : Icons.play_arrow_rounded,
+                                color: qt.emeraldDeep,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _isPlaying ? 'Pause' : 'Listen',
+                                style: TextStyle(
+                                    color: qt.emeraldDeep,
+                                    fontWeight: FontWeight.w700),
+                              ),
+                            ]),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                      ],
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: widget.onOpen,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: qt.glassWhite,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: qt.borderGlass),
+                            ),
+                            child: Text('Open Surah',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    color: qt.textPrimary,
+                                    fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                      ),
+                    ]),
+                  ],
+                ),
+              );
+            },
+          ),
+      ]),
     );
   }
 }
@@ -451,30 +731,47 @@ class _SurahTile extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [qt.emeraldDeep, qt.emeraldMid]),
+                gradient:
+                    LinearGradient(colors: [qt.emeraldDeep, qt.emeraldMid]),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Center(
                   child: Text('${surah.number}',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14))),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14))),
             ),
             const SizedBox(width: 14),
             Expanded(
                 child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(surah.nameEnglish, style: TextStyle(color: qt.textPrimary, fontWeight: FontWeight.bold, fontSize: 15)),
-                Text(surah.nameMeaning, style: TextStyle(color: qt.textSecondary, fontSize: 11)),
+                Text(surah.nameEnglish,
+                    style: TextStyle(
+                        color: qt.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15)),
+                Text(surah.nameMeaning,
+                    style: TextStyle(color: qt.textSecondary, fontSize: 11)),
                 const SizedBox(height: 6),
                 Row(children: [
-                  _pill(surah.revelationType, surah.revelationType == 'Meccan' ? const Color(0xFF78350F) : const Color(0xFF1E3A5F), qt),
+                  _pill(
+                      surah.revelationType,
+                      surah.revelationType == 'Meccan'
+                          ? const Color(0xFF78350F)
+                          : const Color(0xFF1E3A5F),
+                      qt),
                   const SizedBox(width: 6),
                   _pill('${surah.totalAyahs} Ayahs', qt.emeraldDeep, qt),
                 ]),
               ],
             )),
             Text(surah.nameArabic,
-                style: TextStyle(fontFamily: 'QPC Hafs', fontSize: 22, color: qt.emeraldDeep)),
+                style: TextStyle(
+                    fontFamily: 'QPC Hafs',
+                    fontSize: 22,
+                    color: qt.emeraldDeep)),
           ]),
         ),
       ),
@@ -487,6 +784,8 @@ class _SurahTile extends StatelessWidget {
           color: bg.withOpacity(0.1),
           borderRadius: BorderRadius.circular(6),
         ),
-        child: Text(label, style: TextStyle(color: bg, fontSize: 9, fontWeight: FontWeight.bold)),
+        child: Text(label,
+            style:
+                TextStyle(color: bg, fontSize: 9, fontWeight: FontWeight.bold)),
       );
 }
