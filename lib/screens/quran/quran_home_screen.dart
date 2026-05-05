@@ -80,6 +80,18 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
     ));
   }
 
+  void _showQuickNavPanel() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _QuickNavPanel(
+        surahList: _surahList,
+        onNavigate: (surah, ayah) => _openReader(surah, initialAyah: ayah),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
@@ -128,7 +140,8 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
                   letterSpacing: 3.0)),
           const Spacer(),
           _glassButton(
-              Icon(Icons.search_rounded, color: qt.textPrimary, size: 20), qt),
+              Icon(Icons.search_rounded, color: qt.textPrimary, size: 20), qt,
+              onTap: _showQuickNavPanel),
         ]),
         const SizedBox(height: 24),
         Text('القرآن الكريم',
@@ -152,16 +165,19 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
     );
   }
 
-  Widget _glassButton(Widget child, QuranTheme qt) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: qt.cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: qt.borderGlass),
+  Widget _glassButton(Widget child, QuranTheme qt, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: qt.cardBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: qt.borderGlass),
+        ),
+        child: Center(child: child),
       ),
-      child: Center(child: child),
     );
   }
 
@@ -788,4 +804,176 @@ class _SurahTile extends StatelessWidget {
             style:
                 TextStyle(color: bg, fontSize: 9, fontWeight: FontWeight.bold)),
       );
+}
+
+class _QuickNavPanel extends StatefulWidget {
+  final List<SurahInfo> surahList;
+  final Function(int surah, int ayah) onNavigate;
+
+  const _QuickNavPanel({required this.surahList, required this.onNavigate});
+
+  @override
+  State<_QuickNavPanel> createState() => _QuickNavPanelState();
+}
+
+class _QuickNavPanelState extends State<_QuickNavPanel> {
+  int selectedSurah = 1;
+  int selectedAyah = 1;
+
+  @override
+  Widget build(BuildContext context) {
+    final qt = QuranTheme.of(context);
+    final currentSurahInfo =
+        widget.surahList.firstWhere((s) => s.number == selectedSurah);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      decoration: BoxDecoration(
+        color: qt.cardBg,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+        border: Border.all(color: qt.borderGlass),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(children: [
+            Text('Quick Navigation',
+                style: TextStyle(
+                    color: qt.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold)),
+            const Spacer(),
+            GestureDetector(
+              onTap: () => Navigator.of(context).pop(),
+              child: Icon(Icons.close_rounded, color: qt.textMuted),
+            ),
+          ]),
+          const SizedBox(height: 20),
+          // Surah and Ayah in a row
+          Row(
+            children: [
+              Flexible(
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _dropdownLabel('Surah', qt),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: qt.glassWhite,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: qt.borderGlass),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<int>(
+                          isExpanded: true,
+                          value: selectedSurah,
+                          items: widget.surahList.map((s) {
+                            return DropdownMenuItem(
+                              value: s.number,
+                              child: Text('${s.number}. ${s.nameEnglish}',
+                                  style: TextStyle(
+                                      color: qt.textPrimary, fontSize: 13)),
+                            );
+                          }).toList(),
+                          onChanged: (v) {
+                            if (v != null) {
+                              setState(() {
+                                selectedSurah = v;
+                                selectedAyah = 1; // reset ayah
+                              });
+                            }
+                          },
+                          icon: Icon(Icons.arrow_drop_down_rounded,
+                              color: qt.textMuted),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Flexible(
+                flex: 1,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _dropdownLabel('Ayah', qt),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: qt.glassWhite,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: qt.borderGlass),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<int>(
+                          isExpanded: true,
+                          value: selectedAyah,
+                          items: List.generate(
+                                  currentSurahInfo.totalAyahs, (i) => i + 1)
+                              .map((ayah) {
+                            return DropdownMenuItem(
+                              value: ayah,
+                              child: Text('Ayah $ayah',
+                                  style: TextStyle(
+                                      color: qt.textPrimary, fontSize: 13)),
+                            );
+                          }).toList(),
+                          onChanged: (v) {
+                            if (v != null) setState(() => selectedAyah = v);
+                          },
+                          icon: Icon(Icons.arrow_drop_down_rounded,
+                              color: qt.textMuted),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          // Navigate button
+          GestureDetector(
+            onTap: () {
+              Navigator.of(context).pop();
+              widget.onNavigate(selectedSurah, selectedAyah);
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                gradient:
+                    LinearGradient(colors: [qt.emeraldDeep, qt.emeraldMid]),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Text('Navigate',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dropdownLabel(String text, QuranTheme qt) => Text(text,
+      style: TextStyle(
+          color: qt.textMuted,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.5));
 }
