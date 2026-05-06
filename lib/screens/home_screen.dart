@@ -5,6 +5,7 @@ import '../models/quran_models.dart';
 import '../providers/quran_progress_provider.dart';
 import 'asma_list_screen.dart';
 import 'package:provider/provider.dart';
+import 'hadith/hadith_home_screen.dart';
 import 'quran/quran_home_screen.dart';
 import 'quran/quran_reader_screen.dart';
 import '../services/quran_service.dart';
@@ -205,6 +206,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     qt: qt,
                   ),
                 ],
+              ),
+              const SizedBox(height: 16),
+              _buildWideEssentialCard(
+                "Hadith Library",
+                "Browse authentic narrations and save your favorites",
+                Color.fromRGBO(255, 243, 224,
+                    qt.brightness == Brightness.dark ? 0.15 : 1.0),
+                Icons.menu_book_rounded,
+                const Color(0xFFEF6C00),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HadithHomeScreen()),
+                  );
+                },
+                qt: qt,
               ),
               const SizedBox(height: 16),
               _buildWideEssentialCard(

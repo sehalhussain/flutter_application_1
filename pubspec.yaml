@@ -1,4 +1,4 @@
-name: as_salah
+name: kitably
 description: "A premium Islamic prayer and Quran app."
 publish_to: 'none'
 
@@ -62,6 +62,7 @@ flutter:
     - assets/data/quran/
     - assets/icons/
     - assets/fonts/
+    - assets/hadith/
 
   fonts:
     - family: QPC Hafs

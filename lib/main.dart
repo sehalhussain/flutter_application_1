@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/quran_settings_provider.dart';
 import 'providers/quran_progress_provider.dart';
+import 'providers/hadith_progress_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/menu_screen.dart';
 import 'screens/quran/quran_home_screen.dart';
@@ -20,6 +21,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => QuranSettings()..load()),
         ChangeNotifierProvider(create: (_) => QuranProgress()..load()),
+        ChangeNotifierProvider(create: (_) => HadithProgress()..load()),
       ],
       child: const AsSalahApp(),
     ),

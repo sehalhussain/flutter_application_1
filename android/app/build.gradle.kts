@@ -16,7 +16,7 @@ plugins {
 
 android {
     // 2. Update your namespace and applicationId to be unique
-    namespace = "com.sehalhussain.salah"
+    namespace = "com.sehalhussain.kitably"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -31,7 +31,7 @@ android {
 
     defaultConfig {
         // 3. This must be unique on the Play Store!
-        applicationId = "com.sehalhussain.salah"
+        applicationId = "com.sehalhussain.kitably"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
