@@ -206,19 +206,27 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     if (_playingAyah == ayahNumber) {
       if (_ayahAudio.playing) {
         await _ayahAudio.pause();
-        setState(() {}); // refresh UI for pause icon
+        if (mounted) setState(() {}); // refresh UI for pause icon
       } else {
         await _ayahAudio.play();
-        setState(() => _playingAyah = ayahNumber);
+        if (mounted) setState(() => _playingAyah = ayahNumber);
       }
       return;
     }
 
+    // --- CRITICAL FIX: Stop previous ayah audio BEFORE updating state ---
+    // This ensures that any 'completed' events from the previous track
+    // fire while _playingAyah is still the old value (or null), avoiding
+    // race conditions where the new ayah's state is immediately reset.
+    await _ayahAudio.stop();
+
     // Update state immediately for instant UI feedback
-    setState(() {
-      _playingAyah = ayahNumber;
-      _selectedAyah = ayahNumber;
-    });
+    if (mounted) {
+      setState(() {
+        _playingAyah = ayahNumber;
+        _selectedAyah = ayahNumber;
+      });
+    }
 
     // Scroll to ayah being played
     if (scroll) _scrollToAyah(ayahNumber);
@@ -227,11 +235,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       // Stop surah audio
       if (_isPlaying) {
         await _surahAudio.stop();
-        setState(() => _isPlaying = false);
+        if (mounted) setState(() => _isPlaying = false);
       }
-
-      // Stop previous ayah audio
-      await _ayahAudio.stop();
 
       // Ensure audio session is active
       final session = await AudioSession.instance;
@@ -259,7 +264,10 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     final settings = QuranSettingsProvider.of(context, listen: false);
     final current = _playingAyah;
 
-    if (settings.ayahAutoContinue && current != null) {
+    // Guard: If _playingAyah is already null, nothing to do
+    if (current == null) return;
+
+    if (settings.ayahAutoContinue) {
       final surahInfo = _surahInfo;
       if (surahInfo != null) {
         int nextAyah = current + 1;
@@ -277,7 +285,16 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     }
 
     // If not continuing or reached end
-    if (mounted) setState(() => _playingAyah = null);
+    if (mounted) {
+      // Move player out of 'completed' state to avoid race conditions
+      _ayahAudio.stop();
+      setState(() {
+        // Only reset if it's still the same ayah that just finished
+        if (_playingAyah == current) {
+          _playingAyah = null;
+        }
+      });
+    }
   }
 
   Future<void> _stopAyahPlay() async {
@@ -706,6 +723,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     return ScrollablePositionedList.builder(
       itemScrollController: _itemScrollController,
       itemPositionsListener: _itemPositionsListener,
+      minCacheExtent: 400, // Pre-render 400px above/below viewport
       padding: EdgeInsets.only(
         top: 0,
         bottom: MediaQuery.of(context).padding.bottom + 100,
@@ -1041,7 +1059,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               // --- MAIN PLAY/PAUSE ---
               Tooltip(
                 message: (settings.playMode == PlayMode.ayah
-                        ? _ayahAudio.playing
+                        ? (_ayahAudio.playing && _playingAyah != null)
                         : _isPlaying)
                     ? 'Pause'
                     : 'Play',
@@ -1059,11 +1077,11 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                     ),
                     child: Icon(
                       (settings.playMode == PlayMode.ayah
-                              ? _ayahAudio.playing
+                              ? (_ayahAudio.playing && _playingAyah != null)
                               : _isPlaying)
                           ? Icons.pause_rounded
                           : Icons.play_arrow_rounded,
-                      color: Colors.white,
+                      color: Colors.white, // ← keep this line
                       size: 26,
                     ),
                   ),
@@ -1148,7 +1166,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                 Text(
                   '${widget.surahNumber}:${_playingAyah ?? _selectedAyah}',
                   style: TextStyle(
-                    color: isAnyPlaying ? qt.textPrimary : qt.emeraldDeep,
+                    color: isAnyPlaying ? qt.textSecondary : qt.emeraldDeep,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
@@ -1252,7 +1270,7 @@ Widget _buildDropdownItem(
 // ─────────────────────────────────────────────────────────────────────────────
 // Ayah Card
 // ─────────────────────────────────────────────────────────────────────────────
-class _AyahCard extends StatelessWidget {
+class _AyahCard extends StatefulWidget {
   final AyahData ayah;
   final QuranSettings settings;
   final bool isBookmarked;
@@ -1292,138 +1310,150 @@ class _AyahCard extends StatelessWidget {
     required this.surahList,
   });
 
+  @override
+  State<_AyahCard> createState() => _AyahCardState();
+}
+
+class _AyahCardState extends State<_AyahCard>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   bool get _isUrdu =>
-      settings.translation == TranslationId.urJalandhari ||
-      settings.translation == TranslationId.urWahiuddin;
+      widget.settings.translation == TranslationId.urJalandhari ||
+      widget.settings.translation == TranslationId.urWahiuddin;
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final qt = QuranTheme.of(context);
-    final arabic = ayah.arabicFor(settings.script);
-    final isIndoPak = settings.script == ArabicScript.indoPak;
+    final arabic = widget.ayah.arabicFor(widget.settings.script);
+    final isIndoPak = widget.settings.script == ArabicScript.indoPak;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 500),
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: isHighlighted
+        color: widget.isHighlighted
             ? qt.emeraldLight.withOpacity(0.12)
-            : (isLastRead ? qt.emeraldDeep.withOpacity(0.08) : qt.cardBg),
+            : (widget.isLastRead ? qt.emeraldDeep.withOpacity(0.08) : qt.cardBg),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isHighlighted
+          color: widget.isHighlighted
               ? qt.emeraldGlow
-              : (isLastRead
+              : (widget.isLastRead
                   ? qt.emeraldLight.withOpacity(0.3)
                   : qt.borderGlass),
-          width: isHighlighted ? 2.0 : 1.0,
+          width: widget.isHighlighted ? 2.0 : 1.0,
         ),
       ),
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         borderRadius: BorderRadius.circular(20),
         splashColor: qt.emeraldLight.withOpacity(0.05),
-        child: Column(children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Ayah number chip
-                  Row(children: [
-                    _numberChip(ayah.ayahNumber, isSelected, qt),
-                    const Spacer(),
-                    if (isLastRead)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: qt.emeraldDeep.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
+        child: RepaintBoundary(
+          child: Column(children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Ayah number chip
+                    Row(children: [
+                      _numberChip(widget.ayah.ayahNumber, widget.isSelected, qt),
+                      const Spacer(),
+                      if (widget.isLastRead)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: qt.emeraldDeep.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text('LAST READ',
+                              style: TextStyle(
+                                  color: qt.emeraldDeep,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.0)),
                         ),
-                        child: Text('LAST READ',
-                            style: TextStyle(
-                                color: qt.emeraldDeep,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0)),
-                      ),
-                  ]),
-                  const SizedBox(height: 16),
+                    ]),
+                    const SizedBox(height: 16),
 
-                  // Arabic text
-                  Text(
-                    arabic,
-                    textAlign: TextAlign.right,
-                    textDirection: TextDirection.rtl,
-                    style: TextStyle(
-                      fontFamily: isIndoPak ? 'IndoPak' : 'QPC Hafs',
-                      fontFeatures: isIndoPak
-                          ? const [
-                              FontFeature.enable('liga'),
-                              FontFeature.enable('ccmp'),
-                            ]
-                          : null,
-                      fontSize: settings.arabicFontSize,
-                      color: qt.textPrimary,
-                      height: 2.0,
-                    ),
-                  ),
-
-                  // Transliteration
-                  if (settings.showTransliteration &&
-                      ayah.transliteration.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Text(ayah.transliteration,
-                        style: TextStyle(
-                            color: qt.brightness == Brightness.dark
-                                ? qt.emeraldGlow
-                                : qt.emeraldDeep,
-                            fontSize: settings.translationFontSize,
-                            fontStyle: FontStyle.italic,
-                            height: 1.6)),
-                  ],
-
-                  // Divider
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Container(height: 1, color: qt.borderGlass),
-                  ),
-
-                  // Translation
-                  if (settings.showTranslation)
+                    // Arabic text
                     Text(
-                      ayah.translation,
-                      textDirection:
-                          _isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                      arabic,
+                      textAlign: TextAlign.right,
+                      textDirection: TextDirection.rtl,
                       style: TextStyle(
-                        fontFamily: _isUrdu ? 'Urdu' : 'QPC Hafs',
-                        fontFeatures: _isUrdu
+                        fontFamily: isIndoPak ? 'IndoPak' : 'QPC Hafs',
+                        fontFeatures: isIndoPak
                             ? const [
                                 FontFeature.enable('liga'),
                                 FontFeature.enable('ccmp'),
                               ]
                             : null,
-                        fontSize: _isUrdu
-                            ? settings.translationFontSize + 3
-                            : settings.translationFontSize,
-                        color: qt.textSecondary,
-                        height: _isUrdu ? 2.0 : 1.65,
+                        fontSize: widget.settings.arabicFontSize,
+                        color: qt.textPrimary,
+                        height: 2.0,
                       ),
                     ),
 
-                  // Action row
-                  const SizedBox(height: 14),
-                  _buildActionRow(qt),
+                    // Transliteration
+                    if (widget.settings.showTransliteration &&
+                        widget.ayah.transliteration.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text(widget.ayah.transliteration,
+                          style: TextStyle(
+                              color: qt.brightness == Brightness.dark
+                                  ? qt.emeraldGlow
+                                  : qt.emeraldDeep,
+                              fontSize: widget.settings.translationFontSize,
+                              fontStyle: FontStyle.italic,
+                              height: 1.6)),
+                    ],
 
-                  // Tafsir Accordion
-                  if (isTafsirOpen) ...[
-                    const SizedBox(height: 16),
-                    _buildTafsirAccordion(context, qt),
-                  ],
-                ]),
-          ),
-        ]),
+                    // Divider
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Container(height: 1, color: qt.borderGlass),
+                    ),
+
+                    // Translation
+                    if (widget.settings.showTranslation)
+                      Text(
+                        widget.ayah.translation,
+                        textDirection:
+                            _isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                        style: TextStyle(
+                          fontFamily: _isUrdu ? 'Urdu' : 'QPC Hafs',
+                          fontFeatures: _isUrdu
+                              ? const [
+                                  FontFeature.enable('liga'),
+                                  FontFeature.enable('ccmp'),
+                                ]
+                              : null,
+                          fontSize: _isUrdu
+                              ? widget.settings.translationFontSize + 3
+                              : widget.settings.translationFontSize,
+                          color: qt.textSecondary,
+                          height: _isUrdu ? 2.0 : 1.65,
+                        ),
+                      ),
+
+                    // Action row
+                    const SizedBox(height: 14),
+                    _buildActionRow(qt),
+
+                    // Tafsir Accordion
+                    if (widget.isTafsirOpen) ...[
+                      const SizedBox(height: 16),
+                      _buildTafsirAccordion(context, qt),
+                    ],
+                  ]),
+            ),
+          ]),
+        ),
       ),
     );
   }
@@ -1473,69 +1503,69 @@ class _AyahCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(children: [
-          Text('${ayah.surahNumber}:${ayah.ayahNumber}',
+          Text('${widget.ayah.surahNumber}:${widget.ayah.ayahNumber}',
               style: TextStyle(
                   color: qt.textMuted,
                   fontSize: 10,
                   fontWeight: FontWeight.w700)),
           const Spacer(),
           Tooltip(
-            message: isBookmarked ? 'Remove bookmark' : 'Bookmark',
+            message: widget.isBookmarked ? 'Remove bookmark' : 'Bookmark',
             child: _actionBtn(
-              isBookmarked
+              widget.isBookmarked
                   ? Icons.bookmark_rounded
                   : Icons.bookmark_border_rounded,
-              isBookmarked ? qt.emeraldLight : qt.textMuted,
-              onBookmark,
+              widget.isBookmarked ? qt.emeraldLight : qt.textMuted,
+              widget.onBookmark,
             ),
           ),
           const SizedBox(width: 14),
           Tooltip(
-            message: isLastRead ? 'Clear last read' : 'Mark as last read',
+            message: widget.isLastRead ? 'Clear last read' : 'Mark as last read',
             child: _actionBtn(
-              isLastRead
+              widget.isLastRead
                   ? Icons.check_circle_rounded
                   : Icons.check_circle_outline_rounded,
-              isLastRead ? qt.emeraldLight : qt.textMuted,
-              onLastRead,
+              widget.isLastRead ? qt.emeraldLight : qt.textMuted,
+              widget.onLastRead,
             ),
           ),
           const SizedBox(width: 14),
           Tooltip(
             message: 'Copy ayah',
-            child: _actionBtn(Icons.copy_rounded, qt.textMuted, onCopy),
+            child: _actionBtn(Icons.copy_rounded, qt.textMuted, widget.onCopy),
           ),
           const SizedBox(width: 14),
           Tooltip(
             message: 'Share ayah',
             child: _actionBtn(Icons.share_rounded, qt.textMuted, () {
-              final text = '${ayah.arabicFor(settings.script)}\n\n'
-                  '${ayah.translation}\n\n'
-                  '— Quran ${ayah.surahNumber}:${ayah.ayahNumber}';
+              final text = '${widget.ayah.arabicFor(widget.settings.script)}\n\n'
+                  '${widget.ayah.translation}\n\n'
+                  '— Quran ${widget.ayah.surahNumber}:${widget.ayah.ayahNumber}';
               Share.share(text);
             }),
           ),
           const SizedBox(width: 14),
           Tooltip(
-            message: isPlaying ? 'Pause' : 'Play audio',
+            message: widget.isPlaying ? 'Pause' : 'Play audio',
             child: _actionBtn(
-              isPlaying
+              widget.isPlaying
                   ? Icons.pause_circle_rounded
                   : Icons.play_circle_outline_rounded,
-              isPlaying ? qt.emeraldGlow : qt.textMuted,
-              onPlay,
+              widget.isPlaying ? qt.emeraldGlow : qt.textMuted,
+              widget.onPlay,
               size: 18,
             ),
           ),
         ]),
         const SizedBox(height: 12),
         GestureDetector(
-          onTap: onToggleTafsir,
+          onTap: widget.onToggleTafsir,
           child: Text(
-            isTafsirOpen ? 'Hide Tafsir' : 'Read Tafsir',
+            widget.isTafsirOpen ? 'Hide Tafsir' : 'Read Tafsir',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: isTafsirOpen ? qt.emeraldLight : qt.emeraldDeep,
+              color: widget.isTafsirOpen ? qt.emeraldLight : qt.emeraldDeep,
               fontSize: 14,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5,
@@ -1579,10 +1609,10 @@ class _AyahCard extends StatelessWidget {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => TafsirScreen(
-                          surahNumber: ayah.surahNumber,
-                          ayahNumber: ayah.ayahNumber,
+                          surahNumber: widget.ayah.surahNumber,
+                          ayahNumber: widget.ayah.ayahNumber,
                           initialAuthor: author,
-                          surahList: surahList,
+                          surahList: widget.surahList,
                         ),
                       ),
                     );

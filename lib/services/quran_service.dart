@@ -9,7 +9,7 @@
 import 'dart:convert';
 import 'dart:math';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, compute;
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:dio/dio.dart';
@@ -47,6 +47,11 @@ class QuranService {
   // ── Generic loader ────────────────────────────────────────────────────────
   Future<Map<String, dynamic>> _load(String path) async {
     final String s = await rootBundle.loadString(path);
+    // Offload heavy JSON decoding to a background isolate to keep UI snappy
+    return compute(_decodeJson, s);
+  }
+
+  static Map<String, dynamic> _decodeJson(String s) {
     return json.decode(s) as Map<String, dynamic>;
   }
 
@@ -88,7 +93,7 @@ class QuranService {
     final ByteData data = await rootBundle.load(_pathSurahMetadata);
 
     final String s = utf8.decode(data.buffer.asUint8List());
-    final dynamic decoded = json.decode(s);
+    final dynamic decoded = await compute(_decodeJson, s);
 
     final List<SurahInfo> surahs = [];
     if (decoded is Map) {
@@ -149,11 +154,25 @@ class QuranService {
       _getTranslation(translation),
     ]);
 
-    final qpcMap = results[0];
-    final ipMap = results[1];
-    final litMap = results[2];
-    final audioMap = results[3];
-    final transMap = results[4];
+    // Offload the mapping loop to a background isolate. 
+    // This is especially beneficial for large surahs like Al-Baqarah.
+    return compute(_parseAyahsIsolate, {
+      'surahNumber': surahNumber,
+      'qpcMap': results[0],
+      'ipMap': results[1],
+      'litMap': results[2],
+      'audioMap': results[3],
+      'transMap': results[4],
+    });
+  }
+
+  static List<AyahData> _parseAyahsIsolate(Map<String, dynamic> params) {
+    final int surahNumber = params['surahNumber'];
+    final Map<String, dynamic> qpcMap = params['qpcMap'];
+    final Map<String, dynamic> ipMap = params['ipMap'];
+    final Map<String, dynamic> litMap = params['litMap'];
+    final Map<String, dynamic> audioMap = params['audioMap'];
+    final Map<String, dynamic> transMap = params['transMap'];
 
     // Determine ayah count from QPC-Hafs keys
     final ayahCount =
@@ -162,28 +181,19 @@ class QuranService {
     if (ayahCount == 0) return [];
 
     final List<AyahData> ayahs = [];
-
     for (int i = 1; i <= ayahCount; i++) {
       final key = '$surahNumber:$i';
-
-      final uthmani = (qpcMap[key]?['text'] as String?) ?? '';
-      final indoPak = (ipMap[key]?['text'] as String?) ?? '';
-      final literation = (litMap[key]?['t'] as String?) ?? '';
-      final trans = (transMap[key]?['t'] as String?) ?? '';
-      final audioUrl = (audioMap[key]?['audio_url'] as String?);
-
       ayahs.add(AyahData(
         surahNumber: surahNumber,
         ayahNumber: i,
         verseKey: key,
-        uthmani: uthmani,
-        indoPak: indoPak,
-        transliteration: literation,
-        translation: trans,
-        audioUrl: audioUrl,
+        uthmani: (qpcMap[key]?['text'] as String?) ?? '',
+        indoPak: (ipMap[key]?['text'] as String?) ?? '',
+        transliteration: (litMap[key]?['t'] as String?) ?? '',
+        translation: (transMap[key]?['t'] as String?) ?? '',
+        audioUrl: (audioMap[key]?['audio_url'] as String?),
       ));
     }
-
     return ayahs;
   }
 
