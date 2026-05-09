@@ -70,4 +70,7 @@ flutter:
         - asset: assets/fonts/UthmanicHafs_V22.ttf
     - family: IndoPak
       fonts:
-        - asset: assets/fonts/indopak-nastaleeq.ttf
+        - asset: assets/fonts/DigitalKhattIndoPak.otf
+    - family: Urdu
+      fonts:
+        - asset: assets/fonts/NotoNastaliqUrdu-VariableFont_wght.ttf

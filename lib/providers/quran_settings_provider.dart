@@ -10,44 +10,46 @@ import '../models/quran_models.dart';
 
 class QuranSettings extends ChangeNotifier {
   // ── Defaults ──────────────────────────────────────────────────────────────
-  ArabicScript _script        = ArabicScript.uthmani;
-  TranslationId _translation  = TranslationId.enSahih;
-  bool _showTransliteration   = true;
-  bool _showTranslation       = true;
-  double _arabicFontSize      = 32.0;
+  ArabicScript _script = ArabicScript.uthmani;
+  TranslationId _translation = TranslationId.enSahih;
+  bool _showTransliteration = true;
+  bool _showTranslation = true;
+  double _arabicFontSize = 32.0;
   double _translationFontSize = 15.0;
-  PlayMode _playMode          = PlayMode.ayah;
-  bool _ayahAutoContinue      = true;
-  String _selectedReciterId   = "1"; // Default to Mishary Rashid Al Afasy
-  ThemeMode _themeMode        = ThemeMode.system;
+  PlayMode _playMode = PlayMode.ayah;
+  bool _ayahAutoContinue = true;
+  String _selectedReciterId = "1"; // Default to Mishary Rashid Al Afasy
+  ThemeMode _themeMode = ThemeMode.system;
 
   // ── Getters ───────────────────────────────────────────────────────────────
-  ArabicScript   get script               => _script;
-  TranslationId  get translation          => _translation;
-  bool           get showTransliteration  => _showTransliteration;
-  bool           get showTranslation      => _showTranslation;
-  double         get arabicFontSize       => _arabicFontSize;
-  double         get translationFontSize  => _translationFontSize;
-  PlayMode       get playMode             => _playMode;
-  bool           get ayahAutoContinue     => _ayahAutoContinue;
-  String         get selectedReciterId    => _selectedReciterId;
-  ThemeMode      get themeMode            => _themeMode;
+  ArabicScript get script => _script;
+  TranslationId get translation => _translation;
+  bool get showTransliteration => _showTransliteration;
+  bool get showTranslation => _showTranslation;
+  double get arabicFontSize => _arabicFontSize;
+  double get translationFontSize => _translationFontSize;
+  PlayMode get playMode => _playMode;
+  bool get ayahAutoContinue => _ayahAutoContinue;
+  String get selectedReciterId => _selectedReciterId;
+  ThemeMode get themeMode => _themeMode;
 
   // ── Init ──────────────────────────────────────────────────────────────────
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
 
     final scriptIdx = prefs.getInt('quran_script') ?? 0;
-    _script = ArabicScript.values[scriptIdx.clamp(0, ArabicScript.values.length - 1)];
+    _script =
+        ArabicScript.values[scriptIdx.clamp(0, ArabicScript.values.length - 1)];
 
     final transIdx = prefs.getInt('quran_translation') ?? 0;
-    _translation = TranslationId.values[transIdx.clamp(0, TranslationId.values.length - 1)];
+    _translation = TranslationId
+        .values[transIdx.clamp(0, TranslationId.values.length - 1)];
 
-    _showTransliteration  = prefs.getBool('quran_transliteration') ?? true;
-    _showTranslation      = prefs.getBool('quran_show_translation') ?? true;
-    _arabicFontSize       = prefs.getDouble('quran_arabic_size')    ?? 32.0;
-    _translationFontSize  = prefs.getDouble('quran_trans_size')     ?? 15.0;
-    _ayahAutoContinue     = prefs.getBool('quran_auto_continue')    ?? true;
+    _showTransliteration = prefs.getBool('quran_transliteration') ?? true;
+    _showTranslation = prefs.getBool('quran_show_translation') ?? true;
+    _arabicFontSize = prefs.getDouble('quran_arabic_size') ?? 32.0;
+    _translationFontSize = prefs.getDouble('quran_trans_size') ?? 15.0;
+    _ayahAutoContinue = prefs.getBool('quran_auto_continue') ?? false;
 
     final pmIdx = prefs.getInt('quran_play_mode') ?? 1;
     _playMode = PlayMode.values[pmIdx.clamp(0, PlayMode.values.length - 1)];
@@ -55,7 +57,8 @@ class QuranSettings extends ChangeNotifier {
     _selectedReciterId = prefs.getString('quran_reciter_id') ?? "1";
 
     final themeIdx = prefs.getInt('app_theme_mode') ?? 0;
-    _themeMode = ThemeMode.values[themeIdx.clamp(0, ThemeMode.values.length - 1)];
+    _themeMode =
+        ThemeMode.values[themeIdx.clamp(0, ThemeMode.values.length - 1)];
 
     notifyListeners();
   }

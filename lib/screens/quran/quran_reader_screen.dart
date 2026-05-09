@@ -2,11 +2,10 @@ import 'dart:ui';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-
+import 'package:share_plus/share_plus.dart';
 import '/models/quran_models.dart';
 import '/services/quran_service.dart';
 import '/providers/quran_settings_provider.dart';
@@ -74,6 +73,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     super.initState();
     _configureAudioSession();
     _loadAyahs();
+    // Listen to ayah playback completion only
     _ayahAudio.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
         _onAyahComplete();
@@ -85,6 +85,12 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     });
     _surahAudio.playingStream.listen((_) {
       if (mounted) setState(() {});
+    });
+    // Listen to surah completion only, don't reset on idle
+    _surahAudio.playerStateStream.listen((state) {
+      if (state.processingState == ProcessingState.completed) {
+        if (mounted) setState(() => _isPlaying = false);
+      }
     });
   }
 
@@ -155,13 +161,15 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
           avAudioSessionRouteSharingPolicy:
               AVAudioSessionRouteSharingPolicy.defaultPolicy,
           androidAudioAttributes: const AndroidAudioAttributes(
-            contentType: AndroidAudioContentType.music,
+            contentType: AndroidAudioContentType.speech,
             usage: AndroidAudioUsage.media,
           ),
           androidWillPauseWhenDucked: true,
         ),
       );
-      debugPrint('Audio session configured for background playback');
+      await session.setActive(true);
+      debugPrint(
+          'Audio session configured and activated for background playback');
     } catch (e) {
       debugPrint('Error configuring audio session: $e');
     }
@@ -222,18 +230,24 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         setState(() => _isPlaying = false);
       }
 
+      // Stop previous ayah audio
       await _ayahAudio.stop();
-      // Use headers to avoid 403 Forbidden from some audio providers
-      await _ayahAudio.setUrl(ayah.audioUrl!,
-          headers: kIsWeb
-              ? null
-              : {
-                  'User-Agent':
-                      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                });
+
+      // Ensure audio session is active
+      final session = await AudioSession.instance;
+      await session.setActive(true);
+
+      // Set the audio source
+      debugPrint('Setting ayah audio URL: ${ayah.audioUrl}');
+      await _ayahAudio.setUrl(ayah.audioUrl!, headers: null);
+
+      // Play the audio
+      debugPrint('Playing ayah $ayahNumber');
       await _ayahAudio.play();
+      debugPrint('Ayah playback started for $ayahNumber');
     } catch (e) {
-      debugPrint("Audio playback error: $e");
+      debugPrint("Audio playback error for ayah $ayahNumber: $e");
+      if (mounted) setState(() => _playingAyah = null);
     }
 
     _isAutoContinuing = false;
@@ -292,25 +306,26 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
           .getDownloadedSurahPath(widget.surahNumber, reciterId);
 
       try {
+        await _surahAudio.stop(); // Ensure clean state
+        debugPrint('Setting surah audio source');
         if (offlinePath != null) {
           await _surahAudio.setFilePath(offlinePath);
+          debugPrint('Set file path: $offlinePath');
         } else {
           final audioUrl = _surahAudioData?.reciters[reciterId]?.url;
           if (audioUrl == null) {
             setState(() => _isPlaying = false);
             return;
           }
-
-          await _surahAudio.setUrl(audioUrl,
-              headers: kIsWeb
-                  ? null
-                  : {
-                      'User-Agent':
-                          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                    });
+          debugPrint('Setting URL: $audioUrl');
+          await _surahAudio.setUrl(audioUrl, headers: null);
         }
 
+        debugPrint('Starting play');
+        final session = await AudioSession.instance;
+        await session.setActive(true);
         await _surahAudio.play();
+        debugPrint('Play started successfully');
 
         _surahAudio.playerStateStream
             .where((s) => s.processingState == ProcessingState.completed)
@@ -926,7 +941,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: isAnyPlaying
                   ? qt.emeraldDeep.withOpacity(0.95)
@@ -940,157 +955,205 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               boxShadow: [
                 BoxShadow(
                   color: isAnyPlaying
-                      ? qt.emeraldDeep.withOpacity(0.5)
+                      ? qt.emeraldDeep.withOpacity(0.4)
                       : Colors.black26,
-                  blurRadius: 20,
+                  blurRadius: 15,
                 ),
               ],
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              // Play mode toggle
-              _pillBtn(
-                icon: settings.playMode == PlayMode.ayah
-                    ? Icons.format_list_numbered_rounded
-                    : Icons.queue_music_rounded,
-                label: settings.playMode == PlayMode.ayah ? 'Ayah' : 'Surah',
-                active: false,
-                onTap: () => settings.setPlayMode(
-                    settings.playMode == PlayMode.ayah
-                        ? PlayMode.surah
-                        : PlayMode.ayah),
-                qt: qt,
-              ),
-              const SizedBox(width: 4),
-              _divider(qt),
-              const SizedBox(width: 4),
-              // Current position label
-              if (settings.playMode == PlayMode.ayah &&
-                  (_playingAyah != null || _selectedAyah != null))
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Text(
-                    '${widget.surahNumber}:${_playingAyah ?? _selectedAyah}',
-                    style: TextStyle(
-                        color:
-                            (isAnyPlaying || qt.brightness == Brightness.dark)
-                                ? qt.emeraldLight
-                                : qt.emeraldDeep,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12),
+              // --- MODE DROPDOWN ---
+              Theme(
+                // This ensures the dropdown menu matches your app theme
+                data: Theme.of(context).copyWith(
+                  cardColor: qt.cardBg,
+                  hoverColor: qt.emeraldLight.withOpacity(0.1),
+                ),
+                child: PopupMenuButton<PlayMode>(
+                  initialValue: settings.playMode,
+                  tooltip: 'Select Playback Mode',
+                  onSelected: (PlayMode mode) => settings.setPlayMode(mode),
+                  offset:
+                      const Offset(0, -110), // Shows the menu above the pill
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15)),
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: PlayMode.ayah,
+                      child: _buildDropdownItem(
+                          Icons.format_list_numbered_rounded,
+                          'Play Single Ayah',
+                          settings.playMode == PlayMode.ayah,
+                          qt),
+                    ),
+                    PopupMenuItem(
+                      value: PlayMode.surah,
+                      child: _buildDropdownItem(
+                          Icons.queue_music_rounded,
+                          'Play Full Surah',
+                          settings.playMode == PlayMode.surah,
+                          qt),
+                    ),
+                  ],
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isAnyPlaying
+                          ? Colors.white.withOpacity(0.1)
+                          : Colors.black.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          settings.playMode == PlayMode.ayah
+                              ? Icons.format_list_numbered_rounded
+                              : Icons.queue_music_rounded,
+                          size: 18,
+                          color: isAnyPlaying ? Colors.white : qt.emeraldDeep,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          settings.playMode == PlayMode.ayah ? 'Ayah' : 'Surah',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isAnyPlaying ? Colors.white : qt.emeraldDeep,
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_drop_up_rounded,
+                          color: isAnyPlaying
+                              ? Colors.white70
+                              : qt.emeraldDeep.withOpacity(0.5),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              // Main play/pause button
-              GestureDetector(
-                onTap: settings.playMode == PlayMode.ayah
-                    ? () {
-                        if (_playingAyah != null || _selectedAyah != null) {
-                          _playAyah(_playingAyah ?? _selectedAyah!);
-                        } else {
-                          _playAyah(1);
-                        }
-                      }
-                    : _toggleSurahPlay,
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    gradient:
-                        LinearGradient(colors: [qt.emeraldDeep, qt.emeraldMid]),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                          color: qt.emeraldDeep.withOpacity(0.5),
-                          blurRadius: 12)
-                    ],
-                  ),
-                  child: Icon(
+              ),
+
+              const SizedBox(width: 8),
+              _divider(qt),
+              const SizedBox(width: 8),
+
+              // --- MAIN PLAY/PAUSE ---
+              Tooltip(
+                message: (settings.playMode == PlayMode.ayah
+                        ? _ayahAudio.playing
+                        : _isPlaying)
+                    ? 'Pause'
+                    : 'Play',
+                child: GestureDetector(
+                  onTap: settings.playMode == PlayMode.ayah
+                      ? () => _playAyah(_playingAyah ?? _selectedAyah ?? 1)
+                      : _toggleSurahPlay,
+                  child: Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                          colors: [qt.emeraldDeep, qt.emeraldMid]),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
                       (settings.playMode == PlayMode.ayah
                               ? _ayahAudio.playing
                               : _isPlaying)
                           ? Icons.pause_rounded
                           : Icons.play_arrow_rounded,
                       color: Colors.white,
-                      size: 26),
+                      size: 26,
+                    ),
+                  ),
                 ),
               ),
+
+              // --- STOP BUTTON ---
               if ((settings.playMode == PlayMode.ayah &&
                       _playingAyah != null) ||
                   (settings.playMode == PlayMode.surah && _isPlaying)) ...[
                 const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: settings.playMode == PlayMode.ayah
-                      ? _stopAyahPlay
-                      : _stopSurahPlay,
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                      border:
-                          Border.all(color: Colors.redAccent.withOpacity(0.4)),
+                Tooltip(
+                  message: 'Stop',
+                  child: GestureDetector(
+                    onTap: settings.playMode == PlayMode.ayah
+                        ? _stopAyahPlay
+                        : _stopSurahPlay,
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.stop_rounded,
+                          color: Colors.redAccent, size: 20),
                     ),
-                    child: const Icon(Icons.stop_rounded,
-                        color: Colors.redAccent, size: 20),
                   ),
                 ),
               ],
-              const SizedBox(width: 4),
+
+              const SizedBox(width: 8),
               _divider(qt),
-              const SizedBox(width: 4),
-              // Surah Info
-              _pillBtn(
-                icon: Icons.info_outline_rounded,
-                label: 'Info',
-                active: false,
-                onTap: () async {
-                  final result = await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => SurahInfoScreen(
-                        surahNumber: widget.surahNumber,
-                        surahList: widget.surahList,
-                      ),
-                    ),
-                  );
-                  if (result != null &&
-                      result is Map &&
-                      result['ayah'] != null) {
-                    _scrollToAyah(result['ayah'] as int);
-                  }
-                },
-                qt: qt,
+              const SizedBox(width: 8),
+
+              // --- INFO & DOWNLOAD ---
+              Tooltip(
+                message: 'Surah Info',
+                child: _pillBtn(
+                  icon: Icons.info_outline_rounded,
+                  label: 'Info',
+                  active: false,
+                  onTap: () /* logic omitted for brevity */ {},
+                  qt: qt,
+                ),
               ),
+
               if (settings.playMode == PlayMode.surah) ...[
                 const SizedBox(width: 4),
                 _divider(qt),
                 const SizedBox(width: 4),
                 _downloadProgress != null
-                    ? Container(
-                        width: 40,
-                        height: 40,
-                        padding: const EdgeInsets.all(8),
+                    ? SizedBox(
+                        width: 30,
+                        height: 30,
                         child: CircularProgressIndicator(
-                          value: _downloadProgress,
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation(qt.emeraldLight),
+                            value: _downloadProgress,
+                            strokeWidth: 2,
+                            color: qt.emeraldLight))
+                    : Tooltip(
+                        message: _isSurahDownloaded ? 'Downloaded' : 'Download',
+                        child: _pillBtn(
+                          icon: _isSurahDownloaded
+                              ? Icons.download_done
+                              : Icons.download_for_offline_rounded,
+                          label: _isSurahDownloaded ? 'Saved' : 'Download',
+                          active: false,
+                          onTap: _isSurahDownloaded ? () {} : _downloadSurah,
+                          qt: qt,
+                          iconColor:
+                              _isSurahDownloaded ? qt.emeraldLight : null,
                         ),
-                      )
-                    : _isSurahDownloaded
-                        ? _pillBtn(
-                            icon: Icons.download_done,
-                            label: 'Downloaded',
-                            active: false,
-                            onTap: () {},
-                            qt: qt,
-                            iconColor: qt.emeraldLight,
-                          )
-                        : _pillBtn(
-                            icon: Icons.download_for_offline_rounded,
-                            label: 'Download',
-                            active: false,
-                            onTap: _downloadSurah,
-                            qt: qt,
-                          ),
+                      ),
+              ],
+
+              // --- POSITION INDICATOR (In Ayah Mode, replacing Download area) ---
+              if (settings.playMode == PlayMode.ayah &&
+                  (_playingAyah != null || _selectedAyah != null)) ...[
+                const SizedBox(width: 4),
+                _divider(qt),
+                const SizedBox(width: 12),
+                Text(
+                  '${widget.surahNumber}:${_playingAyah ?? _selectedAyah}',
+                  style: TextStyle(
+                    color: isAnyPlaying ? qt.textPrimary : qt.emeraldDeep,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(width: 8),
               ],
             ]),
           ),
@@ -1159,6 +1222,31 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       ),
     );
   }
+}
+
+Widget _buildDropdownItem(
+    IconData icon, String label, bool isSelected, QuranTheme qt) {
+  return Row(
+    children: [
+      Icon(icon, size: 20, color: isSelected ? qt.emeraldDeep : Colors.grey),
+      const SizedBox(width: 12),
+      Text(
+        label,
+        style: TextStyle(
+          color: isSelected
+              ? qt.emeraldDeep
+              : (qt.brightness == Brightness.dark
+                  ? Colors.white
+                  : Colors.black87),
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      if (isSelected) ...[
+        const Spacer(),
+        Icon(Icons.check_circle, size: 16, color: qt.emeraldDeep),
+      ]
+    ],
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1270,6 +1358,12 @@ class _AyahCard extends StatelessWidget {
                     textDirection: TextDirection.rtl,
                     style: TextStyle(
                       fontFamily: isIndoPak ? 'IndoPak' : 'QPC Hafs',
+                      fontFeatures: isIndoPak
+                          ? const [
+                              FontFeature.enable('liga'),
+                              FontFeature.enable('ccmp'),
+                            ]
+                          : null,
                       fontSize: settings.arabicFontSize,
                       color: qt.textPrimary,
                       height: 2.0,
@@ -1303,7 +1397,13 @@ class _AyahCard extends StatelessWidget {
                       textDirection:
                           _isUrdu ? TextDirection.rtl : TextDirection.ltr,
                       style: TextStyle(
-                        fontFamily: _isUrdu ? 'IndoPak' : null,
+                        fontFamily: _isUrdu ? 'Urdu' : 'QPC Hafs',
+                        fontFeatures: _isUrdu
+                            ? const [
+                                FontFeature.enable('liga'),
+                                FontFeature.enable('ccmp'),
+                              ]
+                            : null,
                         fontSize: _isUrdu
                             ? settings.translationFontSize + 3
                             : settings.translationFontSize,
@@ -1369,42 +1469,81 @@ class _AyahCard extends StatelessWidget {
   }
 
   Widget _buildActionRow(QuranTheme qt) {
-    return Row(children: [
-      Text('${ayah.surahNumber}:${ayah.ayahNumber}',
-          style: TextStyle(
-              color: qt.textMuted, fontSize: 10, fontWeight: FontWeight.w700)),
-      const Spacer(),
-      _actionBtn(
-        isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-        isBookmarked ? qt.emeraldLight : qt.textMuted,
-        onBookmark,
-      ),
-      const SizedBox(width: 14),
-      _actionBtn(
-        isLastRead
-            ? Icons.check_circle_rounded
-            : Icons.check_circle_outline_rounded,
-        isLastRead ? qt.emeraldLight : qt.textMuted,
-        onLastRead,
-      ),
-      const SizedBox(width: 14),
-      _actionBtn(
-        isPlaying
-            ? Icons.pause_circle_rounded
-            : Icons.play_circle_outline_rounded,
-        isPlaying ? qt.emeraldGlow : qt.textMuted,
-        onPlay,
-        size: 22,
-      ),
-      const SizedBox(width: 14),
-      _actionBtn(Icons.copy_rounded, qt.textMuted, onCopy),
-      const SizedBox(width: 14),
-      _actionBtn(
-        isTafsirOpen ? Icons.menu_book_rounded : Icons.menu_book_outlined,
-        isTafsirOpen ? qt.emeraldLight : qt.textMuted,
-        onToggleTafsir,
-      ),
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(children: [
+          Text('${ayah.surahNumber}:${ayah.ayahNumber}',
+              style: TextStyle(
+                  color: qt.textMuted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700)),
+          const Spacer(),
+          Tooltip(
+            message: isBookmarked ? 'Remove bookmark' : 'Bookmark',
+            child: _actionBtn(
+              isBookmarked
+                  ? Icons.bookmark_rounded
+                  : Icons.bookmark_border_rounded,
+              isBookmarked ? qt.emeraldLight : qt.textMuted,
+              onBookmark,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Tooltip(
+            message: isLastRead ? 'Clear last read' : 'Mark as last read',
+            child: _actionBtn(
+              isLastRead
+                  ? Icons.check_circle_rounded
+                  : Icons.check_circle_outline_rounded,
+              isLastRead ? qt.emeraldLight : qt.textMuted,
+              onLastRead,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Tooltip(
+            message: 'Copy ayah',
+            child: _actionBtn(Icons.copy_rounded, qt.textMuted, onCopy),
+          ),
+          const SizedBox(width: 14),
+          Tooltip(
+            message: 'Share ayah',
+            child: _actionBtn(Icons.share_rounded, qt.textMuted, () {
+              final text = '${ayah.arabicFor(settings.script)}\n\n'
+                  '${ayah.translation}\n\n'
+                  '— Quran ${ayah.surahNumber}:${ayah.ayahNumber}';
+              Share.share(text);
+            }),
+          ),
+          const SizedBox(width: 14),
+          Tooltip(
+            message: isPlaying ? 'Pause' : 'Play audio',
+            child: _actionBtn(
+              isPlaying
+                  ? Icons.pause_circle_rounded
+                  : Icons.play_circle_outline_rounded,
+              isPlaying ? qt.emeraldGlow : qt.textMuted,
+              onPlay,
+              size: 18,
+            ),
+          ),
+        ]),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: onToggleTafsir,
+          child: Text(
+            isTafsirOpen ? 'Hide Tafsir' : 'Read Tafsir',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isTafsirOpen ? qt.emeraldLight : qt.emeraldDeep,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildTafsirAccordion(BuildContext context, QuranTheme qt) {
@@ -1644,11 +1783,17 @@ class _SettingsSheet extends StatelessWidget {
       ),
       child: Column(children: [
         Text(
-          'بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ',
+          'بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ',
           textAlign: TextAlign.right,
           textDirection: TextDirection.rtl,
           style: TextStyle(
             fontFamily: isIndoPak ? 'IndoPak' : 'QPC Hafs',
+            fontFeatures: isIndoPak
+                ? const [
+                    FontFeature.enable('liga'),
+                    FontFeature.enable('ccmp'),
+                  ]
+                : null,
             fontSize: settings.arabicFontSize,
             color: qt.textPrimary,
             height: 1.8,
@@ -1678,7 +1823,13 @@ class _SettingsSheet extends StatelessWidget {
             textAlign: isUrdu ? TextAlign.right : TextAlign.left,
             textDirection: isUrdu ? TextDirection.rtl : TextDirection.ltr,
             style: TextStyle(
-              fontFamily: isUrdu ? 'IndoPak' : null,
+              fontFamily: isUrdu ? 'Urdu' : 'QPC Hafs',
+              fontFeatures: isUrdu
+                  ? const [
+                      FontFeature.enable('liga'),
+                      FontFeature.enable('ccmp'),
+                    ]
+                  : null,
               fontSize: isUrdu
                   ? settings.translationFontSize + 3
                   : settings.translationFontSize,

@@ -1,4 +1,8 @@
 [
   "assets/hadith/Sahih Al Bukhari.json",
-  "assets/hadith/Sahih Al Muslim.json"
+  "assets/hadith/Sahih Al Muslim.json",
+  "assets/hadith/jami_at_tirmidhi.json",
+  "assets/hadith/sunan_abi_dawud.json",
+  "assets/hadith/sunan_an_nasai.json",
+  "assets/hadith/sunan_ibn_majah.json"
 ]

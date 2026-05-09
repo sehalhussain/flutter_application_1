@@ -56,12 +56,13 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
       appBar: AppBar(
         backgroundColor: qt.cardBg,
         elevation: 0,
+        centerTitle: true,
         iconTheme: IconThemeData(color: qt.textPrimary),
         title: Text(widget.book.title, style: TextStyle(color: qt.textPrimary)),
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
           child: FutureBuilder<HadithBook>(
             future: _bookFuture,
             builder: (context, snapshot) {
@@ -96,25 +97,11 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: qt.cardBg,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: qt.borderGlass),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(book.name,
-                            style: TextStyle(
-                                color: qt.textPrimary,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        Text(book.arabicName,
-                            style: TextStyle(
-                                color: qt.textSecondary,
-                                fontSize: 14,
-                                fontFamily: 'QPC Hafs')),
-                        const SizedBox(height: 12),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -181,7 +168,6 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: qt.cardBg,
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(color: qt.borderGlass),
                                   ),

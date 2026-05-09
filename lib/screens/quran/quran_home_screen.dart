@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import '/models/quran_models.dart';
@@ -634,13 +635,19 @@ class _BookmarkCardState extends State<_BookmarkCard> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      ayah.uthmani,
+                      ayah.arabicFor(settings.script),
                       textDirection: TextDirection.rtl,
                       textAlign: TextAlign.right,
                       style: TextStyle(
                         fontFamily: settings.script == ArabicScript.indoPak
                             ? 'IndoPak'
                             : 'QPC Hafs',
+                        fontFeatures: settings.script == ArabicScript.indoPak
+                            ? const [
+                                FontFeature.enable('liga'),
+                                FontFeature.enable('ccmp'),
+                              ]
+                            : null,
                         fontSize: settings.arabicFontSize,
                         color: qt.textPrimary,
                         height: 2.0,
@@ -659,8 +666,31 @@ class _BookmarkCardState extends State<_BookmarkCard> {
                               height: 1.6)),
                     ],
                     const SizedBox(height: 10),
-                    Text(ayah.translation,
-                        style: TextStyle(color: qt.textSecondary, height: 1.6)),
+                    Text(
+                      ayah.translation,
+                      textDirection: (widget.translation == TranslationId.urJalandhari ||
+                              widget.translation == TranslationId.urWahiuddin)
+                          ? TextDirection.rtl
+                          : TextDirection.ltr,
+                      style: TextStyle(
+                        fontFamily: (widget.translation == TranslationId.urJalandhari ||
+                                widget.translation == TranslationId.urWahiuddin)
+                            ? 'Urdu'
+                            : 'QPC Hafs',
+                        fontFeatures: (widget.translation == TranslationId.urJalandhari ||
+                                widget.translation == TranslationId.urWahiuddin)
+                            ? const [
+                                FontFeature.enable('liga'),
+                                FontFeature.enable('ccmp'),
+                              ]
+                            : null,
+                        color: qt.textSecondary,
+                        height: (widget.translation == TranslationId.urJalandhari ||
+                                widget.translation == TranslationId.urWahiuddin)
+                            ? 2.0
+                            : 1.6,
+                      ),
+                    ),
                     const SizedBox(height: 14),
                     Row(children: [
                       if (ayah.audioUrl != null) ...[

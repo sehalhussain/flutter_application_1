@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'providers/quran_settings_provider.dart';
 import 'providers/quran_progress_provider.dart';
 import 'providers/hadith_progress_provider.dart';
+import 'providers/hadith_reader_settings_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/menu_screen.dart';
 import 'screens/quran/quran_home_screen.dart';
@@ -22,6 +23,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => QuranSettings()..load()),
         ChangeNotifierProvider(create: (_) => QuranProgress()..load()),
         ChangeNotifierProvider(create: (_) => HadithProgress()..load()),
+        ChangeNotifierProvider(create: (_) => HadithReaderSettings()..load()),
       ],
       child: const AsSalahApp(),
     ),
