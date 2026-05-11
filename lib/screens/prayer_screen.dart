@@ -106,215 +106,238 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
     return Scaffold(
       backgroundColor: qt.bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [qt.emeraldDeep, qt.emeraldMid],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
-                ),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      if (Navigator.canPop(context))
-                        IconButton(
-                          icon:
-                              const Icon(Icons.arrow_back, color: Colors.white),
-                          onPressed: () => Navigator.pop(context),
-                        )
-                      else
-                        const SizedBox(width: 48, height: 48),
-                      GestureDetector(
-                        onTap: () {
-                          _showLocationBottomSheet(context);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.black26,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.location_city,
-                                  color: Colors.white, size: 16),
-                              const SizedBox(width: 8),
-                              Text(
-                                "${PrayerService.instance.currentCity ?? 'Unknown'}, ${PrayerService.instance.currentCountry ?? ''}",
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon:
-                            const Icon(Icons.chevron_left, color: Colors.white),
-                        onPressed: _prevMonth,
-                      ),
-                      Column(
-                        children: [
-                          Text(monthName,
-                              style: const TextStyle(
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white)),
-                          Text(yearNum,
-                              style: const TextStyle(
-                                  fontSize: 16, color: Colors.white70)),
-                          if (hijriDateString.isNotEmpty)
-                            Container(
-                              margin: const EdgeInsets.only(top: 8),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.white24,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(hijriDateString,
-                                  style: const TextStyle(
-                                      color: Colors.white, fontSize: 12)),
-                            ),
-                        ],
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.chevron_right,
-                            color: Colors.white),
-                        onPressed: _nextMonth,
-                      ),
-                    ],
-                  ),
-                ],
+      body: Column(
+        children: [
+          // --- IMMERSIVE HEADER SECTION ---
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [qt.emeraldDeep, qt.emeraldMid],
               ),
             ),
-
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(24),
-                children: [
-                  // Selected Day info
-                  if (_selectedDay != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: qt.cardBg,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: qt.borderGlass),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text("Selected Date",
-                                      style: TextStyle(
-                                          color: qt.emeraldDeep,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold)),
-                                  Text(
-                                      "${_selectedDay!['date']['gregorian']['day']} ${_selectedDay!['date']['gregorian']['month']['en']}",
-                                      style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          color: qt.textPrimary)),
-                                ],
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                      "${_selectedDay!['date']['hijri']['day']} ${_selectedDay!['date']['hijri']['month']['en']}",
-                                      style: TextStyle(
-                                          color: qt.textSecondary,
-                                          fontSize: 14)),
-                                  Text(
-                                      "${_selectedDay!['date']['hijri']['year']} AH",
-                                      style: TextStyle(
-                                          color: qt.textMuted, fontSize: 12)),
-                                ],
-                              )
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          _buildPrayerTimesGrid(qt, _selectedDay!['timings']),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+            child: Column(
+              children: [
+                // Top row: Back button only
+                Row(
+                  children: [
+                    if (Navigator.canPop(context))
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      )
+                    else
+                      const SizedBox(width: 48, height: 48),
+                    const Spacer(),
+                    const SizedBox(width: 48), // Balance for back button
                   ],
+                ),
+                const SizedBox(height: 10),
 
-                  // Calendar Grid
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: qt.cardBg,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: qt.borderGlass),
-                    ),
-                    child: Column(
+                // Month Navigation
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildNavButton(Icons.chevron_left, _prevMonth),
+                    Column(
                       children: [
-                        Row(
-                          children: [
-                            Icon(Icons.calendar_month, color: qt.emeraldDeep),
-                            const SizedBox(width: 8),
-                            Text("$monthName $yearNum",
-                                style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: qt.textPrimary)),
-                          ],
+                        Text(monthName,
+                            style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
+                        Text(yearNum,
+                            style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.white70,
+                                letterSpacing: 1.2)),
+                        if (hijriDateString.isNotEmpty)
+                          Container(
+                            margin: const EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(hijriDateString,
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 11)),
+                          ),
+                      ],
+                    ),
+                    _buildNavButton(Icons.chevron_right, _nextMonth),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Location - Centered below month
+                GestureDetector(
+                  onTap: () => _showLocationBottomSheet(context),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.location_on,
+                            color: Colors.white, size: 14),
+                        const SizedBox(width: 6),
+                        Text(
+                          "${PrayerService.instance.currentCity ?? 'Unknown'}, ${PrayerService.instance.currentCountry ?? ''}",
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500),
                         ),
-                        const SizedBox(height: 20),
-                        if (_isLoading)
-                          const Padding(
-                            padding: EdgeInsets.all(40.0),
-                            child: CircularProgressIndicator(),
-                          )
-                        else if (_calendarData != null)
-                          _buildCalendarGrid(qt),
                       ],
                     ),
                   ),
-                ],
+                ),
+              ],
+            ),
+          ),
+
+          // --- FLOATING DATE SELECTOR BAR ---
+          Transform.translate(
+            offset: const Offset(0, -25),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                decoration: BoxDecoration(
+                  color: qt.cardBg,
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: qt.borderGlass),
+                  boxShadow: [
+                    BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5))
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_today, color: qt.emeraldDeep, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _selectedDay != null
+                                ? "${_selectedDay!['date']['gregorian']['day']} ${_selectedDay!['date']['gregorian']['month']['en']} ${_selectedDay!['date']['gregorian']['year']}"
+                                : "Select a date",
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: qt.textPrimary),
+                          ),
+                          if (_selectedDay != null)
+                            Text(
+                              "${_selectedDay!['date']['hijri']['day']} ${_selectedDay!['date']['hijri']['month']['en']} ${_selectedDay!['date']['hijri']['year']} AH",
+                              style:
+                                  TextStyle(fontSize: 12, color: qt.textMuted),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: qt.emeraldDeep.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _getNextPrayer(_selectedDay?['timings']) != null
+                            ? "Next: ${_getNextPrayer(_selectedDay?['timings'])}"
+                            : "",
+                        style: TextStyle(
+                            color: qt.emeraldDeep,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+
+          // --- CONTENT AREA ---
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              children: [
+                // Prayer Times Card
+                if (_selectedDay != null) ...[
+                  _buildSectionTitle("Prayer Times", qt),
+                  const SizedBox(height: 12),
+                  _buildPrayerTimesCard(qt, _selectedDay!['timings']),
+                  const SizedBox(height: 24),
+                ],
+
+                // Calendar Grid Card
+                _buildSectionTitle("Calendar", qt),
+                const SizedBox(height: 12),
+                _buildCalendarCard(qt),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildPrayerTimesGrid(QuranTheme qt, Map<String, dynamic> timings) {
+  Widget _buildNavButton(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.white, size: 24),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, QuranTheme qt) {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 20,
+          decoration: BoxDecoration(
+            color: qt.emeraldDeep,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(title,
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: qt.textPrimary)),
+      ],
+    );
+  }
+
+  Widget _buildPrayerTimesCard(QuranTheme qt, Map<String, dynamic> timings) {
     final prayerOrder = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
     final nextPrayer = _getNextPrayer(timings);
 
-    // Check if selected day is today
     bool isToday = false;
     if (_selectedDay != null) {
       final parts = _selectedDay!['date']['gregorian']['date'].split('-');
@@ -325,41 +348,193 @@ class _PrayerScreenState extends State<PrayerScreen> {
           d.year == today.year && d.month == today.month && d.day == today.day;
     }
 
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 2.5,
-      children: prayerOrder.map((prayer) {
-        final time = timings[prayer].toString().split(' ')[0];
-        final isNext = isToday && prayer == nextPrayer;
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: qt.cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: qt.borderGlass),
+      ),
+      child: Column(
+        children: prayerOrder.map((prayer) {
+          final time = timings[prayer].toString().split(' ')[0];
+          final isNext = isToday && prayer == nextPrayer;
 
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: isNext ? qt.emeraldDeep : qt.bg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isNext ? qt.emeraldDeep : qt.borderGlass),
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: isNext ? qt.emeraldDeep : qt.bg,
+              borderRadius: BorderRadius.circular(16),
+              border:
+                  Border.all(color: isNext ? qt.emeraldDeep : qt.borderGlass),
+            ),
+            child: Row(
+              children: [
+                // Prayer Icon/Indicator
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: isNext
+                        ? Colors.white.withOpacity(0.2)
+                        : qt.emeraldDeep.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Icon(
+                      _getPrayerIcon(prayer),
+                      color: isNext ? Colors.white : qt.emeraldDeep,
+                      size: 18,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Prayer Name
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(prayer,
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: isNext ? Colors.white : qt.textPrimary)),
+                      if (isNext)
+                        Text("Up Next",
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.white.withOpacity(0.7))),
+                    ],
+                  ),
+                ),
+                // Time
+                Text(time,
+                    style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: isNext ? Colors.white : qt.textSecondary)),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  IconData _getPrayerIcon(String prayer) {
+    switch (prayer) {
+      case 'Fajr':
+        return Icons.wb_twilight;
+      case 'Sunrise':
+        return Icons.wb_sunny_outlined;
+      case 'Dhuhr':
+        return Icons.sunny;
+      case 'Asr':
+        return Icons.filter_drama_outlined;
+      case 'Maghrib':
+        return Icons.nights_stay_outlined;
+      case 'Isha':
+        return Icons.bedtime_outlined;
+      default:
+        return Icons.access_time;
+    }
+  }
+
+  Widget _buildCalendarCard(QuranTheme qt) {
+    String englishMonth = "";
+    String hijriMonth = "";
+    String hijriYear = "";
+
+    if (_calendarData != null && _calendarData!.isNotEmpty) {
+      final firstDay = _calendarData!.first['date'];
+      englishMonth = firstDay['gregorian']['month']['en'];
+      hijriMonth = firstDay['hijri']['month']['en'];
+      hijriYear = firstDay['hijri']['year'];
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: qt.cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: qt.borderGlass),
+      ),
+      child: Column(
+        children: [
+          // Month Name Header - English & Hijri
+          if (englishMonth.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.calendar_month,
+                          color: qt.emeraldDeep, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        englishMonth,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: qt.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: qt.emeraldDeep.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      "$hijriMonth $hijriYear AH",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: qt.emeraldDeep,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Divider
+          if (englishMonth.isNotEmpty)
+            Divider(color: qt.borderGlass, height: 1),
+
+          const SizedBox(height: 16),
+
+          // Weekday Headers
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+                .map((d) => Expanded(
+                    child: Center(
+                        child: Text(d,
+                            style: TextStyle(
+                                color: qt.textMuted,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12)))))
+                .toList(),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(prayer,
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isNext ? Colors.white : qt.textPrimary)),
-              Text(time,
-                  style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: isNext ? Colors.white : qt.textSecondary)),
-            ],
-          ),
-        );
-      }).toList(),
+          const SizedBox(height: 16),
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.all(40.0),
+              child: CircularProgressIndicator(),
+            )
+          else if (_calendarData != null)
+            _buildCalendarGrid(qt),
+        ],
+      ),
     );
   }
 
@@ -367,90 +542,72 @@ class _PrayerScreenState extends State<PrayerScreen> {
     if (_calendarData == null || _calendarData!.isEmpty)
       return const SizedBox.shrink();
 
-    // Calculate first day of month padding
     final firstDayData =
         _calendarData!.first['date']['gregorian']['date'].split('-');
     final firstDay = DateTime(int.parse(firstDayData[2]),
         int.parse(firstDayData[1]), int.parse(firstDayData[0]));
-    // 1 = Monday, 7 = Sunday
-    // if we want Sunday as first day:
     int paddingDays = firstDay.weekday == 7 ? 0 : firstDay.weekday;
 
     final daysInMonth = _calendarData!.length;
 
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-              .map((d) => Expanded(
-                  child: Center(
-                      child: Text(d,
-                          style: TextStyle(
-                              color: qt.textMuted,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12)))))
-              .toList(),
-        ),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 7,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 1,
-          ),
-          itemCount: paddingDays + daysInMonth,
-          itemBuilder: (context, index) {
-            if (index < paddingDays) return const SizedBox.shrink();
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 7,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        childAspectRatio: 1,
+      ),
+      itemCount: paddingDays + daysInMonth,
+      itemBuilder: (context, index) {
+        if (index < paddingDays) return const SizedBox.shrink();
 
-            final dataIndex = index - paddingDays;
-            final dayData = _calendarData![dataIndex];
-            final isSelected = _selectedDay == dayData;
+        final dataIndex = index - paddingDays;
+        final dayData = _calendarData![dataIndex];
+        final isSelected = _selectedDay == dayData;
 
-            final parts = dayData['date']['gregorian']['date'].split('-');
-            final dDate = DateTime(
-                int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
-            final today = DateTime.now();
-            final isToday = dDate.year == today.year &&
-                dDate.month == today.month &&
-                dDate.day == today.day;
+        final parts = dayData['date']['gregorian']['date'].split('-');
+        final dDate = DateTime(
+            int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+        final today = DateTime.now();
+        final isToday = dDate.year == today.year &&
+            dDate.month == today.month &&
+            dDate.day == today.day;
 
-            return GestureDetector(
-              onTap: () => setState(() => _selectedDay = dayData),
-              child: Container(
-                decoration: BoxDecoration(
+        return GestureDetector(
+          onTap: () => setState(() => _selectedDay = dayData),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? qt.emeraldDeep
+                  : (isToday
+                      ? qt.emeraldDeep.withOpacity(0.1)
+                      : Colors.transparent),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
                   color: isSelected
                       ? qt.emeraldDeep
-                      : (isToday
-                          ? qt.emeraldDeep.withOpacity(0.1)
-                          : Colors.transparent),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: isSelected
-                          ? qt.emeraldDeep
-                          : (isToday ? qt.emeraldDeep : qt.borderGlass)),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(dayData['date']['gregorian']['day'],
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: isSelected ? Colors.white : qt.textPrimary)),
-                    Text(dayData['date']['hijri']['day'],
-                        style: TextStyle(
-                            fontSize: 9,
-                            color: isSelected ? Colors.white70 : qt.textMuted)),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ],
+                      : (isToday ? qt.emeraldDeep : qt.borderGlass)),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(dayData['date']['gregorian']['day'],
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: isSelected ? Colors.white : qt.textPrimary)),
+                const SizedBox(height: 2),
+                Text(dayData['date']['hijri']['day'],
+                    style: TextStyle(
+                        fontSize: 10,
+                        color: isSelected ? Colors.white70 : qt.textMuted)),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

@@ -166,96 +166,104 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
-    final teal = const Color(0xFF26A69A);
-    final isDark = qt.brightness == Brightness.dark;
-
-    return Scaffold(
-      backgroundColor: qt.bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(qt, teal, isDark),
-            Expanded(
-              child: _isLoading
-                  ? Center(
-                      child: CircularProgressIndicator(color: teal),
-                    )
-                  : _hasError
-                      ? _buildError(qt, teal)
-                      : _buildBody(qt, teal, isDark),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ══════════════════════════════════════════════════════
-  //  HEADER
-  // ══════════════════════════════════════════════════════
-  Widget _buildHeader(QuranTheme qt, Color teal, bool isDark) {
     final monthName = _hijriMonth >= 1 && _hijriMonth <= 12
         ? _hijriMonthNames[_hijriMonth]
         : 'Month $_hijriMonth';
     final range = _gregorianRange();
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF00695C),
-            const Color(0xFF26A69A),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(36),
-          bottomRight: Radius.circular(36),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF26A69A).withOpacity(0.35),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
+    return Scaffold(
+      backgroundColor: qt.bg,
+      body: Column(
         children: [
-          // ── Top row: back + location ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 12, 16, 0),
-            child: Row(
+          // --- IMMERSIVE HEADER SECTION ---
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 40, 20, 30),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [qt.emeraldDeep, qt.emeraldMid],
+              ),
+            ),
+            child: Column(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                      color: Colors.white, size: 20),
-                  onPressed: () => Navigator.pop(context),
+                // Top row: Back button only
+                Row(
+                  children: [
+                    if (Navigator.canPop(context))
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      )
+                    else
+                      const SizedBox(width: 48, height: 48),
+                    const Spacer(),
+                    const SizedBox(width: 48), // Balance for back button
+                  ],
                 ),
-                const Spacer(),
+                const SizedBox(height: 10),
+
+                // Month Navigation
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildNavButton(Icons.chevron_left, _prevMonth),
+                    Column(
+                      children: [
+                        Text(monthName,
+                            style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white)),
+                        Text('$_hijriYear AH',
+                            style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.white70,
+                                letterSpacing: 1.2)),
+                        if (range.isNotEmpty)
+                          Container(
+                            margin: const EdgeInsets.only(top: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(range,
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 11)),
+                          ),
+                      ],
+                    ),
+                    _buildNavButton(Icons.chevron_right, _nextMonth),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Location - Centered below month, compact
                 GestureDetector(
-                  onTap: () => _showLocationSheet(context, qt),
+                  onTap: () => _showLocationBottomSheet(context, qt),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 7),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: Colors.black26,
-                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.white.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withOpacity(0.15)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.location_city,
-                            color: Colors.white, size: 14),
-                        const SizedBox(width: 6),
+                        const Icon(Icons.location_on,
+                            color: Colors.white70, size: 12),
+                        const SizedBox(width: 4),
                         Text(
-                          '${PrayerService.instance.currentCity ?? 'City'}, '
-                          '${PrayerService.instance.currentCountry ?? ''}',
+                          "${PrayerService.instance.currentCity ?? 'Unknown'}, ${PrayerService.instance.currentCountry ?? ''}",
                           style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold),
+                              color: Colors.white70,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w400),
                         ),
                       ],
                     ),
@@ -264,90 +272,32 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          // ── Month navigation ──
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _navBtn(Icons.chevron_left_rounded, _prevMonth),
-                Column(
-                  children: [
-                    Text(
-                      monthName,
-                      style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: -0.5),
-                    ),
-                    Text(
-                      '$_hijriYear AH',
-                      style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500),
-                    ),
-                    if (range.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Text(range,
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500)),
-                      ),
-                    ],
-                  ],
-                ),
-                _navBtn(Icons.chevron_right_rounded, _nextMonth),
-              ],
-            ),
+
+          // --- CONTENT AREA ---
+          Expanded(
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(color: qt.emeraldDeep),
+                  )
+                : _hasError
+                    ? _buildError(qt)
+                    : _buildBody(qt),
           ),
-          const SizedBox(height: 20),
-          // ── Day-of-week header ──
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-                  .map((d) => Expanded(
-                        child: Center(
-                          child: Text(d,
-                              style: const TextStyle(
-                                  color: Colors.white60,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5)),
-                        ),
-                      ))
-                  .toList(),
-            ),
-          ),
-          const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  Widget _navBtn(IconData icon, VoidCallback onTap) {
-    return Material(
-      color: Colors.white.withOpacity(0.18),
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Icon(icon, color: Colors.white, size: 24),
+  Widget _buildNavButton(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          shape: BoxShape.circle,
         ),
+        child: Icon(icon, color: Colors.white, size: 24),
       ),
     );
   }
@@ -355,7 +305,7 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
   // ══════════════════════════════════════════════════════
   //  BODY — grid + important dates
   // ══════════════════════════════════════════════════════
-  Widget _buildBody(QuranTheme qt, Color teal, bool isDark) {
+  Widget _buildBody(QuranTheme qt) {
     final data = _calendarData!;
     final offset = _startOffset();
     final totalCells = offset + data.length;
@@ -368,13 +318,56 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
     }
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
       children: [
+        // Weekday Headers
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+              .map((d) => Expanded(
+                    child: Center(
+                      child: Text(d,
+                          style: TextStyle(
+                              color: qt.textMuted,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12)),
+                    ),
+                  ))
+              .toList(),
+        ),
+        const SizedBox(height: 12),
+
         // Calendar grid
-        _buildGrid(qt, teal, isDark, data, offset, totalCells),
+        _buildGrid(qt, data, offset, totalCells),
         const SizedBox(height: 28),
+
         // Important dates
-        if (events.isNotEmpty) _buildEventsList(qt, teal, events),
+        if (events.isNotEmpty) ...[
+          _buildSectionTitle("Important Dates", qt),
+          const SizedBox(height: 14),
+          ...events.map((day) => _buildEventCard(qt, day)),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildSectionTitle(String title, QuranTheme qt) {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 20,
+          decoration: BoxDecoration(
+            color: qt.emeraldDeep,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(title,
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: qt.textPrimary)),
       ],
     );
   }
@@ -382,8 +375,6 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
   // ── Calendar grid ──
   Widget _buildGrid(
     QuranTheme qt,
-    Color teal,
-    bool isDark,
     List<dynamic> data,
     int offset,
     int totalCells,
@@ -395,7 +386,7 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
         crossAxisCount: 7,
         mainAxisSpacing: 6,
         crossAxisSpacing: 6,
-        childAspectRatio: 0.82,
+        childAspectRatio: 0.85,
       ),
       itemCount: totalCells,
       itemBuilder: (context, index) {
@@ -414,108 +405,73 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
           isToday: today,
           hasEvent: hasEvent,
           qt: qt,
-          teal: teal,
           onTap: hasEvent
-              ? () => _showDayDetail(context, qt, teal, dayData, hols)
+              ? () => _showDayDetail(context, qt, dayData, hols)
               : null,
         );
       },
     );
   }
 
-  // ── Important Dates section ──
-  Widget _buildEventsList(
-      QuranTheme qt, Color teal, List<Map<dynamic, dynamic>> events) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 4,
-              height: 22,
-              decoration: BoxDecoration(
-                color: teal,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text('Important Dates',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: qt.textPrimary)),
-          ],
-        ),
-        const SizedBox(height: 14),
-        ...events.map((day) {
-          final h = day['date']['hijri'];
-          final g = day['date']['gregorian'];
-          final hols = _holidays(day);
-          final hDay = h['day'].toString();
-          final hMonth = h['month']['en'].toString();
-          final gDay = g['day'].toString();
-          final gMonth = g['month']['en'].toString();
+  // ── Event Card ──
+  Widget _buildEventCard(QuranTheme qt, Map<dynamic, dynamic> day) {
+    final h = day['date']['hijri'];
+    final g = day['date']['gregorian'];
+    final hols = _holidays(day);
+    final hDay = h['day'].toString();
+    final hMonth = h['month']['en'].toString();
+    final gDay = g['day'].toString();
+    final gMonth = g['month']['en'].toString();
 
-          return Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            decoration: BoxDecoration(
-              color: qt.cardBg,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: qt.borderGlass),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3)),
-              ],
-            ),
-            child: ListTile(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
-              leading: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [teal.withOpacity(0.15), teal.withOpacity(0.05)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(hDay,
-                      style: TextStyle(
-                          color: teal,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16)),
-                ),
-              ),
-              title: Text(
-                hols.join(' • '),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: qt.cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: qt.borderGlass),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 3)),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: qt.emeraldDeep.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(hDay,
                 style: TextStyle(
-                    color: qt.textPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13),
-              ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 3),
-                child: Text(
-                  '$hDay $hMonth  •  $gDay $gMonth',
-                  style: TextStyle(color: qt.textMuted, fontSize: 11),
-                ),
-              ),
-              trailing: Icon(Icons.star_rounded, color: teal, size: 18),
-            ),
-          );
-        }),
-      ],
+                    color: qt.emeraldDeep,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16)),
+          ),
+        ),
+        title: Text(
+          hols.join(' • '),
+          style: TextStyle(
+              color: qt.textPrimary, fontWeight: FontWeight.w600, fontSize: 13),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 3),
+          child: Text(
+            '$hDay $hMonth  •  $gDay $gMonth',
+            style: TextStyle(color: qt.textMuted, fontSize: 11),
+          ),
+        ),
+        trailing: Icon(Icons.star_rounded, color: qt.emeraldDeep, size: 18),
+      ),
     );
   }
 
   // ── Error state ──
-  Widget _buildError(QuranTheme qt, Color teal) {
+  Widget _buildError(QuranTheme qt) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -533,15 +489,16 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
           const SizedBox(height: 24),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-                backgroundColor: teal,
+                backgroundColor: qt.emeraldDeep,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 28, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14))),
             onPressed: _fetchCalendar,
             icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Retry', style: TextStyle(fontWeight: FontWeight.bold)),
+            label: const Text('Retry',
+                style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -552,7 +509,6 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
   void _showDayDetail(
     BuildContext context,
     QuranTheme qt,
-    Color teal,
     Map<dynamic, dynamic> dayData,
     List<String> hols,
   ) {
@@ -592,10 +548,11 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: teal.withOpacity(0.12),
+                    color: qt.emeraldDeep.withOpacity(0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.star_rounded, color: teal, size: 26),
+                  child:
+                      Icon(Icons.star_rounded, color: qt.emeraldDeep, size: 26),
                 ),
                 const SizedBox(width: 16),
                 Column(
@@ -607,8 +564,7 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
                             fontWeight: FontWeight.bold,
                             fontSize: 17)),
                     Text('$gDay $gMonth $gYear',
-                        style:
-                            TextStyle(color: qt.textMuted, fontSize: 13)),
+                        style: TextStyle(color: qt.textMuted, fontSize: 13)),
                   ],
                 ),
               ],
@@ -622,7 +578,7 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
                           width: 8,
                           height: 8,
                           decoration: BoxDecoration(
-                              color: teal, shape: BoxShape.circle)),
+                              color: qt.emeraldDeep, shape: BoxShape.circle)),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(h,
@@ -640,8 +596,8 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
     );
   }
 
-  // ── Location picker sheet (same as prayer screen) ──
-  void _showLocationSheet(BuildContext context, QuranTheme qt) {
+  // ── Location picker sheet ──
+  void _showLocationBottomSheet(BuildContext context, QuranTheme qt) {
     String q = '';
     showModalBottomSheet(
       context: context,
@@ -659,7 +615,9 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
           return Padding(
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(ctx).viewInsets.bottom,
-              left: 24, right: 24, top: 24,
+              left: 24,
+              right: 24,
+              top: 24,
             ),
             child: SizedBox(
               height: MediaQuery.of(ctx).size.height * 0.68,
@@ -673,8 +631,7 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
                         decoration: InputDecoration(
                           hintText: 'Search city...',
                           hintStyle: TextStyle(color: qt.textMuted),
-                          prefixIcon:
-                              Icon(Icons.search, color: qt.textMuted),
+                          prefixIcon: Icon(Icons.search, color: qt.textMuted),
                           filled: true,
                           fillColor: qt.cardBg,
                           border: OutlineInputBorder(
@@ -687,11 +644,10 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
                     const SizedBox(width: 10),
                     Container(
                       decoration: BoxDecoration(
-                          color: const Color(0xFF26A69A).withOpacity(0.1),
+                          color: qt.emeraldDeep.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(14)),
                       child: IconButton(
-                        icon: const Icon(Icons.my_location,
-                            color: Color(0xFF26A69A)),
+                        icon: Icon(Icons.my_location, color: qt.emeraldDeep),
                         onPressed: () async {
                           Navigator.pop(ctx);
                           setState(() => _isLoading = true);
@@ -715,8 +671,8 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
                                   color: qt.textPrimary,
                                   fontWeight: FontWeight.bold)),
                           subtitle: Text(loc['country']!,
-                              style: TextStyle(
-                                  color: qt.textMuted, fontSize: 12)),
+                              style:
+                                  TextStyle(color: qt.textMuted, fontSize: 12)),
                           onTap: () async {
                             Navigator.pop(ctx);
                             setState(() => _isLoading = true);
@@ -747,7 +703,6 @@ class _DayCell extends StatelessWidget {
   final bool isToday;
   final bool hasEvent;
   final QuranTheme qt;
-  final Color teal;
   final VoidCallback? onTap;
 
   const _DayCell({
@@ -756,27 +711,25 @@ class _DayCell extends StatelessWidget {
     required this.isToday,
     required this.hasEvent,
     required this.qt,
-    required this.teal,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final bg = isToday
-        ? teal
+        ? qt.emeraldDeep
         : hasEvent
-            ? teal.withOpacity(0.1)
+            ? qt.emeraldDeep.withOpacity(0.1)
             : Colors.transparent;
 
     final border = isToday
-        ? teal
+        ? qt.emeraldDeep
         : hasEvent
-            ? teal.withOpacity(0.4)
+            ? qt.emeraldDeep.withOpacity(0.4)
             : qt.borderGlass;
 
     final hijriColor = isToday ? Colors.white : qt.textPrimary;
-    final gregColor =
-        isToday ? Colors.white70 : qt.textMuted;
+    final gregColor = isToday ? Colors.white70 : qt.textMuted;
 
     return GestureDetector(
       onTap: onTap,
@@ -789,7 +742,7 @@ class _DayCell extends StatelessWidget {
           boxShadow: isToday
               ? [
                   BoxShadow(
-                      color: teal.withOpacity(0.35),
+                      color: qt.emeraldDeep.withOpacity(0.35),
                       blurRadius: 10,
                       offset: const Offset(0, 3))
                 ]
@@ -820,7 +773,7 @@ class _DayCell extends StatelessWidget {
                   width: 6,
                   height: 6,
                   decoration: BoxDecoration(
-                      color: teal, shape: BoxShape.circle),
+                      color: qt.emeraldDeep, shape: BoxShape.circle),
                 ),
               ),
           ],

@@ -44,7 +44,7 @@ class _AsmaListScreenState extends State<AsmaListScreen> {
   @override
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
-    
+
     return Scaffold(
       backgroundColor: qt.bg,
       body: Column(
@@ -67,7 +67,7 @@ class _AsmaListScreenState extends State<AsmaListScreen> {
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
                       onPressed: () => Navigator.pop(context),
                     ),
-                    Text("Asma ul Husna",
+                    const Text("Asma ul Husna",
                         style: TextStyle(
                             color: Colors.white,
                             fontSize: 22,
