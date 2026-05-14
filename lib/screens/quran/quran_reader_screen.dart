@@ -117,12 +117,13 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       final audioData =
           await QuranService.instance.getSurahAudio(widget.surahNumber);
       if (mounted) setState(() => _surahAudioData = audioData);
-      // Check if surah is downloaded
-      final downloaded = await _checkSurahDownloaded();
-      if (mounted) setState(() => _isSurahDownloaded = downloaded);
     } catch (e) {
       debugPrint("Error fetching surah audio: $e");
     }
+
+    // Check if surah is downloaded (Independent of metadata status)
+    final downloaded = await _checkSurahDownloaded();
+    if (mounted) setState(() => _isSurahDownloaded = downloaded);
 
     // Scroll to initial ayah after frame
     if (widget.initialAyah != null) {
@@ -397,15 +398,18 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   }
 
   Future<bool> _checkSurahDownloaded() async {
-    if (_surahAudioData == null) return false;
     final settings = QuranSettingsProvider.of(context, listen: false);
     String reciterId = settings.selectedReciterId;
-    ReciterAudio? reciterAudio = _surahAudioData!.reciters[reciterId];
-    if (reciterAudio == null) {
-      reciterId = _surahAudioData!.reciters.keys.first;
-      reciterAudio = _surahAudioData!.reciters[reciterId];
+
+    // If metadata is available, we use it to handle potential fallbacks
+    // like the player does.
+    if (_surahAudioData != null) {
+      ReciterAudio? reciterAudio = _surahAudioData!.reciters[reciterId];
+      if (reciterAudio == null && _surahAudioData!.reciters.isNotEmpty) {
+        reciterId = _surahAudioData!.reciters.keys.first;
+      }
     }
-    if (reciterAudio == null) return false;
+
     final path = await QuranService.instance
         .getDownloadedSurahPath(widget.surahNumber, reciterId);
     return path != null;
@@ -1166,7 +1170,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                 Text(
                   '${widget.surahNumber}:${_playingAyah ?? _selectedAyah}',
                   style: TextStyle(
-                    color: isAnyPlaying ? qt.textSecondary : qt.emeraldDeep,
+                    color: isAnyPlaying ? Colors.white : qt.emeraldDeep,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
@@ -1229,8 +1233,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       color: _isAnyPlaying ? Colors.white24 : qt.borderGlass);
 
   // ── Settings bottom sheet ─────────────────────────────────────────────────
-  void _showSettingsSheet() {
-    showModalBottomSheet(
+  void _showSettingsSheet() async {
+    await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
@@ -1239,6 +1243,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         surahAudio: _surahAudioData,
       ),
     );
+    // Refresh download status when settings (like reciter) might have changed
+    final downloaded = await _checkSurahDownloaded();
+    if (mounted) setState(() => _isSurahDownloaded = downloaded);
   }
 }
 
@@ -1336,7 +1343,9 @@ class _AyahCardState extends State<_AyahCard>
       decoration: BoxDecoration(
         color: widget.isHighlighted
             ? qt.emeraldLight.withOpacity(0.12)
-            : (widget.isLastRead ? qt.emeraldDeep.withOpacity(0.08) : qt.cardBg),
+            : (widget.isLastRead
+                ? qt.emeraldDeep.withOpacity(0.08)
+                : qt.cardBg),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: widget.isHighlighted
@@ -1360,7 +1369,8 @@ class _AyahCardState extends State<_AyahCard>
                   children: [
                     // Ayah number chip
                     Row(children: [
-                      _numberChip(widget.ayah.ayahNumber, widget.isSelected, qt),
+                      _numberChip(
+                          widget.ayah.ayahNumber, widget.isSelected, qt),
                       const Spacer(),
                       if (widget.isLastRead)
                         Container(
@@ -1521,7 +1531,8 @@ class _AyahCardState extends State<_AyahCard>
           ),
           const SizedBox(width: 14),
           Tooltip(
-            message: widget.isLastRead ? 'Clear last read' : 'Mark as last read',
+            message:
+                widget.isLastRead ? 'Clear last read' : 'Mark as last read',
             child: _actionBtn(
               widget.isLastRead
                   ? Icons.check_circle_rounded
@@ -1539,7 +1550,8 @@ class _AyahCardState extends State<_AyahCard>
           Tooltip(
             message: 'Share ayah',
             child: _actionBtn(Icons.share_rounded, qt.textMuted, () {
-              final text = '${widget.ayah.arabicFor(widget.settings.script)}\n\n'
+              final text =
+                  '${widget.ayah.arabicFor(widget.settings.script)}\n\n'
                   '${widget.ayah.translation}\n\n'
                   '— Quran ${widget.ayah.surahNumber}:${widget.ayah.ayahNumber}';
               Share.share(text);
