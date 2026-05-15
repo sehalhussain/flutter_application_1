@@ -385,8 +385,9 @@ class _PrayerCardState extends State<_PrayerCard> {
       return DateFormat.jm().format(dt);
     }
 
-    final otherPrayers =
-        prayerOrder.where((p) => p != currentPrayer && p != nextPrayer).toList();
+    final otherPrayers = prayerOrder
+        .where((p) => p != currentPrayer && p != nextPrayer)
+        .toList();
 
     return RepaintBoundary(
       child: Container(
@@ -712,12 +713,20 @@ class _AsmaSliderState extends State<_AsmaSlider> {
                 context,
                 MaterialPageRoute(builder: (_) => const AsmaListScreen()),
               ),
-              child: Text(
-                "View All",
-                style: TextStyle(
-                  color: qt.emeraldDeep,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: qt.emeraldDeep.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Text(
+                  "View All",
+                  style: TextStyle(
+                    color: qt.emeraldDeep,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ),
@@ -733,54 +742,89 @@ class _AsmaSliderState extends State<_AsmaSlider> {
             final names = snapshot.data!.take(_limit).toList();
 
             return SizedBox(
-              height: 200,
+              height: 220,
               child: ListView.builder(
                 controller: _scrollController,
                 scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 itemCount: names.length,
                 itemBuilder: (context, index) {
                   final name = names[index];
                   return RepaintBoundary(
-                    child: Container(
-                      width: 240,
-                      margin: const EdgeInsets.only(right: 16),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: qt.cardBg,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: qt.borderGlass),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            name.name,
-                            style: TextStyle(
-                              fontSize: 32,
-                              color: qt.emeraldDeep,
-                              fontFamily: 'QPC Hafs',
+                    child: IntrinsicWidth(
+                      child: Container(
+                        height: double.infinity,
+                        constraints: const BoxConstraints(minWidth: 240),
+                        margin: const EdgeInsets.only(right: 16),
+                        child: Stack(
+                          children: [
+                            // Card Background
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: qt.cardBg,
+                                  borderRadius: BorderRadius.circular(32),
+                                  border: Border.all(color: qt.borderGlass),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color.fromARGB(255, 0, 0, 0)
+                                          .withOpacity(0.04),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            name.transliteration,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: qt.textPrimary,
-                              fontWeight: FontWeight.bold,
+                            // Content
+                            Align(
+                              alignment: Alignment.center,
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 32),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      name.name,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 36,
+                                        color: qt.emeraldDeep,
+                                        fontFamily: 'QPC Hafs',
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      name.transliteration.toUpperCase(),
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: qt.textPrimary,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: 0.8,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      name.meaning,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: qt.textMuted,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                          Text(
-                            name.meaning,
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: qt.textMuted,
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -835,7 +879,11 @@ class _AyahSection extends StatelessWidget {
                 style: TextStyle(color: qt.textMuted),
               );
             }
-            return _AyahCard(ayah: snapshot.data!, qt: qt);
+            // Wrap in SizedBox to force full width matching parent ListView padding
+            return SizedBox(
+              width: double.infinity,
+              child: _AyahCard(ayah: snapshot.data!, qt: qt),
+            );
           },
         ),
       ],

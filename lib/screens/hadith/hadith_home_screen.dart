@@ -4,6 +4,7 @@ import '../../models/hadith_models.dart';
 import '../../providers/hadith_progress_provider.dart';
 import '../../services/hadith_service.dart';
 import 'hadith_book_screen.dart';
+import 'hadith_chapter_screen.dart';
 import 'hadith_reader_screen.dart';
 
 class HadithHomeScreen extends StatefulWidget {
@@ -305,23 +306,20 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
       onTap: () async {
         final book =
             await HadithService.instance.loadHadithBook(lastRead.assetPath);
-        Hadith? found;
+        HadithChapter? foundChapter;
         for (final chapter in book.allBooks) {
-          for (final h in chapter.hadithList) {
-            if (h.uuid == lastRead.hadithUuid) {
-              found = h;
-              break;
-            }
+          if (chapter.hadithList.any((h) => h.uuid == lastRead.hadithUuid)) {
+            foundChapter = chapter;
+            break;
           }
-          if (found != null) break;
         }
-        if (found != null && mounted) {
-          final selectedHadith = found;
+
+        if (foundChapter != null && mounted) {
           Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => HadithReaderScreen(
-              hadith: selectedHadith,
-              bookTitle: lastRead.bookTitle,
-              chapterTitle: lastRead.chapterTitle,
+            builder: (_) => HadithChapterScreen(
+              chapter: foundChapter!,
+              bookAsset: lastRead.assetPath,
+              bookName: lastRead.bookTitle,
             ),
           ));
         }

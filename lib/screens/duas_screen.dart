@@ -485,7 +485,7 @@ class _AccordionCardState extends State<_AccordionCard>
                       child: Text(
                         dua.title,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: widget.translationFontSize, // ← was 14
                           fontWeight: FontWeight.w600,
                           color: qt.textPrimary,
                         ),

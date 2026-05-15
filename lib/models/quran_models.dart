@@ -133,7 +133,7 @@ class ReciterAudio {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Juz entry
+// Juz entry (for the home screen list)
 // ─────────────────────────────────────────────────────────────────────────────
 class JuzEntry {
   final int juzNumber;
@@ -149,6 +149,56 @@ class JuzEntry {
     required this.startAyah,
     required this.startSurahName,
   });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Juz metadata entry (from quran-metadata-juz.json – rich juz info)
+// ─────────────────────────────────────────────────────────────────────────────
+class JuzMetadataEntry {
+  final int juzNumber;
+  final int versesCount;
+  final String firstVerseKey; // e.g. "1:1"
+  final String lastVerseKey; // e.g. "2:141"
+  final Map<String, String> verseMapping; // e.g. {"1": "1-7", "2": "1-141"}
+
+  const JuzMetadataEntry({
+    required this.juzNumber,
+    required this.versesCount,
+    required this.firstVerseKey,
+    required this.lastVerseKey,
+    required this.verseMapping,
+  });
+
+  factory JuzMetadataEntry.fromJson(Map<String, dynamic> json) =>
+      JuzMetadataEntry(
+        juzNumber: json['juz_number'] as int,
+        versesCount: json['verses_count'] as int,
+        firstVerseKey: json['first_verse_key'] as String,
+        lastVerseKey: json['last_verse_key'] as String,
+        verseMapping: (json['verse_mapping'] as Map<String, dynamic>)
+            .map((k, v) => MapEntry(k, v as String)),
+      );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sajdah metadata entry (from quran-metadata-sajda.json)
+// ─────────────────────────────────────────────────────────────────────────────
+class SajdahMetadata {
+  final int sajdahNumber;
+  final String verseKey; // e.g. "7:206"
+  final String sajdahType; // "optional" or "required"
+
+  const SajdahMetadata({
+    required this.sajdahNumber,
+    required this.verseKey,
+    required this.sajdahType,
+  });
+
+  factory SajdahMetadata.fromJson(Map<String, dynamic> json) => SajdahMetadata(
+        sajdahNumber: json['sajdah_number'] as int,
+        verseKey: json['verse_key'] as String,
+        sajdahType: json['sajdah_type'] as String,
+      );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -194,8 +244,8 @@ class LastReadPosition {
 
   factory LastReadPosition.fromJson(Map<String, dynamic> json) =>
       LastReadPosition(
-        surah: json['surah'] as int,
-        ayah: json['ayah'] as int,
+        surah: json['surah'] as int? ?? 0,
+        ayah: json['ayah'] as int? ?? 0,
         surahName: json['surahName'] as String? ?? '',
       );
 }

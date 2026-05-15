@@ -22,9 +22,10 @@ class HadithReaderScreen extends StatefulWidget {
 }
 
 class _HadithReaderScreenState extends State<HadithReaderScreen> {
-  Future<void> _toggleFavorite(HadithProgress progress) async {
-    await progress.toggleFavorite(widget.hadith.bookAsset, widget.hadith.uuid);
-    setState(() {});
+
+
+  void _toggleFavorite(HadithProgress progress) {
+    progress.toggleFavorite(widget.hadith.bookAsset, widget.hadith.uuid);
   }
 
   void _openReaderSettings() {
@@ -57,7 +58,7 @@ class _HadithReaderScreenState extends State<HadithReaderScreen> {
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
     final progress = HadithProgressProvider.of(context, listen: true);
-    final settings = HadithReaderSettingsProvider.of(context);
+    final settings = HadithReaderSettingsProvider.of(context, listen: true);
     final isFavorite =
         progress.isFavorite(widget.hadith.bookAsset, widget.hadith.uuid);
 

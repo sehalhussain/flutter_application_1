@@ -154,7 +154,7 @@ class QuranService {
       _getTranslation(translation),
     ]);
 
-    // Offload the mapping loop to a background isolate. 
+    // Offload the mapping loop to a background isolate.
     // This is especially beneficial for large surahs like Al-Baqarah.
     return compute(_parseAyahsIsolate, {
       'surahNumber': surahNumber,
@@ -301,6 +301,7 @@ class QuranService {
     _cacheTranslations.clear();
   }
 
+  // ── Juz metadata (removed — now a compile-time constant in juz_metadata_data.dart) ──
   // ── Surah Audio API ───────────────────────────────────────────────────────
   final Map<int, SurahAudio> _cacheSurahAudio = {};
 

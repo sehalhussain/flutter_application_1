@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../constants/quran_theme.dart';
@@ -12,11 +13,13 @@ class HadithChapterScreen extends StatefulWidget {
   final HadithChapter chapter;
   final String bookAsset;
   final String bookName;
+  final String? initialSearchQuery;
 
   const HadithChapterScreen({
     required this.chapter,
     required this.bookAsset,
     required this.bookName,
+    this.initialSearchQuery,
     super.key,
   });
 
@@ -62,7 +65,6 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(color: qt.textPrimary),
-        // Removed redundant title — now shown in the banner below
         title: Text(
           widget.chapter.englishTitle,
           textAlign: TextAlign.center,
@@ -91,7 +93,6 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
           child: Column(
             children: [
-              // Banner header: centered chapter name + hadith count
               Padding(
                 padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
                 child: Column(
@@ -117,6 +118,7 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
                   bookAsset: widget.bookAsset,
                   bookName: widget.bookName,
                   chapterTitle: widget.chapter.englishTitle,
+                  initialSearchQuery: widget.initialSearchQuery,
                 ),
               ),
             ],
@@ -132,12 +134,14 @@ class HadithListView extends StatefulWidget {
   final String bookAsset;
   final String bookName;
   final String chapterTitle;
+  final String? initialSearchQuery;
 
   const HadithListView({
     required this.hadiths,
     required this.bookAsset,
     required this.bookName,
     required this.chapterTitle,
+    this.initialSearchQuery,
     super.key,
   });
 
@@ -147,66 +151,123 @@ class HadithListView extends StatefulWidget {
 
 class _HadithListViewState extends State<HadithListView> {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
-  List<Hadith> _filteredHadiths = [];
+
+  // Pre-computed lower-case fields for fast searching
+  List<_SearchableHadith> _searchableHadiths = [];
+  List<_SearchableHadith> _filteredSearchable = [];
   List<Hadith> _displayedHadiths = [];
+
   int _currentChunk = 0;
   static const int _chunkSize = 15;
   bool _isLoadingMore = false;
+  bool _initialSearchApplied = false;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
     super.initState();
-    _filteredHadiths = widget.hadiths;
-    _loadInitialChunk();
+    _searchableHadiths =
+        widget.hadiths.map((h) => _SearchableHadith(h)).toList(growable: false);
+    _filteredSearchable = List.of(_searchableHadiths);
     _scrollController.addListener(_onScroll);
-    _searchController.addListener(_onSearchChanged);
+    _searchController.addListener(_onSearchChangedDelayed);
+
+    // Initialize the first chunk of hadiths immediately so it's ready for the first build.
+    _loadInitialChunk();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.initialSearchQuery != null &&
+          widget.initialSearchQuery!.isNotEmpty &&
+          !_initialSearchApplied) {
+        _initialSearchApplied = true;
+        _searchController.text = widget.initialSearchQuery!;
+      } else if (!_initialSearchApplied) {
+        _initialSearchApplied = true;
+      }
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     _scrollController.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
   void _loadInitialChunk() {
+    if (_filteredSearchable.isEmpty) {
+      _displayedHadiths = [];
+      return;
+    }
+    final hadiths =
+        _filteredSearchable.map((s) => s.hadith).toList(growable: false);
     _displayedHadiths =
-        HadithService.instance.getHadithChunk(_filteredHadiths, 0, _chunkSize);
+        HadithService.instance.getHadithChunk(hadiths, 0, _chunkSize);
     _currentChunk = 1;
   }
 
-  void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase();
+  void _clearSearch() {
+    _searchController.clear();
+    _searchFocusNode.unfocus();
+  }
+
+  bool get _isSearching => _searchController.text.trim().isNotEmpty;
+
+  void _onSearchChangedDelayed() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 120), _executeSearch);
+  }
+
+  void _executeSearch() {
+    final query = _searchController.text.toLowerCase().trim();
+
+    List<_SearchableHadith> newFiltered;
+    if (query.isEmpty) {
+      newFiltered = List.of(_searchableHadiths);
+    } else {
+      newFiltered = _searchableHadiths.where((s) => s.matches(query)).toList();
+    }
+
+    // Avoid rebuild if no changes
+    if (_listsEqual(newFiltered, _filteredSearchable)) return;
+
     setState(() {
-      _filteredHadiths = widget.hadiths.where((hadith) {
-        return hadith.title.toLowerCase().contains(query) ||
-            hadith.localNum.contains(query) ||
-            hadith.arabicText.toLowerCase().contains(query) ||
-            hadith.englishText.toLowerCase().contains(query) ||
-            hadith.narrator.toLowerCase().contains(query) ||
-            hadith.grade.toLowerCase().contains(query);
-      }).toList();
+      _filteredSearchable = newFiltered;
       _loadInitialChunk();
     });
+  }
+
+  bool _listsEqual(List<_SearchableHadith> a, List<_SearchableHadith> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].hadith.uuid != b[i].hadith.uuid) return false;
+    }
+    return true;
   }
 
   void _onScroll() {
     if (_scrollController.position.pixels >=
             _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore &&
-        _displayedHadiths.length < _filteredHadiths.length) {
+        _displayedHadiths.length < _filteredSearchable.length) {
       _loadMore();
     }
   }
 
   void _loadMore() {
-    setState(() {
-      _isLoadingMore = true;
-    });
+    if (_isLoadingMore) return;
+    setState(() => _isLoadingMore = true);
+
     Future.delayed(const Duration(milliseconds: 300), () {
-      final newChunk = HadithService.instance.getHadithChunk(
-          _filteredHadiths, _currentChunk * _chunkSize, _chunkSize);
+      if (!mounted) return;
+      final hadiths =
+          _filteredSearchable.map((s) => s.hadith).toList(growable: false);
+      final newChunk = HadithService.instance
+          .getHadithChunk(hadiths, _currentChunk * _chunkSize, _chunkSize);
       setState(() {
         _displayedHadiths.addAll(newChunk);
         _currentChunk++;
@@ -266,7 +327,7 @@ class _HadithListViewState extends State<HadithListView> {
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
     final progress = HadithProgressProvider.of(context, listen: true);
-    final settings = HadithReaderSettingsProvider.of(context);
+    final settings = HadithReaderSettingsProvider.of(context, listen: true);
 
     return Column(
       children: [
@@ -274,9 +335,16 @@ class _HadithListViewState extends State<HadithListView> {
           padding: const EdgeInsets.only(bottom: 16),
           child: TextField(
             controller: _searchController,
+            focusNode: _searchFocusNode,
             decoration: InputDecoration(
               hintText: 'Search hadiths...',
               prefixIcon: Icon(Icons.search, color: qt.textMuted),
+              suffixIcon: _isSearching
+                  ? IconButton(
+                      icon: Icon(Icons.clear, color: qt.textMuted),
+                      onPressed: _clearSearch,
+                    )
+                  : null,
               filled: true,
               fillColor: qt.cardBg,
               border: OutlineInputBorder(
@@ -295,11 +363,27 @@ class _HadithListViewState extends State<HadithListView> {
             style: TextStyle(color: qt.textPrimary),
           ),
         ),
+        if (_isSearching)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '${_filteredSearchable.length} result${_filteredSearchable.length == 1 ? '' : 's'}',
+                style: TextStyle(
+                    color: qt.emeraldLight,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500),
+              ),
+            ),
+          ),
         Expanded(
           child: _displayedHadiths.isEmpty
               ? Center(
-                  child: Text('No hadiths found',
-                      style: TextStyle(color: qt.textMuted)),
+                  child: Text(
+                    _isSearching ? 'No hadiths found' : 'No hadiths',
+                    style: TextStyle(color: qt.textMuted),
+                  ),
                 )
               : ListView.separated(
                   controller: _scrollController,
@@ -310,9 +394,17 @@ class _HadithListViewState extends State<HadithListView> {
                   itemBuilder: (context, index) {
                     if (index == _displayedHadiths.length) {
                       return Center(
-                        child: CircularProgressIndicator(
-                            valueColor:
-                                AlwaysStoppedAnimation(qt.emeraldLight)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor:
+                                    AlwaysStoppedAnimation(qt.emeraldLight)),
+                          ),
+                        ),
                       );
                     }
                     final hadith = _displayedHadiths[index];
@@ -428,7 +520,7 @@ class _HadithListViewState extends State<HadithListView> {
                                   textAlign: TextAlign.right,
                                   textDirection: TextDirection.rtl,
                                   style: TextStyle(
-                                      fontFamily: 'QPC Hafs',
+                                      fontFamily: 'indopak',
                                       fontSize: settings.arabicFontSize,
                                       color: qt.textPrimary,
                                       height: 1.8),
@@ -456,4 +548,31 @@ class _HadithListViewState extends State<HadithListView> {
       ],
     );
   }
+}
+
+/// Pre-computed lower-case fields for fast filtering.
+class _SearchableHadith {
+  final Hadith hadith;
+  final String lowerTitle;
+  final String lowerNarrator;
+  final String lowerEnglish;
+  final String lowerArabic;
+  final String lowerGrade;
+  final String lowerNum;
+
+  _SearchableHadith(this.hadith)
+      : lowerTitle = hadith.title.toLowerCase(),
+        lowerNarrator = hadith.narrator.toLowerCase(),
+        lowerEnglish = hadith.englishText.toLowerCase(),
+        lowerArabic = hadith.arabicText.toLowerCase(),
+        lowerGrade = hadith.grade.toLowerCase(),
+        lowerNum = hadith.localNum.toLowerCase();
+
+  bool matches(String query) =>
+      lowerTitle.contains(query) ||
+      lowerNum.contains(query) ||
+      lowerArabic.contains(query) ||
+      lowerEnglish.contains(query) ||
+      lowerNarrator.contains(query) ||
+      lowerGrade.contains(query);
 }

@@ -11,7 +11,8 @@ import '/services/quran_service.dart';
 import '/providers/quran_settings_provider.dart';
 import '/providers/quran_progress_provider.dart';
 import '/constants/quran_theme.dart';
-import 'surah_info_screen.dart';
+import '/constants/sajdah_data.dart';
+import '/constants/juz_metadata_data.dart';
 import 'tafsir_screen.dart';
 
 class QuranReaderScreen extends StatefulWidget {
@@ -45,6 +46,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   double? _downloadProgress;
   bool _isSurahDownloaded = false;
   bool _isAutoContinuing = false;
+  Map<String, int> _juzStarts = {}; // firstVerseKey -> juz number
+  Map<int, JuzMetadataEntry> _juzMetadataMap = {}; // juzNumber -> metadata
+  Map<String, SajdahMetadata> _sajdahMetadata = {}; // verseKey -> sajdah info
 
   bool get _isAnyPlaying => _isPlaying || _playingAyah != null;
 
@@ -101,7 +105,47 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     super.dispose();
   }
 
+  // ── Juz helpers ───────────────────────────────────────────────────────────
+  /// Returns a list where each item is either an ayah index (int) or a juz
+  /// divider (JuzDivider).  The builder uses this to insert juz indicators
+  /// above the first verse of each juz.
+  List<Object> _buildDisplayItems() {
+    final items = <Object>[];
+    for (int i = 0; i < _ayahs.length; i++) {
+      final ayah = _ayahs[i];
+      final verseKey = ayah.verseKey;
+      // If this verse is the first verse of a juz (and not juz 1),
+      // insert a divider before it.
+      if (_juzStarts.containsKey(verseKey)) {
+        final juzNum = _juzStarts[verseKey]!;
+        if (juzNum > 1) {
+          items.add(_JuzDividerData(juzNumber: juzNum));
+        }
+      }
+      items.add(i); // ayah index
+    }
+    return items;
+  }
+
   // ── Data ──────────────────────────────────────────────────────────────────
+  void _initJuzData() {
+    // Compile-time constant — zero I/O, zero parsing.
+    final juzStarts = <String, int>{};
+    for (int j = 1; j <= 30; j++) {
+      final entry = kJuzMetadata[j];
+      if (entry != null) {
+        juzStarts[entry.firstVerseKey] = j;
+      }
+    }
+    _juzMetadataMap = kJuzMetadata;
+    _juzStarts = juzStarts;
+  }
+
+  void _initSajdahData() {
+    // Compile-time constant — zero I/O, zero parsing.
+    _sajdahMetadata = kSajdahData;
+  }
+
   Future<void> _loadAyahs() async {
     final settings = QuranSettingsProvider.of(context, listen: false);
     final ayahs = await QuranService.instance
@@ -111,6 +155,12 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       _ayahs = ayahs;
       _loading = false;
     });
+
+    // Load juz boundary data (compile-time constant, instant)
+    _initJuzData();
+
+    // Load sajdah metadata (compile-time constant, instant)
+    _initSajdahData();
 
     // Fetch surah audio metadata
     try {
@@ -177,12 +227,31 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   }
 
   // ── Scroll to ayah ────────────────────────────────────────────────────────
+  /// Returns the 0-based index in the ScrollablePositionedList for the given
+  /// ayah number, accounting for the Bismillah header and any juz dividers
+  /// inserted before this ayah.
+  int _ayahScrollIndex(int ayahNumber) {
+    final targetIndex = _ayahs.indexWhere((a) => a.ayahNumber == ayahNumber);
+    if (targetIndex < 0) return -1;
+
+    // Count juz dividers that appear before this ayah in displayItems
+    int dividersBefore = 0;
+    for (int i = 0; i <= targetIndex; i++) {
+      final ayah = _ayahs[i];
+      if (_juzStarts.containsKey(ayah.verseKey) &&
+          _juzStarts[ayah.verseKey]! > 1) {
+        dividersBefore++;
+      }
+    }
+    // +1 for Bismillah header
+    return targetIndex + dividersBefore + 1;
+  }
+
   Future<void> _scrollToAyah(int ayahNumber) async {
     if (!mounted) return;
-    final targetIndex = _ayahs.indexWhere((a) => a.ayahNumber == ayahNumber);
-    if (targetIndex < 0) return;
+    final listIndex = _ayahScrollIndex(ayahNumber);
+    if (listIndex < 0) return;
 
-    final listIndex = targetIndex + 1; // +1 for the Bismillah header
     for (var attempt = 0; attempt < 10 && mounted; attempt++) {
       if (_itemScrollController.isAttached) break;
       await Future.delayed(const Duration(milliseconds: 40));
@@ -193,7 +262,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       index: listIndex,
       duration: const Duration(milliseconds: 520),
       curve: Curves.easeOutCubic,
-      alignment: 0.0,
+      alignment: 0.0, // Scrolls to the top of the screen
     );
   }
 
@@ -724,6 +793,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   Widget _buildReaderList(
       QuranSettings settings, QuranProgress progress, QuranTheme qt) {
     final surahNum = widget.surahNumber;
+    final displayItems = _buildDisplayItems();
+
     return ScrollablePositionedList.builder(
       itemScrollController: _itemScrollController,
       itemPositionsListener: _itemPositionsListener,
@@ -732,21 +803,33 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         top: 0,
         bottom: MediaQuery.of(context).padding.bottom + 100,
       ),
-      itemCount: _ayahs.length + 2, // +1 bismillah header, +1 nav footer
+      // +1 bismillah header, +1 nav footer
+      itemCount: displayItems.length + 2,
       itemBuilder: (ctx, index) {
         // Header: Bismillah
         if (index == 0) return _buildBismillah(qt);
 
         // Footer: Prev/Next navigation
-        if (index == _ayahs.length + 1) return _buildNavFooter(qt);
+        if (index == displayItems.length + 1) return _buildNavFooter(qt);
 
-        final ayah = _ayahs[index - 1];
+        final item = displayItems[index - 1];
+
+        // Juz divider widget
+        if (item is _JuzDividerData) {
+          return _buildJuzDivider(item, qt);
+        }
+
+        // Ayah card
+        final ayahIndex = item as int;
+        final ayah = _ayahs[ayahIndex];
         final isBookmarked = progress.isBookmarked(surahNum, ayah.ayahNumber);
         final isLastRead = progress.isLastRead(surahNum, ayah.ayahNumber);
         final isMenuOpen = _openMenuAyah == ayah.ayahNumber;
         final isPlaying = _playingAyah == ayah.ayahNumber && _ayahAudio.playing;
         final isHighlighted = _highlightedAyah == ayah.ayahNumber;
         final isSelected = _selectedAyah == ayah.ayahNumber;
+
+        final sajdahEntry = _sajdahMetadata[ayah.verseKey];
 
         return _AyahCard(
           key: ValueKey<int>(ayah.ayahNumber),
@@ -758,6 +841,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
           isPlaying: isPlaying,
           isHighlighted: isHighlighted,
           isSelected: isSelected,
+          sajdah: sajdahEntry,
           onBookmark: () => progress.toggleBookmark(
               surahNum, ayah.ayahNumber, _surahInfo?.nameEnglish ?? ''),
           onLastRead: () {
@@ -810,6 +894,76 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
           surahList: widget.surahList,
         );
       },
+    );
+  }
+
+  Widget _buildJuzDivider(_JuzDividerData data, QuranTheme qt) {
+    final juzNum = data.juzNumber;
+    // Look up verse mapping info for this juz
+    final entry = _juzMetadataMap[juzNum];
+    String? surahRange;
+    if (entry != null) {
+      // Build surah range string from verse mapping
+      final surahKeys = entry.verseMapping.keys.toList()..sort();
+      if (surahKeys.length == 1) {
+        surahRange = 'Surah ${surahKeys.first}';
+      } else {
+        surahRange = 'Surahs ${surahKeys.first}–${surahKeys.last}';
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(children: [
+        // Dotted line
+        Row(children: [
+          Expanded(child: Container(height: 1, color: qt.borderGlass)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Icon(Icons.auto_stories_rounded,
+                color: qt.emeraldDeep, size: 16),
+          ),
+          Expanded(child: Container(height: 1, color: qt.borderGlass)),
+        ]),
+        const SizedBox(height: 12),
+        // Juz badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [qt.emeraldDeep, qt.emeraldMid]),
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(
+                  color: qt.emeraldDeep.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4)),
+            ],
+          ),
+          child: Text('JUZ $juzNum',
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                  letterSpacing: 1.5)),
+        ),
+        if (surahRange != null) ...[
+          const SizedBox(height: 8),
+          Text(surahRange,
+              style: TextStyle(
+                  color: qt.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600)),
+        ],
+        if (entry != null) ...[
+          const SizedBox(height: 4),
+          Text('${entry.versesCount} verses',
+              style: TextStyle(
+                  color: qt.textMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500)),
+        ],
+        const SizedBox(height: 8),
+      ]),
     );
   }
 
@@ -1234,6 +1388,9 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
   // ── Settings bottom sheet ─────────────────────────────────────────────────
   void _showSettingsSheet() async {
+    // Save currently visible ayah so we can re-scroll after font size changes
+    final savedAyah = _selectedAyah ?? _playingAyah ?? 1;
+
     await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1246,6 +1403,14 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     // Refresh download status when settings (like reciter) might have changed
     final downloaded = await _checkSurahDownloaded();
     if (mounted) setState(() => _isSurahDownloaded = downloaded);
+
+    // Re-scroll to the same ayah after font size changes may have resized cards
+    if (mounted) {
+      // Small delay to let layout settle after font size change
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) _scrollToAyah(savedAyah);
+      });
+    }
   }
 }
 
@@ -1275,6 +1440,14 @@ Widget _buildDropdownItem(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Juz Divider Data (used by _buildDisplayItems)
+// ─────────────────────────────────────────────────────────────────────────────
+class _JuzDividerData {
+  final int juzNumber;
+  const _JuzDividerData({required this.juzNumber});
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Ayah Card
 // ─────────────────────────────────────────────────────────────────────────────
 class _AyahCard extends StatefulWidget {
@@ -1287,6 +1460,7 @@ class _AyahCard extends StatefulWidget {
   final bool isHighlighted;
   final bool isSelected;
   final bool isTafsirOpen;
+  final SajdahMetadata? sajdah;
   final VoidCallback onBookmark;
   final VoidCallback onLastRead;
   final VoidCallback onCopy;
@@ -1307,6 +1481,7 @@ class _AyahCard extends StatefulWidget {
     required this.isPlaying,
     required this.isHighlighted,
     required this.isSelected,
+    this.sajdah,
     required this.onBookmark,
     required this.onLastRead,
     required this.onCopy,
@@ -1372,6 +1547,10 @@ class _AyahCardState extends State<_AyahCard>
                       _numberChip(
                           widget.ayah.ayahNumber, widget.isSelected, qt),
                       const Spacer(),
+                      if (widget.sajdah != null) ...[
+                        _buildSajdahBadge(qt),
+                        const SizedBox(width: 8),
+                      ],
                       if (widget.isLastRead)
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -1505,6 +1684,39 @@ class _AyahCardState extends State<_AyahCard>
                   color: qt.textMuted,
                   fontWeight: FontWeight.w700,
                   fontSize: 12))),
+    );
+  }
+
+  Widget _buildSajdahBadge(QuranTheme qt) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: qt.emeraldDeep.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: qt.emeraldDeep.withOpacity(0.25),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.auto_awesome_rounded,
+            size: 10,
+            color: qt.emeraldDeep,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'Sajdah',
+            style: TextStyle(
+              color: qt.emeraldDeep,
+              fontSize: 8,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
