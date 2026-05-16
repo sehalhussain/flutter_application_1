@@ -28,16 +28,29 @@ class _TafsirScreenState extends State<TafsirScreen> {
   String? _selectedAuthor;
   bool _isDownloaded = false;
 
+  static bool _authorMatches(String selected, String fromApi) {
+    // Normalize both strings: lowercase, remove apostrophes, hyphens, spaces
+    String normalize(String s) =>
+        s.toLowerCase().replaceAll(RegExp(r"['\-\s]"), '');
+    final normalizedSelected = normalize(selected);
+    final normalizedApi = normalize(fromApi);
+    return normalizedSelected == normalizedApi ||
+        normalizedApi.contains(normalizedSelected) ||
+        normalizedSelected.contains(normalizedApi);
+  }
+
   @override
   void initState() {
     super.initState();
-    _tafsirFuture = QuranService.instance.getTafsir(widget.surahNumber, widget.ayahNumber);
+    _tafsirFuture =
+        QuranService.instance.getTafsir(widget.surahNumber, widget.ayahNumber);
     _selectedAuthor = widget.initialAuthor;
     _checkDownloaded();
   }
 
   Future<void> _checkDownloaded() async {
-    final offline = await QuranService.instance.getOfflineTafsir(widget.surahNumber, widget.ayahNumber);
+    final offline = await QuranService.instance
+        .getOfflineTafsir(widget.surahNumber, widget.ayahNumber);
     if (mounted) {
       setState(() {
         _isDownloaded = offline != null;
@@ -54,11 +67,15 @@ class _TafsirScreenState extends State<TafsirScreen> {
       appBar: AppBar(
         backgroundColor: qt.bg,
         elevation: 0,
-        title: Text('Tafsir', 
-          style: TextStyle(color: qt.textPrimary, fontWeight: FontWeight.bold, fontSize: 18)),
+        title: Text('Tafsir',
+            style: TextStyle(
+                color: qt.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 18)),
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: qt.textPrimary, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
+              color: qt.textPrimary, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
         actions: [
@@ -67,27 +84,34 @@ class _TafsirScreenState extends State<TafsirScreen> {
             builder: (context, snapshot) {
               if (snapshot.hasData) {
                 return IconButton(
-                  icon: Icon(_isDownloaded ? Icons.download_done_rounded : Icons.download_rounded, color: qt.emeraldLight),
+                  icon: Icon(
+                      _isDownloaded
+                          ? Icons.download_done_rounded
+                          : Icons.download_rounded,
+                      color: qt.emeraldLight),
                   tooltip: _isDownloaded ? "Downloaded" : "Save Offline",
-                  onPressed: _isDownloaded ? null : () async {
-                    await QuranService.instance.saveTafsirOffline(
-                      widget.surahNumber,
-                      widget.ayahNumber,
-                      snapshot.data!,
-                    );
-                    if (context.mounted) {
-                      setState(() {
-                        _isDownloaded = true;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Tafsir saved for offline reading!'),
-                          backgroundColor: qt.emeraldDeep,
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
+                  onPressed: _isDownloaded
+                      ? null
+                      : () async {
+                          await QuranService.instance.saveTafsirOffline(
+                            widget.surahNumber,
+                            widget.ayahNumber,
+                            snapshot.data!,
+                          );
+                          if (context.mounted) {
+                            setState(() {
+                              _isDownloaded = true;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text(
+                                    'Tafsir saved for offline reading!'),
+                                backgroundColor: qt.emeraldDeep,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
                 );
               }
               return const SizedBox.shrink();
@@ -99,39 +123,43 @@ class _TafsirScreenState extends State<TafsirScreen> {
         future: _tafsirFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator(color: qt.emeraldLight, strokeWidth: 2));
+            return Center(
+                child: CircularProgressIndicator(
+                    color: qt.emeraldLight, strokeWidth: 2));
           }
           if (snapshot.hasError) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(32),
-                child: Text('Error loading tafsir: ${snapshot.error}', 
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: qt.textMuted)),
+                child: Text('Error loading tafsir: ${snapshot.error}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: qt.textMuted)),
               ),
             );
           }
           if (!snapshot.hasData) {
-            return Center(child: Text('No tafsir available.', style: TextStyle(color: qt.textMuted)));
+            return Center(
+                child: Text('No tafsir available.',
+                    style: TextStyle(color: qt.textMuted)));
           }
 
           final response = snapshot.data!;
           final authors = response.tafsirs.map((t) => t.author).toList();
-          
+
           // Default to first author if none selected or if selected not found
-          if (_selectedAuthor == null || !authors.contains(_selectedAuthor)) {
+          if (_selectedAuthor == null ||
+              !authors.any((a) => _authorMatches(_selectedAuthor!, a))) {
             _selectedAuthor = authors.isNotEmpty ? authors.first : null;
           }
 
           final selectedTafsir = response.tafsirs.firstWhere(
-            (t) => t.author == _selectedAuthor,
+            (t) => _authorMatches(_selectedAuthor ?? '', t.author),
             orElse: () => response.tafsirs.first,
           );
 
           return Column(
             children: [
-              if (authors.length > 1)
-                _buildAuthorSelector(authors, qt),
+              if (authors.length > 1) _buildAuthorSelector(authors, qt),
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -188,7 +216,9 @@ class _TafsirScreenState extends State<TafsirScreen> {
                             fontStyle: FontStyle.italic,
                           ),
                           blockquoteDecoration: BoxDecoration(
-                            border: Border(left: BorderSide(color: qt.emeraldLight, width: 4)),
+                            border: Border(
+                                left: BorderSide(
+                                    color: qt.emeraldLight, width: 4)),
                             color: qt.glassWhite,
                           ),
                           code: TextStyle(
@@ -222,7 +252,7 @@ class _TafsirScreenState extends State<TafsirScreen> {
         itemCount: authors.length,
         itemBuilder: (context, index) {
           final author = authors[index];
-          final isSelected = author == _selectedAuthor;
+          final isSelected = _authorMatches(author, _selectedAuthor ?? '');
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: ChoiceChip(

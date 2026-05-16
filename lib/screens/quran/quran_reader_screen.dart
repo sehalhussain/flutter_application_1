@@ -14,6 +14,7 @@ import '/constants/quran_theme.dart';
 import '/constants/sajdah_data.dart';
 import '/constants/juz_metadata_data.dart';
 import 'tafsir_screen.dart';
+import 'surah_info_screen.dart';
 
 class QuranReaderScreen extends StatefulWidget {
   final int surahNumber;
@@ -1285,7 +1286,16 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
                   icon: Icons.info_outline_rounded,
                   label: 'Info',
                   active: false,
-                  onTap: () /* logic omitted for brevity */ {},
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => SurahInfoScreen(
+                          surahNumber: widget.surahNumber,
+                          surahList: widget.surahList,
+                        ),
+                      ),
+                    );
+                  },
                   qt: qt,
                 ),
               ),
@@ -1805,7 +1815,7 @@ class _AyahCardState extends State<_AyahCard>
   }
 
   Widget _buildTafsirAccordion(BuildContext context, QuranTheme qt) {
-    final authors = ["Ibn Kathir", "Tazkirul Quran", "Ma'ariful Quran"];
+    final authors = ["Ibn Kathir", "Ma'ariful Quran", "Tazkirul Quran"];
 
     return Container(
       decoration: BoxDecoration(
