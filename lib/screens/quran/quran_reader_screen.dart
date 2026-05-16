@@ -148,8 +148,11 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
   Future<void> _loadAyahs() async {
     final settings = QuranSettingsProvider.of(context, listen: false);
-    final ayahs = await QuranService.instance
-        .loadAyahs(widget.surahNumber, settings.translation);
+    final ayahs = await QuranService.instance.loadAyahs(
+      widget.surahNumber,
+      settings.translation,
+      ayahReciterId: settings.selectedAyahReciterId,
+    );
     if (!mounted) return;
     setState(() {
       _ayahs = ayahs;
@@ -1397,6 +1400,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       isScrollControlled: true,
       builder: (_) => _SettingsSheet(
         onTranslationChanged: _reloadTranslation,
+        onAyahReciterChanged: _loadAyahs,
         surahAudio: _surahAudioData,
       ),
     );
@@ -1888,10 +1892,12 @@ class _AyahCardState extends State<_AyahCard>
 // ─────────────────────────────────────────────────────────────────────────────
 class _SettingsSheet extends StatelessWidget {
   final VoidCallback onTranslationChanged;
+  final VoidCallback onAyahReciterChanged;
   final SurahAudio? surahAudio;
 
   const _SettingsSheet({
     required this.onTranslationChanged,
+    required this.onAyahReciterChanged,
     this.surahAudio,
   });
 
@@ -2013,10 +2019,20 @@ class _SettingsSheet extends StatelessWidget {
             const SizedBox(height: 16),
           ],
 
-          // Auto-continue
-          _toggle('Auto-continue Ayahs', settings.ayahAutoContinue,
-              settings.setAyahAutoContinue, qt),
-          const SizedBox(height: 24),
+          // Ayah Reciter selection (only in Ayah mode)
+          if (settings.playMode == PlayMode.ayah) ...[
+            _label('Ayah Reciter', qt),
+            const SizedBox(height: 8),
+            _ayahReciterDropdown(context, settings, qt),
+            const SizedBox(height: 16),
+          ],
+
+          // Auto-continue (only in Ayah mode)
+          if (settings.playMode == PlayMode.ayah) ...[
+            _toggle('Auto-continue Ayahs', settings.ayahAutoContinue,
+                settings.setAyahAutoContinue, qt),
+            const SizedBox(height: 24),
+          ],
         ]),
       ),
     );
@@ -2302,6 +2318,38 @@ class _SettingsSheet extends StatelessWidget {
           onChanged: (v) {
             if (v != null) {
               settings.setSelectedReciterId(v);
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _ayahReciterDropdown(
+      BuildContext context, QuranSettings settings, QuranTheme qt) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: qt.glassWhite,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: qt.borderGlass),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: settings.selectedAyahReciterId,
+          dropdownColor: qt.cardBg,
+          isExpanded: true,
+          style: TextStyle(color: qt.textPrimary, fontSize: 14),
+          items: kAyahReciters
+              .map((r) => DropdownMenuItem(
+                    value: r.id,
+                    child: Text(r.name),
+                  ))
+              .toList(),
+          onChanged: (v) {
+            if (v != null) {
+              settings.setSelectedAyahReciterId(v);
+              onAyahReciterChanged();
             }
           },
         ),

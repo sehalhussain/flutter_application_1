@@ -28,7 +28,7 @@ class QuranService {
   static const _pathQpcHafs = '$_base/qpc-hafs.json';
   static const _pathIndoPak = '$_base/indopak-nastaleeq.json';
   static const _pathLiteration = '$_base/en.literation.json';
-  static const _pathAyahAudio =
+  static const _pathAyahAudioDefault =
       '$_base/ayah-recitation-mishari-rashid-al-afasy.json';
   static const _pathSurahInfo = '$_base/surah-info.json';
   static const _pathSurahMetadata = '$_base/surah-metadata.json';
@@ -39,7 +39,7 @@ class QuranService {
   Map<String, dynamic>? _cacheQpcHafs;
   Map<String, dynamic>? _cacheIndoPak;
   Map<String, dynamic>? _cacheLiteration;
-  Map<String, dynamic>? _cacheAyahAudio;
+  final Map<String, Map<String, dynamic>> _cacheAyahAudios = {};
   List<SurahInfo>? _cacheSurahInfo;
   Map<String, dynamic>? _cacheSurahInfoDetail;
   final Map<String, Map<String, dynamic>> _cacheTranslations = {};
@@ -64,8 +64,18 @@ class QuranService {
   Future<Map<String, dynamic>> _getLiteration() async =>
       _cacheLiteration ??= await _load(_pathLiteration);
 
-  Future<Map<String, dynamic>> _getAyahAudio() async =>
-      _cacheAyahAudio ??= await _load(_pathAyahAudio);
+  Future<Map<String, dynamic>> _getAyahAudio(String reciterId) async {
+    if (_cacheAyahAudios.containsKey(reciterId)) {
+      return _cacheAyahAudios[reciterId]!;
+    }
+
+    final reciter = kAyahReciters.firstWhere((r) => r.id == reciterId,
+        orElse: () => kAyahReciters.first);
+    final path = '$_base/${reciter.fileName}';
+    final data = await _load(path);
+    _cacheAyahAudios[reciterId] = data;
+    return data;
+  }
 
   Future<Map<String, dynamic>> _getTranslation(TranslationId id) async {
     final key = id.fileName;
@@ -143,14 +153,15 @@ class QuranService {
   /// Runs all 5 JSON lookups in parallel for speed.
   Future<List<AyahData>> loadAyahs(
     int surahNumber,
-    TranslationId translation,
-  ) async {
+    TranslationId translation, {
+    String? ayahReciterId,
+  }) async {
     // Fire all loads in parallel
     final results = await Future.wait([
       _getQpcHafs(),
       _getIndoPak(),
       _getLiteration(),
-      _getAyahAudio(),
+      _getAyahAudio(ayahReciterId ?? 'mishary'),
       _getTranslation(translation),
     ]);
 
@@ -200,13 +211,14 @@ class QuranService {
   Future<AyahData?> loadAyah(
     int surahNumber,
     int ayahNumber,
-    TranslationId translation,
-  ) async {
+    TranslationId translation, {
+    String? ayahReciterId,
+  }) async {
     final results = await Future.wait([
       _getQpcHafs(),
       _getIndoPak(),
       _getLiteration(),
-      _getAyahAudio(),
+      _getAyahAudio(ayahReciterId ?? 'mishary'),
       _getTranslation(translation),
     ]);
 
@@ -295,7 +307,7 @@ class QuranService {
     _cacheQpcHafs = null;
     _cacheIndoPak = null;
     _cacheLiteration = null;
-    _cacheAyahAudio = null;
+    _cacheAyahAudios.clear();
     _cacheSurahInfo = null;
     _cacheSurahInfoDetail = null;
     _cacheTranslations.clear();

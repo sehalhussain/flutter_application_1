@@ -402,3 +402,36 @@ class TafsirItem {
         'content': content,
       };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ayah Reciter Models
+// ─────────────────────────────────────────────────────────────────────────────
+class AyahReciter {
+  final String id;
+  final String name;
+  final String fileName;
+
+  const AyahReciter({
+    required this.id,
+    required this.name,
+    required this.fileName,
+  });
+}
+
+const kAyahReciters = [
+  AyahReciter(
+    id: 'mishary',
+    name: 'Mishari Rashid Al Afasy',
+    fileName: 'ayah-recitation-mishari-rashid-al-afasy.json',
+  ),
+  AyahReciter(
+    id: 'saud',
+    name: 'Saud Al-Shuraim',
+    fileName: 'ayah-recitation-saud-al-shuraim.json',
+  ),
+  AyahReciter(
+    id: 'yasser',
+    name: 'Yasser Al-Dosari',
+    fileName: 'ayah-recitation-yasser-al-dosari.json',
+  ),
+];

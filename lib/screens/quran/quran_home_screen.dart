@@ -518,10 +518,12 @@ class _BookmarkCardState extends State<_BookmarkCard> {
   void _toggleExpanded() {
     setState(() => _expanded = !_expanded);
     if (_expanded && _ayahFuture == null) {
+      final settings = QuranSettingsProvider.of(context, listen: false);
       _ayahFuture = QuranService.instance.loadAyah(
         widget.bookmark.surah,
         widget.bookmark.ayah,
         widget.translation,
+        ayahReciterId: settings.selectedAyahReciterId,
       );
     }
   }

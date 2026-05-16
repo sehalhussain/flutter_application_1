@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../constants/quran_theme.dart';
 import '../../models/hadith_models.dart';
 import '../../providers/hadith_progress_provider.dart';
@@ -22,8 +23,6 @@ class HadithReaderScreen extends StatefulWidget {
 }
 
 class _HadithReaderScreenState extends State<HadithReaderScreen> {
-
-
   void _toggleFavorite(HadithProgress progress) {
     progress.toggleFavorite(widget.hadith.bookAsset, widget.hadith.uuid);
   }
@@ -35,6 +34,15 @@ class _HadithReaderScreenState extends State<HadithReaderScreen> {
       isScrollControlled: true,
       builder: (ctx) => const HadithReaderSettingsSheet(),
     );
+  }
+
+  void _shareHadith() {
+    final text = 'Hadith: ${widget.hadith.title}\n\n'
+        '${widget.hadith.narrator}\n\n'
+        '${widget.hadith.arabicText}\n\n'
+        '${widget.hadith.englishText}\n\n'
+        '— ${widget.bookTitle}, ${widget.chapterTitle}';
+    Share.share(text);
   }
 
   Widget _glassBtn(Widget child, QuranTheme qt) => ClipRRect(
@@ -75,25 +83,12 @@ class _HadithReaderScreenState extends State<HadithReaderScreen> {
             style: TextStyle(color: qt.textPrimary)),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 8.0),
+            padding: const EdgeInsets.only(right: 16.0),
             child: GestureDetector(
               onTap: _openReaderSettings,
               child: Center(
                 child: _glassBtn(
                     Icon(Icons.tune_rounded, color: qt.textPrimary, size: 18),
-                    qt),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: GestureDetector(
-              onTap: () => _toggleFavorite(progress),
-              child: Center(
-                child: _glassBtn(
-                    Icon(isFavorite ? Icons.favorite : Icons.favorite_border,
-                        color: isFavorite ? Colors.redAccent : qt.textPrimary,
-                        size: 18),
                     qt),
               ),
             ),
@@ -111,35 +106,88 @@ class _HadithReaderScreenState extends State<HadithReaderScreen> {
                     fontWeight: FontWeight.bold,
                     fontSize: 14)),
             const SizedBox(height: 16),
-            if (widget.hadith.narrator.isNotEmpty)
-              Text('Narrator: ${widget.hadith.narrator}',
-                  style: TextStyle(color: qt.textMuted, fontSize: 12)),
-            if (widget.hadith.grade.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text('Grade: ${widget.hadith.grade}',
-                  style: TextStyle(color: qt.emeraldLight, fontSize: 12)),
-            ],
-            const SizedBox(height: 18),
             Container(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: qt.cardBg,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(28),
                 border: Border.all(color: qt.borderGlass),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Hadith #${widget.hadith.localNum}',
+                              style: TextStyle(
+                                  color: qt.emeraldLight,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12)),
+                          if (widget.hadith.grade.isNotEmpty)
+                            Text(widget.hadith.grade,
+                                style: TextStyle(
+                                    color: qt.textMuted, fontSize: 10)),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed: _shareHadith,
+                            icon: Icon(Icons.share_outlined,
+                                color: qt.textMuted, size: 20),
+                          ),
+                          IconButton(
+                            onPressed: () => _toggleFavorite(progress),
+                            icon: Icon(
+                              isFavorite
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              color:
+                                  isFavorite ? Colors.redAccent : qt.textMuted,
+                              size: 20,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (widget.hadith.narrator.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(widget.hadith.narrator,
+                          style: TextStyle(
+                              color: qt.textMuted,
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic)),
+                    ),
                   Text(widget.hadith.arabicText,
                       textAlign: TextAlign.right,
                       textDirection: TextDirection.rtl,
                       style: TextStyle(
-                          fontFamily: 'QPC Hafs',
+                          fontFamily: 'indopak',
                           fontSize: settings.arabicFontSize,
                           color: qt.textPrimary,
                           height: 1.9),
                       softWrap: true),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
+                  Container(
+                    width: 40,
+                    height: 1,
+                    color: qt.borderGlass,
+                  ),
+                  const SizedBox(height: 24),
                   Text(
                       widget.hadith.englishText
                           .split('\n\n')

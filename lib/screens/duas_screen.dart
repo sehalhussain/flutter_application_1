@@ -522,7 +522,7 @@ class _AccordionCardState extends State<_AccordionCard>
                             textAlign: TextAlign.right,
                             textDirection: TextDirection.rtl,
                             style: TextStyle(
-                              fontFamily: 'QPC Hafs',
+                              fontFamily: 'indopak',
                               fontSize: widget.arabicFontSize,
                               height: 2.0,
                               color: qt.textPrimary,

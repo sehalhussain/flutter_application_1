@@ -50,7 +50,7 @@ flutter_icons:
 
 flutter_native_splash:
   image: assets/icons/app_icon.png
-  fullscreen: true
+  fullscreen: false
   color: "#ffffff"
 
 flutter:

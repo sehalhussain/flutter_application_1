@@ -5,6 +5,7 @@ import '../../models/hadith_models.dart';
 import '../../providers/hadith_reader_settings_provider.dart';
 import '../../services/hadith_service.dart';
 import 'hadith_chapter_screen.dart';
+import 'hadith_reader_screen.dart';
 
 /// Pre-computed search index for a single Hadith.
 class _HadithSearchIndex {
@@ -492,11 +493,10 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => HadithChapterScreen(
-                  chapter: parentChapter,
-                  bookAsset: widget.book.assetPath,
-                  bookName: widget.book.title,
-                  initialSearchQuery: _searchController.text,
+            builder: (_) => HadithReaderScreen(
+                  hadith: hadith,
+                  bookTitle: widget.book.title,
+                  chapterTitle: parentChapter.englishTitle,
                 )));
       },
       child: Container(

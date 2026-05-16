@@ -17,7 +17,7 @@ plugins {
 android {
     // 2. Update your namespace and applicationId to be unique
     namespace = "com.sehalhussain.kitably"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -33,7 +33,7 @@ android {
         // 3. This must be unique on the Play Store!
         applicationId = "com.sehalhussain.kitably"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -63,4 +63,8 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    implementation("androidx.activity:activity-ktx:1.9.0")
 }

@@ -19,6 +19,7 @@ class QuranSettings extends ChangeNotifier {
   PlayMode _playMode = PlayMode.ayah;
   bool _ayahAutoContinue = true;
   String _selectedReciterId = "1"; // Default to Mishary Rashid Al Afasy
+  String _selectedAyahReciterId = "mishary";
   ThemeMode _themeMode = ThemeMode.system;
 
   // ── Getters ───────────────────────────────────────────────────────────────
@@ -31,6 +32,7 @@ class QuranSettings extends ChangeNotifier {
   PlayMode get playMode => _playMode;
   bool get ayahAutoContinue => _ayahAutoContinue;
   String get selectedReciterId => _selectedReciterId;
+  String get selectedAyahReciterId => _selectedAyahReciterId;
   ThemeMode get themeMode => _themeMode;
 
   // ── Init ──────────────────────────────────────────────────────────────────
@@ -55,6 +57,7 @@ class QuranSettings extends ChangeNotifier {
     _playMode = PlayMode.values[pmIdx.clamp(0, PlayMode.values.length - 1)];
 
     _selectedReciterId = prefs.getString('quran_reciter_id') ?? "1";
+    _selectedAyahReciterId = prefs.getString('quran_ayah_reciter_id') ?? "mishary";
 
     final themeIdx = prefs.getInt('app_theme_mode') ?? 0;
     _themeMode =
@@ -125,6 +128,13 @@ class QuranSettings extends ChangeNotifier {
     notifyListeners();
     final p = await SharedPreferences.getInstance();
     p.setString('quran_reciter_id', v);
+  }
+
+  Future<void> setSelectedAyahReciterId(String v) async {
+    _selectedAyahReciterId = v;
+    notifyListeners();
+    final p = await SharedPreferences.getInstance();
+    p.setString('quran_ayah_reciter_id', v);
   }
 
   Future<void> setThemeMode(ThemeMode v) async {
