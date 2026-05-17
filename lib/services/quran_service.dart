@@ -17,6 +17,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/quran_models.dart';
 import '../constants/juz_data.dart';
+import 'translation_download_service.dart';
 
 class QuranService {
   QuranService._();
@@ -155,15 +156,30 @@ class QuranService {
     int surahNumber,
     TranslationId translation, {
     String? ayahReciterId,
+    String? customTranslationId,
   }) async {
     // Fire all loads in parallel
-    final results = await Future.wait([
+    final List<Future> futures = [
       _getQpcHafs(),
       _getIndoPak(),
       _getLiteration(),
       _getAyahAudio(ayahReciterId ?? 'mishary'),
-      _getTranslation(translation),
-    ]);
+    ];
+
+    // Load translation from downloaded file or bundled asset
+    if (customTranslationId != null) {
+      final json = await TranslationDownloadService.instance
+          .loadTranslationJson(customTranslationId);
+      if (json == null) {
+        throw Exception(
+            'Translation "$customTranslationId" not downloaded. Requires one-time internet connection.');
+      }
+      futures.add(Future.value(json));
+    } else {
+      futures.add(_getTranslation(translation));
+    }
+
+    final results = await Future.wait(futures);
 
     // Offload the mapping loop to a background isolate.
     // This is especially beneficial for large surahs like Al-Baqarah.
@@ -250,12 +266,27 @@ class QuranService {
   }
 
   /// Reload translation only (re-uses cached arabic/audio data).
+  /// Supports both built-in and downloadable translations.
+  /// If [customTranslationId] is non-null, it loads from a downloaded file.
   Future<List<AyahData>> reloadTranslation(
     List<AyahData> existing,
-    TranslationId newTranslation,
-  ) async {
+    TranslationId newTranslation, {
+    String? customTranslationId,
+  }) async {
     if (existing.isEmpty) return existing;
-    final transMap = await _getTranslation(newTranslation);
+
+    Map<String, dynamic> transMap;
+    if (customTranslationId != null) {
+      final json = await TranslationDownloadService.instance
+          .loadTranslationJson(customTranslationId);
+      if (json == null) {
+        throw Exception(
+            'Translation "$customTranslationId" not downloaded. Requires one-time internet connection.');
+      }
+      transMap = json;
+    } else {
+      transMap = await _getTranslation(newTranslation);
+    }
 
     return existing.map((a) {
       final trans = (transMap[a.verseKey]?['t'] as String?) ?? '';

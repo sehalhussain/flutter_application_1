@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../services/quran_service.dart';
 import '../services/backup_service.dart';
+import '../services/translation_download_service.dart';
+import '../models/downloadable_translation.dart';
 
 class StorageManagementScreen extends StatefulWidget {
   const StorageManagementScreen({super.key});
@@ -14,6 +16,7 @@ class StorageManagementScreen extends StatefulWidget {
 class _StorageManagementScreenState extends State<StorageManagementScreen> {
   List<File> _audioFiles = [];
   List<File> _tafsirFiles = [];
+  List<File> _translationFiles = [];
   bool _isLoading = true;
 
   @override
@@ -26,9 +29,12 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     setState(() => _isLoading = true);
     final audioFiles = await QuranService.instance.getDownloadedAudioFiles();
     final tafsirFiles = await QuranService.instance.getDownloadedTafsirs();
+    final translationFiles = await TranslationDownloadService.instance
+        .getDownloadedTranslationFiles();
     setState(() {
       _audioFiles = audioFiles;
       _tafsirFiles = tafsirFiles;
+      _translationFiles = translationFiles;
       _isLoading = false;
     });
   }
@@ -76,7 +82,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     final theme = Theme.of(context);
 
     return DefaultTabController(
-        length: 2,
+        length: 3,
         child: Scaffold(
           backgroundColor: theme.colorScheme.surface,
           appBar: AppBar(
@@ -151,6 +157,7 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
                 tabs: [
                   Tab(text: "Audio Downloads"),
                   Tab(text: "Saved Tafsirs"),
+                  Tab(text: "Saved Translations"),
                 ],
               ),
 
@@ -165,12 +172,115 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
                           // Tafsir Tab
                           _buildFileList(_tafsirFiles, Icons.text_snippet,
                               "No saved tafsirs", theme, false),
+                          // Translation Tab
+                          _buildTranslationFileList(theme),
                         ],
                       ),
               ),
             ],
           ),
         ));
+  }
+
+  Widget _buildTranslationFileList(ThemeData theme) {
+    if (_translationFiles.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.translate,
+                size: 64, color: theme.colorScheme.onSurface.withOpacity(0.2)),
+            const SizedBox(height: 16),
+            Text("No downloaded translations",
+                style: TextStyle(
+                    color: theme.colorScheme.onSurface.withOpacity(0.5))),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: _translationFiles.length,
+      itemBuilder: (context, index) {
+        final file = _translationFiles[index];
+        final name = file.path.split('/').last.split('\\').last;
+        final size = file.lengthSync();
+
+        // Find the matching display name
+        String displayName = name;
+        for (final t in kDownloadableTranslations) {
+          if (name.contains(t.id)) {
+            displayName = t.displayName;
+            break;
+          }
+        }
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF26A69A).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.translate, color: Color(0xFF26A69A)),
+            ),
+            title: Text(displayName,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            subtitle: Text(_formatBytes(size),
+                style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            trailing: IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text("Delete Translation"),
+                    content:
+                        Text("Are you sure you want to delete $displayName?"),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text("Cancel"),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          Navigator.pop(ctx);
+                          // Find id from filename
+                          String? id;
+                          for (final t in kDownloadableTranslations) {
+                            if (name.contains(t.id)) {
+                              id = t.id;
+                              break;
+                            }
+                          }
+                          if (id != null) {
+                            await TranslationDownloadService.instance
+                                .deleteTranslation(id);
+                          } else {
+                            await file.delete();
+                          }
+                          _loadFiles();
+                        },
+                        child: const Text("Delete",
+                            style: TextStyle(color: Colors.red)),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildFileList(List<File> files, IconData emptyIcon, String emptyText,

@@ -1,11 +1,11 @@
 {
-    "name": "flutter_application_1",
-    "short_name": "flutter_application_1",
+    "name": "Kitably - Quran, Tafsir, Hadith & Prayer Times.",
+    "short_name": "Kitably web",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "The ultimate Islamic library in your pocket. Access the Quran with Tafsir, all six Sahih Hadith, daily Duas, and accurate prayer times. Custom-built for simplicity with Roman Urdu support.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

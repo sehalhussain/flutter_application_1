@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/quran_settings_provider.dart';
 import '../services/prayer_service.dart';
+import '../services/translation_download_service.dart';
+import '../models/downloadable_translation.dart';
 import '../constants/locations.dart';
 import '../constants/quran_theme.dart';
 import 'storage_management_screen.dart';
@@ -18,11 +20,12 @@ class _MenuScreenState extends State<MenuScreen> {
   Widget build(BuildContext context) {
     final settings = context.watch<QuranSettings>();
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text("Settings", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text("Settings",
+            style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: ListView(
@@ -33,12 +36,10 @@ class _MenuScreenState extends State<MenuScreen> {
           _buildLocationTile(context),
           const SizedBox(height: 8),
           _buildAsrMethodTile(context),
-          
           const SizedBox(height: 30),
           _buildSectionHeader("Appearance"),
           const SizedBox(height: 10),
           _buildThemeSelector(context, settings),
-          
           const SizedBox(height: 30),
           _buildSectionHeader("Storage & Data"),
           const SizedBox(height: 10),
@@ -47,16 +48,21 @@ class _MenuScreenState extends State<MenuScreen> {
             title: const Text("Manage Downloads"),
             subtitle: const Text("Delete downloaded Surah audio files"),
             trailing: const Icon(Icons.chevron_right),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             tileColor: colorScheme.surfaceVariant.withOpacity(0.3),
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const StorageManagementScreen()),
+                MaterialPageRoute(
+                    builder: (context) => const StorageManagementScreen()),
               );
             },
           ),
-          
+          const SizedBox(height: 30),
+          _buildSectionHeader("Translations"),
+          const SizedBox(height: 10),
+          _buildTranslationManagement(context),
           const SizedBox(height: 30),
           _buildSectionHeader("About"),
           const SizedBox(height: 10),
@@ -92,7 +98,8 @@ class _MenuScreenState extends State<MenuScreen> {
     return ListTile(
       leading: const Icon(Icons.location_on, color: Color(0xFF26A69A)),
       title: const Text("Prayer Location"),
-      subtitle: Text("${PrayerService.instance.currentCity ?? 'Unknown'}, ${PrayerService.instance.currentCountry ?? ''}"),
+      subtitle: Text(
+          "${PrayerService.instance.currentCity ?? 'Unknown'}, ${PrayerService.instance.currentCountry ?? ''}"),
       trailing: const Icon(Icons.edit, size: 20, color: Colors.grey),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       tileColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
@@ -105,7 +112,8 @@ class _MenuScreenState extends State<MenuScreen> {
     return ListTile(
       leading: const Icon(Icons.access_time, color: Color(0xFF26A69A)),
       title: const Text("Asr Calculation Method"),
-      subtitle: Text(method == 0 ? "Standard (Shafi, Maliki, Hanbali)" : "Hanafi"),
+      subtitle:
+          Text(method == 0 ? "Standard (Shafi, Maliki, Hanbali)" : "Hanafi"),
       trailing: const Icon(Icons.swap_horiz, size: 20, color: Colors.grey),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       tileColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
@@ -147,15 +155,109 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
+  Widget _buildTranslationManagement(BuildContext context) {
+    final downloadService = TranslationDownloadService.instance;
+    return FutureBuilder<void>(
+      future: downloadService.refreshDownloadedStatus(),
+      builder: (ctx, _) {
+        return ListenableBuilder(
+          listenable: downloadService,
+          builder: (ctx, _) {
+            final translations = kDownloadableTranslations;
+            final downloaded = translations
+                .where((t) => downloadService.isDownloaded(t.id) == true)
+                .toList();
+
+            if (downloaded.isEmpty) {
+              return ListTile(
+                leading: const Icon(Icons.translate, color: Color(0xFF26A69A)),
+                title: const Text("Manage Translations"),
+                subtitle: const Text(
+                    "No downloaded translations. Tap download icon in Quran reader."),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                tileColor: Theme.of(context)
+                    .colorScheme
+                    .surfaceVariant
+                    .withOpacity(0.3),
+              );
+            }
+
+            return Column(
+              children: [
+                for (final t in downloaded)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF26A69A).withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.check_circle_rounded,
+                            color: Color(0xFF26A69A), size: 20),
+                      ),
+                      title: Text(t.displayName,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: const Text("Downloaded",
+                          style: TextStyle(color: Colors.grey, fontSize: 12)),
+                      trailing: IconButton(
+                        icon:
+                            const Icon(Icons.delete_outline, color: Colors.red),
+                        onPressed: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text("Delete Translation"),
+                              content: Text(
+                                  "Delete downloaded translation: ${t.displayName}?"),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text("Cancel"),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text("Delete",
+                                      style: TextStyle(color: Colors.red)),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirm == true) {
+                            await downloadService.deleteTranslation(t.id);
+                            setState(() {});
+                          }
+                        },
+                      ),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                      tileColor: Theme.of(context)
+                          .colorScheme
+                          .surfaceVariant
+                          .withOpacity(0.3),
+                    ),
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showLocationBottomSheet(BuildContext context) {
     final qt = QuranTheme.of(context);
     String searchQuery = '';
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: qt.bg,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
           final filtered = POPULAR_LOCATIONS.where((loc) {
@@ -166,7 +268,9 @@ class _MenuScreenState extends State<MenuScreen> {
           return Padding(
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(ctx).viewInsets.bottom,
-              left: 24, right: 24, top: 24,
+              left: 24,
+              right: 24,
+              top: 24,
             ),
             child: SizedBox(
               height: MediaQuery.of(ctx).size.height * 0.7,
@@ -176,7 +280,8 @@ class _MenuScreenState extends State<MenuScreen> {
                     children: [
                       Expanded(
                         child: TextField(
-                          onChanged: (val) => setModalState(() => searchQuery = val),
+                          onChanged: (val) =>
+                              setModalState(() => searchQuery = val),
                           style: TextStyle(color: qt.textPrimary),
                           decoration: InputDecoration(
                             hintText: "Search city...",
@@ -211,30 +316,45 @@ class _MenuScreenState extends State<MenuScreen> {
                   const SizedBox(height: 16),
                   Expanded(
                     child: ListView.builder(
-                      itemCount: filtered.length + (searchQuery.isNotEmpty ? 1 : 0),
+                      itemCount:
+                          filtered.length + (searchQuery.isNotEmpty ? 1 : 0),
                       itemBuilder: (context, index) {
                         if (searchQuery.isNotEmpty && index == 0) {
                           return ListTile(
                             leading: Icon(Icons.public, color: qt.emeraldDeep),
-                            title: Text('Search for "$searchQuery"', style: TextStyle(color: qt.emeraldDeep, fontWeight: FontWeight.bold)),
-                            subtitle: Text('Worldwide search', style: TextStyle(color: qt.textMuted, fontSize: 12)),
+                            title: Text('Search for "$searchQuery"',
+                                style: TextStyle(
+                                    color: qt.emeraldDeep,
+                                    fontWeight: FontWeight.bold)),
+                            subtitle: Text('Worldwide search',
+                                style: TextStyle(
+                                    color: qt.textMuted, fontSize: 12)),
                             onTap: () async {
                               Navigator.pop(ctx);
-                              await PrayerService.instance.setLocation(searchQuery, '');
+                              await PrayerService.instance
+                                  .setLocation(searchQuery, '');
                               setState(() {});
                             },
                           );
                         }
-                        
-                        final locIndex = searchQuery.isNotEmpty ? index - 1 : index;
+
+                        final locIndex =
+                            searchQuery.isNotEmpty ? index - 1 : index;
                         final loc = filtered[locIndex];
                         return ListTile(
-                          leading: Icon(Icons.location_on_outlined, color: qt.textMuted),
-                          title: Text(loc['city']!, style: TextStyle(color: qt.textPrimary, fontWeight: FontWeight.bold)),
-                          subtitle: Text(loc['country']!, style: TextStyle(color: qt.textMuted, fontSize: 12)),
+                          leading: Icon(Icons.location_on_outlined,
+                              color: qt.textMuted),
+                          title: Text(loc['city']!,
+                              style: TextStyle(
+                                  color: qt.textPrimary,
+                                  fontWeight: FontWeight.bold)),
+                          subtitle: Text(loc['country']!,
+                              style:
+                                  TextStyle(color: qt.textMuted, fontSize: 12)),
                           onTap: () async {
                             Navigator.pop(ctx);
-                            await PrayerService.instance.setLocation(loc['city']!, loc['country']!);
+                            await PrayerService.instance
+                                .setLocation(loc['city']!, loc['country']!);
                             setState(() {});
                           },
                         );
@@ -296,8 +416,12 @@ class _MenuScreenState extends State<MenuScreen> {
     final isSelected = settings.themeMode == mode;
     return ListTile(
       leading: Icon(icon, color: isSelected ? const Color(0xFF26A69A) : null),
-      title: Text(title, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-      trailing: isSelected ? const Icon(Icons.check_circle, color: Color(0xFF26A69A)) : null,
+      title: Text(title,
+          style: TextStyle(
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+      trailing: isSelected
+          ? const Icon(Icons.check_circle, color: Color(0xFF26A69A))
+          : null,
       onTap: () => settings.setThemeMode(mode),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     );

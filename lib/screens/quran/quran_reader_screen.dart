@@ -7,7 +7,9 @@ import 'package:just_audio/just_audio.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:share_plus/share_plus.dart';
 import '/models/quran_models.dart';
+import '/models/downloadable_translation.dart';
 import '/services/quran_service.dart';
+import '/services/translation_download_service.dart';
 import '/providers/quran_settings_provider.dart';
 import '/providers/quran_progress_provider.dart';
 import '/constants/quran_theme.dart';
@@ -149,11 +151,32 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
   Future<void> _loadAyahs() async {
     final settings = QuranSettingsProvider.of(context, listen: false);
-    final ayahs = await QuranService.instance.loadAyahs(
-      widget.surahNumber,
-      settings.translation,
-      ayahReciterId: settings.selectedAyahReciterId,
-    );
+    List<AyahData> ayahs = [];
+    try {
+      if (settings.customTranslationId != null) {
+        final isDownloaded = await TranslationDownloadService.instance
+            .checkIfDownloaded(settings.customTranslationId!);
+        if (!isDownloaded) {
+          await settings.setTranslation(TranslationId.enSahih);
+        }
+      }
+      ayahs = await QuranService.instance.loadAyahs(
+        widget.surahNumber,
+        settings.translation,
+        ayahReciterId: settings.selectedAyahReciterId,
+        customTranslationId: settings.customTranslationId,
+      );
+    } catch (e) {
+      debugPrint("Error loading translation, falling back to English: $e");
+      await settings.setTranslation(TranslationId.enSahih);
+      ayahs = await QuranService.instance.loadAyahs(
+        widget.surahNumber,
+        TranslationId.enSahih,
+        ayahReciterId: settings.selectedAyahReciterId,
+        customTranslationId: null,
+      );
+    }
+
     if (!mounted) return;
     setState(() {
       _ayahs = ayahs;
@@ -196,10 +219,42 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
   Future<void> _reloadTranslation() async {
     final settings = QuranSettingsProvider.of(context, listen: false);
-    final updated = await QuranService.instance
-        .reloadTranslation(_ayahs, settings.translation);
-    if (!mounted) return;
-    setState(() => _ayahs = updated);
+    try {
+      if (settings.customTranslationId != null) {
+        final isDownloaded = await TranslationDownloadService.instance
+            .checkIfDownloaded(settings.customTranslationId!);
+        if (!isDownloaded) {
+          await settings.setTranslation(TranslationId.enSahih);
+        }
+      }
+      final updated = await QuranService.instance.reloadTranslation(
+        _ayahs,
+        settings.translation,
+        customTranslationId: settings.customTranslationId,
+      );
+      if (!mounted) return;
+      setState(() => _ayahs = updated);
+    } catch (e) {
+      debugPrint("Error reloading translation, falling back to English: $e");
+      await settings.setTranslation(TranslationId.enSahih);
+      try {
+        final updated = await QuranService.instance.reloadTranslation(
+          _ayahs,
+          TranslationId.enSahih,
+          customTranslationId: null,
+        );
+        if (!mounted) return;
+        setState(() => _ayahs = updated);
+      } catch (err) {
+        debugPrint("Error loading fallback translation: $err");
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Translation failed to load. Fell back to English.'),
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
   }
 
   // ── Audio Session Configuration ────────────────────────────────────────────
@@ -1516,8 +1571,9 @@ class _AyahCardState extends State<_AyahCard>
   bool get wantKeepAlive => true;
 
   bool get _isUrdu =>
-      widget.settings.translation == TranslationId.urJalandhari ||
-      widget.settings.translation == TranslationId.urWahiuddin;
+      !widget.settings.isCustomTranslation &&
+      (widget.settings.translation == TranslationId.urJalandhari ||
+          widget.settings.translation == TranslationId.urWahiuddin);
 
   @override
   Widget build(BuildContext context) {
@@ -1898,6 +1954,38 @@ class _AyahCardState extends State<_AyahCard>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Translation Option Model (used in dropdown)
+// ─────────────────────────────────────────────────────────────────────────────
+class _TranslationOption {
+  final String key;
+  final String label;
+  final bool isBuiltin;
+  final TranslationId? builtinId;
+  final String? customId;
+  final bool? isDownloaded;
+  final bool? isDownloading;
+  final double? downloadProgress;
+
+  const _TranslationOption({
+    required this.key,
+    required this.label,
+    required this.isBuiltin,
+    this.builtinId,
+    this.customId,
+    this.isDownloaded,
+    this.isDownloading,
+    this.downloadProgress,
+  });
+}
+
+// ── Progress stream helper ─────────────────────────────────────────────────
+Stream<double> _progressStream(TranslationDownloadService service, String id) {
+  return Stream.periodic(const Duration(milliseconds: 100), (_) {
+    return service.progressFor(id) ?? 0.0;
+  }).takeWhile((p) => p < 1.0);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Settings Bottom Sheet
 // ─────────────────────────────────────────────────────────────────────────────
 class _SettingsSheet extends StatelessWidget {
@@ -2176,6 +2264,42 @@ class _SettingsSheet extends StatelessWidget {
 
   Widget _translationDropdown(
       BuildContext context, QuranSettings settings, QuranTheme qt) {
+    final downloadService = TranslationDownloadService.instance;
+    final isCustom = settings.isCustomTranslation;
+
+    // Build a combined list: built-in + downloadable
+    // Built-in translations
+    final builtInItems = TranslationId.values.map((t) {
+      return _TranslationOption(
+        key: 'builtin_${t.index}',
+        label: t.displayName,
+        isBuiltin: true,
+        builtinId: t,
+        customId: null,
+      );
+    }).toList();
+
+    // Downloadable translations
+    final downloadableItems = kDownloadableTranslations.map((d) {
+      return _TranslationOption(
+        key: 'custom_${d.id}',
+        label: d.displayName,
+        isBuiltin: false,
+        builtinId: null,
+        customId: d.id,
+        isDownloaded: downloadService.isDownloaded(d.id) ?? false,
+        isDownloading: downloadService.isDownloading(d.id),
+        downloadProgress: downloadService.progressFor(d.id),
+      );
+    }).toList();
+
+    final allOptions = [...builtInItems, ...downloadableItems];
+
+    // Find current selected option
+    final currentKey = isCustom
+        ? 'custom_${settings.customTranslationId}'
+        : 'builtin_${settings.translation.index}';
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
@@ -2184,25 +2308,178 @@ class _SettingsSheet extends StatelessWidget {
         border: Border.all(color: qt.borderGlass),
       ),
       child: DropdownButtonHideUnderline(
-        child: DropdownButton<TranslationId>(
-          value: settings.translation,
+        child: DropdownButton<String>(
+          value: currentKey,
           dropdownColor: qt.cardBg,
           isExpanded: true,
           style: TextStyle(color: qt.textPrimary, fontSize: 14),
-          items: TranslationId.values
-              .map((t) => DropdownMenuItem(
-                    value: t,
-                    child: Text(t.displayName),
-                  ))
-              .toList(),
-          onChanged: (v) {
-            if (v != null) {
-              settings.setTranslation(v);
+          items: allOptions.map((opt) {
+            final isDownloadable = !opt.isBuiltin;
+            final isDownloaded = opt.isDownloaded ?? false;
+            final isDownloading = opt.isDownloading ?? false;
+            final progress = opt.downloadProgress;
+            final isCurrentOpt = opt.key == currentKey;
+
+            return DropdownMenuItem<String>(
+              value: opt.key,
+              enabled: opt.isBuiltin || isDownloaded || !isDownloading,
+              child: Row(
+                children: [
+                  // Label
+                  Expanded(
+                    child: Text(
+                      opt.label,
+                      style: TextStyle(
+                        color: (!opt.isBuiltin && !isDownloaded)
+                            ? qt.textMuted
+                            : (isCurrentOpt ? qt.emeraldDeep : qt.textPrimary),
+                        fontWeight:
+                            isCurrentOpt ? FontWeight.w600 : FontWeight.normal,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  // Download icon for non-builtin, non-downloaded items
+                  if (isDownloadable && !isDownloaded && !isDownloading)
+                    GestureDetector(
+                      onTap: () {
+                        final dlTranslation = kDownloadableTranslations
+                            .firstWhere((t) => t.id == opt.customId);
+                        _handleDownload(context, dlTranslation, settings,
+                            downloadService, onTranslationChanged);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Icon(Icons.download_rounded,
+                            color: qt.textMuted, size: 18),
+                      ),
+                    ),
+                  // Downloading progress
+                  if (isDownloading && progress != null)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          value: progress,
+                          strokeWidth: 2,
+                          color: qt.emeraldLight,
+                        ),
+                      ),
+                    ),
+                  // Downloaded check
+                  if (isDownloadable && isDownloaded)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Icon(Icons.check_circle_rounded,
+                          color: qt.emeraldLight, size: 18),
+                    ),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: (key) {
+            if (key == null) return;
+            if (key.startsWith('builtin_')) {
+              final idx = int.parse(key.split('_')[1]);
+              settings.setTranslation(TranslationId.values[idx]);
               onTranslationChanged();
+            } else if (key.startsWith('custom_')) {
+              final id = key.split('_')[1];
+              final isDown = downloadService.isDownloaded(id) ?? false;
+              final isDownloading = downloadService.isDownloading(id) ?? false;
+
+              if (isDown) {
+                // Already downloaded — switch to it
+                settings.setCustomTranslation(id);
+                onTranslationChanged();
+              } else if (!isDownloading) {
+                // Not downloaded and not currently downloading — start download
+                final dlTranslation =
+                    kDownloadableTranslations.firstWhere((t) => t.id == id);
+                _handleDownload(context, dlTranslation, settings,
+                    downloadService, onTranslationChanged);
+              }
+              // If downloading, do nothing (wait for completion)
             }
           },
         ),
       ),
+    );
+  }
+
+  void _handleDownload(
+    BuildContext _dialogCtx,
+    DownloadableTranslation translation,
+    QuranSettings settings,
+    TranslationDownloadService downloadService,
+    VoidCallback onTranslationChanged,
+  ) {
+    showDialog(
+      context: _dialogCtx,
+      builder: (dialogCtx) {
+        downloadService.downloadTranslation(translation).then((_) {
+          if (dialogCtx.mounted) {
+            Navigator.of(dialogCtx).pop();
+            settings.setCustomTranslation(translation.id);
+            onTranslationChanged();
+          }
+        }).catchError((e) {
+          if (dialogCtx.mounted) {
+            Navigator.of(dialogCtx).pop();
+            ScaffoldMessenger.of(dialogCtx).showSnackBar(SnackBar(
+              content: Text('Download failed: $e'),
+              backgroundColor: Colors.redAccent,
+            ));
+          }
+        });
+        return AlertDialog(
+          title: Row(children: [
+            const Icon(Icons.download_for_offline_rounded,
+                color: Color(0xFF26A69A)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Downloading\n${translation.displayName}',
+                style:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ]),
+          content: SizedBox(
+            width: double.infinity,
+            child: StreamBuilder<double>(
+              stream: _progressStream(downloadService, translation.id),
+              builder: (ctx, snap) {
+                final progress = snap.data ?? 0.0;
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor: Colors.grey[200],
+                      color: const Color(0xFF26A69A),
+                      minHeight: 6,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '${(progress * 100).toInt()}%',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Requires one-time internet connection',
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 

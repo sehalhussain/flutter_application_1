@@ -12,6 +12,7 @@ class QuranSettings extends ChangeNotifier {
   // ── Defaults ──────────────────────────────────────────────────────────────
   ArabicScript _script = ArabicScript.uthmani;
   TranslationId _translation = TranslationId.enSahih;
+  String? _customTranslationId; // null = using built-in translation
   bool _showTransliteration = true;
   bool _showTranslation = true;
   double _arabicFontSize = 32.0;
@@ -25,6 +26,8 @@ class QuranSettings extends ChangeNotifier {
   // ── Getters ───────────────────────────────────────────────────────────────
   ArabicScript get script => _script;
   TranslationId get translation => _translation;
+  String? get customTranslationId => _customTranslationId;
+  bool get isCustomTranslation => _customTranslationId != null;
   bool get showTransliteration => _showTransliteration;
   bool get showTranslation => _showTranslation;
   double get arabicFontSize => _arabicFontSize;
@@ -46,6 +49,7 @@ class QuranSettings extends ChangeNotifier {
     final transIdx = prefs.getInt('quran_translation') ?? 0;
     _translation = TranslationId
         .values[transIdx.clamp(0, TranslationId.values.length - 1)];
+    _customTranslationId = prefs.getString('quran_custom_translation');
 
     _showTransliteration = prefs.getBool('quran_transliteration') ?? true;
     _showTranslation = prefs.getBool('quran_show_translation') ?? true;
@@ -57,7 +61,8 @@ class QuranSettings extends ChangeNotifier {
     _playMode = PlayMode.values[pmIdx.clamp(0, PlayMode.values.length - 1)];
 
     _selectedReciterId = prefs.getString('quran_reciter_id') ?? "1";
-    _selectedAyahReciterId = prefs.getString('quran_ayah_reciter_id') ?? "mishary";
+    _selectedAyahReciterId =
+        prefs.getString('quran_ayah_reciter_id') ?? "mishary";
 
     final themeIdx = prefs.getInt('app_theme_mode') ?? 0;
     _themeMode =
@@ -76,9 +81,28 @@ class QuranSettings extends ChangeNotifier {
 
   Future<void> setTranslation(TranslationId v) async {
     _translation = v;
+    _customTranslationId = null; // switching to built-in clears custom
     notifyListeners();
     final p = await SharedPreferences.getInstance();
     p.setInt('quran_translation', v.index);
+    p.remove('quran_custom_translation');
+  }
+
+  /// Select a downloadable translation. Pass null to revert to built-in default.
+  Future<void> setCustomTranslation(String? id) async {
+    _customTranslationId = id;
+    if (id != null) {
+      // Keep the backing TranslationId at a safe default when using custom
+      _translation = TranslationId.enSahih;
+    }
+    notifyListeners();
+    final p = await SharedPreferences.getInstance();
+    if (id != null) {
+      p.setString('quran_custom_translation', id);
+      p.setInt('quran_translation', TranslationId.enSahih.index);
+    } else {
+      p.remove('quran_custom_translation');
+    }
   }
 
   Future<void> setShowTransliteration(bool v) async {
