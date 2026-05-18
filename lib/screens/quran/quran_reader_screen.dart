@@ -250,7 +250,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text('Translation failed to load. Fell back to English.'),
+        content:
+            const Text('Translation failed to load. Fell back to English.'),
         backgroundColor: Colors.redAccent,
         behavior: SnackBarBehavior.floating,
       ));
@@ -2416,18 +2417,31 @@ class _SettingsSheet extends StatelessWidget {
     TranslationDownloadService downloadService,
     VoidCallback onTranslationChanged,
   ) {
+    bool _downloadCompleted = false;
+
     showDialog(
       context: _dialogCtx,
+      barrierDismissible: false,
       builder: (dialogCtx) {
         downloadService.downloadTranslation(translation).then((_) {
-          if (dialogCtx.mounted) {
-            Navigator.of(dialogCtx).pop();
-            settings.setCustomTranslation(translation.id);
-            onTranslationChanged();
+          if (dialogCtx.mounted && !_downloadCompleted) {
+            _downloadCompleted = true;
+            // Use rootNavigator: true to ensure we only pop the dialog,
+            // not affecting the settings sheet or other navigation layers
+            Navigator.of(dialogCtx, rootNavigator: true).pop();
+
+            // Use addPostFrameCallback instead of a fixed delay
+            // This ensures the dialog is fully dismissed before applying settings
+            // and guarantees execution after the UI frame has settled
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              settings.setCustomTranslation(translation.id);
+              onTranslationChanged();
+            });
           }
         }).catchError((e) {
-          if (dialogCtx.mounted) {
-            Navigator.of(dialogCtx).pop();
+          if (dialogCtx.mounted && !_downloadCompleted) {
+            _downloadCompleted = true;
+            Navigator.of(dialogCtx, rootNavigator: true).pop();
             ScaffoldMessenger.of(dialogCtx).showSnackBar(SnackBar(
               content: Text('Download failed: $e'),
               backgroundColor: Colors.redAccent,

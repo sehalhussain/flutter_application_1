@@ -289,15 +289,15 @@ extension TranslationIdX on TranslationId {
       case TranslationId.enSahih:
         return 'English – Sahih International';
       case TranslationId.urMaududi:
-        return 'Roman Urdu - Maulana Maududi';
+        return 'Roman Urdu';
       case TranslationId.urJalandhari:
-        return 'Urdu – Fatah Muhammad Jalandhari';
+        return 'Urdu – Jalandhari';
       case TranslationId.urWahiuddin:
-        return 'Urdu – Maulana Wahiduddin Khan';
+        return 'Urdu – Wahiduddin Khan';
       case TranslationId.enMuhsin:
         return 'English – Muhsin Khan';
       case TranslationId.hiUmari:
-        return 'Hindi – Maulana Azizul Haque al-Umari';
+        return 'Hindi – Al-Umari';
     }
   }
 
