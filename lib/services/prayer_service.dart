@@ -65,8 +65,8 @@ class PrayerService {
 
     try {
       Position position = await Geolocator.getCurrentPosition();
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-          position.latitude, position.longitude);
+      List<Placemark> placemarks =
+          await placemarkFromCoordinates(position.latitude, position.longitude);
 
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks[0];
@@ -83,17 +83,17 @@ class PrayerService {
 
   // Fetch Timings for Today
   // method 4 = Umm Al-Qura University, Makkah
-  Future<Map<String, dynamic>?> getTodayTimings({int method = 4}) async {
+  Future<Map<String, dynamic>?> getTodayTimings({int method = 1}) async {
     if (currentCity == null || currentCountry == null) {
       await initLocation();
     }
-    
+
     final city = currentCity ?? 'Kolkata';
     final country = currentCountry ?? 'India';
     final now = DateTime.now();
     final todayStr = "${now.year}-${now.month}-${now.day}";
     final school = asrMethod;
-    
+
     final prefs = await SharedPreferences.getInstance();
     final cacheKey = 'prayer_cache_today_$school';
     final cachedDataStr = prefs.getString(cacheKey);
@@ -101,7 +101,9 @@ class PrayerService {
     if (cachedDataStr != null) {
       try {
         final cachedMap = json.decode(cachedDataStr);
-        if (cachedMap['city'] == city && cachedMap['country'] == country && cachedMap['date'] == todayStr) {
+        if (cachedMap['city'] == city &&
+            cachedMap['country'] == country &&
+            cachedMap['date'] == todayStr) {
           return cachedMap['data'];
         }
       } catch (e) {
@@ -112,18 +114,20 @@ class PrayerService {
     try {
       final response = await http.get(Uri.parse(
           '$_baseUrl/timingsByCity?city=$city&country=$country&method=$method&school=$school'));
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final timingsData = data['data'];
-        
-        await prefs.setString(cacheKey, json.encode({
-          'city': city,
-          'country': country,
-          'date': todayStr,
-          'data': timingsData,
-        }));
-        
+
+        await prefs.setString(
+            cacheKey,
+            json.encode({
+              'city': city,
+              'country': country,
+              'date': todayStr,
+              'data': timingsData,
+            }));
+
         return timingsData;
       }
     } catch (e) {
@@ -133,11 +137,12 @@ class PrayerService {
   }
 
   // Fetch Calendar for Month
-  Future<List<dynamic>?> getCalendarByMonth(int year, int month, {int method = 4}) async {
-     if (currentCity == null || currentCountry == null) {
+  Future<List<dynamic>?> getCalendarByMonth(int year, int month,
+      {int method = 4}) async {
+    if (currentCity == null || currentCountry == null) {
       await initLocation();
     }
-    
+
     final city = currentCity ?? 'Kolkata';
     final country = currentCountry ?? 'India';
     final school = asrMethod;
@@ -149,7 +154,10 @@ class PrayerService {
     if (cachedDataStr != null) {
       try {
         final cachedMap = json.decode(cachedDataStr);
-        if (cachedMap['city'] == city && cachedMap['country'] == country && cachedMap['year'] == year && cachedMap['month'] == month) {
+        if (cachedMap['city'] == city &&
+            cachedMap['country'] == country &&
+            cachedMap['year'] == year &&
+            cachedMap['month'] == month) {
           return cachedMap['data'];
         }
       } catch (e) {
@@ -160,18 +168,20 @@ class PrayerService {
     try {
       final response = await http.get(Uri.parse(
           '$_baseUrl/calendarByCity?city=$city&country=$country&month=$month&year=$year&method=$method&school=$school'));
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final calendarData = data['data'];
 
-        await prefs.setString(cacheKey, json.encode({
-          'city': city,
-          'country': country,
-          'year': year,
-          'month': month,
-          'data': calendarData,
-        }));
+        await prefs.setString(
+            cacheKey,
+            json.encode({
+              'city': city,
+              'country': country,
+              'year': year,
+              'month': month,
+              'data': calendarData,
+            }));
 
         return calendarData;
       }
@@ -182,7 +192,8 @@ class PrayerService {
   }
 
   // Fetch Calendar for a HIJRI month (returns Gregorian dates for each day)
-  Future<List<dynamic>?> getHijriCalendarByMonth(int hijriYear, int hijriMonth, {int method = 4}) async {
+  Future<List<dynamic>?> getHijriCalendarByMonth(int hijriYear, int hijriMonth,
+      {int method = 4}) async {
     if (currentCity == null || currentCountry == null) {
       await initLocation();
     }
@@ -192,7 +203,8 @@ class PrayerService {
     final school = asrMethod;
 
     final prefs = await SharedPreferences.getInstance();
-    final cacheKey = 'hijri_cal_${hijriYear}_${hijriMonth}_${school}_${city}_$country';
+    final cacheKey =
+        'hijri_cal_${hijriYear}_${hijriMonth}_${school}_${city}_$country';
     final cachedDataStr = prefs.getString(cacheKey);
 
     if (cachedDataStr != null) {
