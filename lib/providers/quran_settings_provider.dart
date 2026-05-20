@@ -22,6 +22,7 @@ class QuranSettings extends ChangeNotifier {
   String _selectedReciterId = "1"; // Default to Mishary Rashid Al Afasy
   String _selectedAyahReciterId = "mishary";
   ThemeMode _themeMode = ThemeMode.system;
+  bool _showBismillahSplash = true;
 
   // ── Getters ───────────────────────────────────────────────────────────────
   ArabicScript get script => _script;
@@ -37,6 +38,7 @@ class QuranSettings extends ChangeNotifier {
   String get selectedReciterId => _selectedReciterId;
   String get selectedAyahReciterId => _selectedAyahReciterId;
   ThemeMode get themeMode => _themeMode;
+  bool get showBismillahSplash => _showBismillahSplash;
 
   // ── Init ──────────────────────────────────────────────────────────────────
   Future<void> load() async {
@@ -67,6 +69,7 @@ class QuranSettings extends ChangeNotifier {
     final themeIdx = prefs.getInt('app_theme_mode') ?? 0;
     _themeMode =
         ThemeMode.values[themeIdx.clamp(0, ThemeMode.values.length - 1)];
+    _showBismillahSplash = prefs.getBool('app_show_bismillah_splash') ?? true;
 
     notifyListeners();
   }
@@ -166,6 +169,13 @@ class QuranSettings extends ChangeNotifier {
     notifyListeners();
     final p = await SharedPreferences.getInstance();
     p.setInt('app_theme_mode', v.index);
+  }
+
+  Future<void> setShowBismillahSplash(bool v) async {
+    _showBismillahSplash = v;
+    notifyListeners();
+    final p = await SharedPreferences.getInstance();
+    p.setBool('app_show_bismillah_splash', v);
   }
 }
 

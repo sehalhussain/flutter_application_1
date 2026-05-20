@@ -187,85 +187,93 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
             ),
             child: Column(
               children: [
-                // Top row: Back button only
+                // Top row: Back arrow (L) | Month name (center) | Year (R)
                 Row(
                   children: [
-                    if (Navigator.canPop(context))
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      )
-                    else
-                      const SizedBox(width: 48, height: 48),
+                    SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Navigator.canPop(context)
+                          ? IconButton(
+                              icon: const Icon(Icons.arrow_back,
+                                  color: Colors.white),
+                              onPressed: () => Navigator.pop(context),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
                     const Spacer(),
-                    const SizedBox(width: 48), // Balance for back button
-                  ],
-                ),
-                const SizedBox(height: 10),
-
-                // Month Navigation
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildNavButton(Icons.chevron_left, _prevMonth),
-                    Column(
-                      children: [
-                        Text(monthName,
-                            style: const TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white)),
-                        Text('$_hijriYear AH',
+                    Text(monthName,
+                        style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white)),
+                    const Spacer(),
+                    SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Center(
+                        child: Text('$_hijriYear AH',
                             style: const TextStyle(
                                 fontSize: 14,
                                 color: Colors.white70,
                                 letterSpacing: 1.2)),
-                        if (range.isNotEmpty)
-                          Container(
-                            margin: const EdgeInsets.only(top: 8),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(range,
-                                style: const TextStyle(
-                                    color: Colors.white, fontSize: 11)),
-                          ),
-                      ],
+                      ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+
+                // Navigation row: chevrons + Gregorian range
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildNavButton(Icons.chevron_left, _prevMonth),
+                    if (range.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(range,
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 11)),
+                      ),
                     _buildNavButton(Icons.chevron_right, _nextMonth),
                   ],
                 ),
 
                 const SizedBox(height: 12),
 
-                // Location - Centered below month, compact
+                // Location - compact row
                 GestureDetector(
                   onTap: () => _showLocationBottomSheet(context, qt),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.15)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.location_on,
-                            color: Colors.white70, size: 12),
-                        const SizedBox(width: 4),
-                        Text(
-                          "${PrayerService.instance.currentCity ?? 'Unknown'}, ${PrayerService.instance.currentCountry ?? ''}",
-                          style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400),
-                        ),
-                      ],
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(16),
+                        border:
+                            Border.all(color: Colors.white.withOpacity(0.15)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.location_on,
+                              color: Colors.white.withOpacity(0.7), size: 12),
+                          const SizedBox(width: 4),
+                          Text(
+                            "${PrayerService.instance.currentCity ?? 'Unknown'}, ${PrayerService.instance.currentCountry ?? ''}",
+                            style: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w400),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

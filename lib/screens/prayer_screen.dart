@@ -5,7 +5,9 @@ import '../constants/locations.dart';
 import 'package:intl/intl.dart';
 
 class PrayerScreen extends StatefulWidget {
-  const PrayerScreen({super.key});
+  final VoidCallback? onBackToHome;
+
+  const PrayerScreen({super.key, this.onBackToHome});
 
   @override
   State<PrayerScreen> createState() => _PrayerScreenState();
@@ -25,29 +27,33 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
   Future<void> _fetchCalendar() async {
     setState(() => _isLoading = true);
-    final data = await PrayerService.instance.getCalendarByMonth(
-      _displayDate.year,
-      _displayDate.month,
-    );
+    try {
+      final data = await PrayerService.instance.getCalendarByMonth(
+        _displayDate.year,
+        _displayDate.month,
+      );
 
-    if (data != null && mounted) {
-      setState(() {
-        _calendarData = data;
+      if (data != null && mounted) {
+        setState(() {
+          _calendarData = data;
 
-        final today = DateTime.now();
-        if (_displayDate.year == today.year &&
-            _displayDate.month == today.month) {
-          final todayData = data.firstWhere((d) {
-            final parts = d['date']['gregorian']['date'].split('-');
-            return int.parse(parts[0]) == today.day;
-          }, orElse: () => data[0]);
-          _selectedDay = todayData;
-        } else {
-          _selectedDay = data[0];
-        }
-        _isLoading = false;
-      });
-    } else {
+          final today = DateTime.now();
+          if (_displayDate.year == today.year &&
+              _displayDate.month == today.month) {
+            final todayData = data.firstWhere((d) {
+              final parts = d['date']['gregorian']['date'].split('-');
+              return int.parse(parts[0]) == today.day;
+            }, orElse: () => data[0] as Map<String, dynamic>);
+            _selectedDay = todayData;
+          } else {
+            _selectedDay = data[0];
+          }
+          _isLoading = false;
+        });
+      } else {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    } catch (e) {
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -64,6 +70,17 @@ class _PrayerScreenState extends State<PrayerScreen> {
       _displayDate = DateTime(_displayDate.year, _displayDate.month + 1, 1);
     });
     _fetchCalendar();
+  }
+
+  /// Converts a "HH:mm" 24-hour string to "h:mm am/pm" 12-hour format.
+  String _to12Hour(String time24) {
+    final parts = time24.split(':');
+    if (parts.length != 2) return time24;
+    final hour = int.tryParse(parts[0]) ?? 0;
+    final minute = parts[1];
+    final period = hour < 12 ? 'AM' : 'PM';
+    final hour12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+    return '$hour12:$minute $period';
   }
 
   String? _getNextPrayer(Map<String, dynamic>? timings) {
@@ -110,7 +127,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
         children: [
           // --- IMMERSIVE HEADER SECTION ---
           Container(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+            padding: const EdgeInsets.fromLTRB(20, 40, 20, 40),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
@@ -120,54 +137,62 @@ class _PrayerScreenState extends State<PrayerScreen> {
             ),
             child: Column(
               children: [
-                // Top row: Back button only
+                // Top row: Back arrow (L) | Month name (center) | Year (R)
                 Row(
                   children: [
-                    if (Navigator.canPop(context))
-                      IconButton(
+                    SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: IconButton(
                         icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      )
-                    else
-                      const SizedBox(width: 48, height: 48),
+                        onPressed: () {
+                          if (widget.onBackToHome != null) {
+                            widget.onBackToHome!();
+                          } else if (Navigator.canPop(context)) {
+                            Navigator.of(context).pop();
+                          }
+                        },
+                      ),
+                    ),
                     const Spacer(),
-                    const SizedBox(width: 48), // Balance for back button
-                  ],
-                ),
-                const SizedBox(height: 10),
-
-                // Month Navigation
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildNavButton(Icons.chevron_left, _prevMonth),
-                    Column(
-                      children: [
-                        Text(monthName,
-                            style: const TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white)),
-                        Text(yearNum,
+                    Text(monthName,
+                        style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white)),
+                    const Spacer(),
+                    SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: Center(
+                        child: Text(yearNum,
                             style: const TextStyle(
                                 fontSize: 14,
                                 color: Colors.white70,
                                 letterSpacing: 1.2)),
-                        if (hijriDateString.isNotEmpty)
-                          Container(
-                            margin: const EdgeInsets.only(top: 8),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(hijriDateString,
-                                style: const TextStyle(
-                                    color: Colors.white, fontSize: 11)),
-                          ),
-                      ],
+                      ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+
+                // Navigation row: chevrons + hijri date string
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildNavButton(Icons.chevron_left, _prevMonth),
+                    if (hijriDateString.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(hijriDateString,
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 11)),
+                      ),
                     _buildNavButton(Icons.chevron_right, _nextMonth),
                   ],
                 ),
@@ -177,28 +202,31 @@ class _PrayerScreenState extends State<PrayerScreen> {
                 // Location - Centered below month
                 GestureDetector(
                   onTap: () => _showLocationBottomSheet(context),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.location_on,
-                            color: Colors.white, size: 14),
-                        const SizedBox(width: 6),
-                        Text(
-                          "${PrayerService.instance.currentCity ?? 'Unknown'}, ${PrayerService.instance.currentCountry ?? ''}",
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500),
-                        ),
-                      ],
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border:
+                            Border.all(color: Colors.white.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.location_on,
+                              color: Colors.white, size: 14),
+                          const SizedBox(width: 6),
+                          Text(
+                            "${PrayerService.instance.currentCity ?? 'Unknown'}, ${PrayerService.instance.currentCountry ?? ''}",
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -408,8 +436,8 @@ class _PrayerScreenState extends State<PrayerScreen> {
                     ],
                   ),
                 ),
-                // Time
-                Text(time,
+                // Time (12-hour format)
+                Text(_to12Hour(time),
                     style: TextStyle(
                         fontFamily: 'monospace',
                         fontWeight: FontWeight.bold,

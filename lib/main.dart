@@ -11,7 +11,6 @@ import 'screens/menu_screen.dart';
 import 'screens/quran/quran_home_screen.dart';
 import 'screens/prayer_screen.dart';
 import 'constants/quran_theme.dart';
-import 'services/quran_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,8 +22,11 @@ void main() async {
     statusBarColor: Colors.transparent,
   ));
 
-  // Pre-load metadata for performance
-  await QuranService.instance.loadSurahList();
+  // NOTE: No blocking pre-load here.
+  // QuranService.loadSurahList() is now lazy-loaded on first demand.
+  // PrayerService geolocation services are only initialized when the user
+  // taps "detect location" — we already have 37 cities with built-in
+  // lat/lng coordinates for offline use.
 
   runApp(
     MultiProvider(
@@ -64,7 +66,195 @@ class AsSalahApp extends StatelessWidget {
         fontFamily: 'Roboto',
         scaffoldBackgroundColor: const Color(0xFF0F1711),
       ),
-      home: const MainNavigation(),
+      home: const _SplashWrapper(),
+    );
+  }
+}
+
+/// Shows a splash with app logo, Bismillah, and English translation with a
+/// slow zoom + fade-in effect while providers settle. Then transitions to
+/// the main navigation with a cross-fade for perceived performance.
+class _SplashWrapper extends StatefulWidget {
+  const _SplashWrapper();
+
+  @override
+  State<_SplashWrapper> createState() => _SplashWrapperState();
+}
+
+class _SplashWrapperState extends State<_SplashWrapper>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<double> _scaleAnimation;
+  double _splashOpacity = 1.0;
+  bool _splashRemoved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    );
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.9, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    // Safely check settings in the next frame to see if splash is disabled
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final settings = Provider.of<QuranSettings>(context, listen: false);
+      if (!settings.showBismillahSplash) {
+        setState(() {
+          _splashRemoved = true;
+        });
+      } else {
+        _controller.forward();
+        // Start the fade out after the splash animation finishes
+        Future.delayed(const Duration(milliseconds: 3500), () {
+          if (mounted && _splashOpacity > 0.0) {
+            setState(() {
+              _splashOpacity = 0.0;
+            });
+          }
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = context.watch<QuranSettings>();
+    if (!settings.showBismillahSplash) {
+      return const MainNavigation();
+    }
+
+    final brightness = Theme.of(context).brightness;
+    final bg = brightness == Brightness.light
+        ? const Color(0xFFFBFDFA)
+        : const Color(0xFF0F1711);
+    final fg = brightness == Brightness.light
+        ? const Color(0xFF004D40)
+        : const Color(0xFF80CBC4);
+    final muted = brightness == Brightness.light
+        ? const Color(0xFF78909C)
+        : const Color(0xFF90A4AE);
+
+    return Stack(
+      children: [
+        // Home screen content, pre-rendering underneath the splash screen
+        const MainNavigation(),
+
+        if (!_splashRemoved)
+          Positioned.fill(
+            child: AnimatedOpacity(
+              opacity: _splashOpacity,
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeInOut,
+              onEnd: () {
+                if (_splashOpacity == 0.0) {
+                  setState(() {
+                    _splashRemoved = true;
+                  });
+                }
+              },
+              child: Scaffold(
+                backgroundColor: bg,
+                body: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    if (_splashOpacity > 0.0) {
+                      setState(() {
+                        _splashOpacity = 0.0;
+                      });
+                    }
+                  },
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: AnimatedBuilder(
+                          animation: _controller,
+                          builder: (context, child) {
+                            return Opacity(
+                              opacity: _fadeAnimation.value,
+                              child: Transform.scale(
+                                scale: _scaleAnimation.value,
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Bismillah in Arabic
+                            Text(
+                              '\u{0628}\u{0650}\u{0633}\u{0652}\u{0645}\u{0650} '
+                              '\u{0627}\u{0644}\u{0644}\u{0651}\u{064e}\u{0647}\u{0650} '
+                              '\u{0627}\u{0644}\u{0631}\u{0651}\u{064e}\u{062d}\u{0652}\u{0645}\u{064e}\u{0646}\u{0650} '
+                              '\u{0627}\u{0644}\u{0631}\u{0651}\u{064e}\u{062d}\u{0650}\u{064a}\u{0645}\u{0650}',
+                              style: TextStyle(
+                                fontSize: 28,
+                                color: fg,
+                                fontWeight: FontWeight.w400,
+                                fontFamily: 'QPC Hafs',
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+
+                            // English translation
+                            Text(
+                              'In the name of Allah,\nthe Most Gracious, the Most Merciful',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: muted,
+                                fontWeight: FontWeight.w400,
+                                height: 1.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 40,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Text(
+                          'Tap anywhere to skip',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: muted.withOpacity(0.6),
+                            letterSpacing: 0.8,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -73,21 +263,25 @@ class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
   @override
-  State<MainNavigation> createState() => _MainNavigationState();
+  State<MainNavigation> createState() => MainNavigationState();
 }
 
-class _MainNavigationState extends State<MainNavigation> {
+class MainNavigationState extends State<MainNavigation> {
   int _index = 0;
 
-  final screens = [
-    const HomeScreen(),
-    const PrayerScreen(),
-    const MenuScreen(),
-  ];
+  void goToTab(int tab) {
+    setState(() => _index = tab);
+  }
 
   @override
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
+
+    final screens = [
+      const HomeScreen(),
+      PrayerScreen(onBackToHome: () => goToTab(0)),
+      const MenuScreen(),
+    ];
 
     return Scaffold(
       backgroundColor: qt.bg,
