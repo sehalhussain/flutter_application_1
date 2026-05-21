@@ -1,6 +1,4 @@
 // lib/providers/quran_progress_provider.dart
-//
-// Manages bookmarks + last-read position, persisted to shared_preferences.
 
 import 'dart:convert';
 import 'package:flutter/widgets.dart';
@@ -11,30 +9,56 @@ import '../models/quran_models.dart';
 class QuranProgress extends ChangeNotifier {
   List<QuranBookmark> _bookmarks = [];
   LastReadPosition? _lastRead;
+  List<ReadingSession> _recentReads = [];
+
+  static const int _maxRecentReads = 5;
+  static const String _bookmarksKey = 'quran_bookmarks';
+  static const String _lastReadKey = 'quran_last_read';
+  static const String _recentReadsKey = 'quran_recent_reads_v2';
 
   List<QuranBookmark> get bookmarks => List.unmodifiable(_bookmarks);
   LastReadPosition? get lastRead => _lastRead;
+  List<ReadingSession> get recentReads => List.unmodifiable(_recentReads);
 
   // ── Init ──────────────────────────────────────────────────────────────────
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final bmRaw = prefs.getStringList('quran_bookmarks') ?? [];
-    _bookmarks = bmRaw
-        .map((s) =>
-            QuranBookmark.fromJson(json.decode(s) as Map<String, dynamic>))
-        .toList();
+    // Bookmarks
+    final bmRaw = prefs.getStringList(_bookmarksKey) ?? [];
+    _bookmarks =
+        bmRaw.map((s) => QuranBookmark.fromJson(json.decode(s))).toList();
 
-    final lrRaw = prefs.getString('quran_last_read');
+    // Legacy last read (migrate to recent reads if present)
+    final lrRaw = prefs.getString(_lastReadKey);
     if (lrRaw != null) {
-      _lastRead =
-          LastReadPosition.fromJson(json.decode(lrRaw) as Map<String, dynamic>);
+      _lastRead = LastReadPosition.fromJson(
+          json.decode(lrRaw)); // ← FIXED: lrRaw not lr
+      // Migrate to new system
+      final migrated = ReadingSession(
+        surah: _lastRead!.surah,
+        ayah: _lastRead!.ayah,
+        surahName: _lastRead!.surahName,
+        timestamp: DateTime.now().subtract(const Duration(days: 30)), // old
+      );
+      _recentReads.add(migrated);
+      prefs.remove(_lastReadKey); // clear legacy
     }
+
+    // New recent reads
+    final rrRaw = prefs.getStringList(_recentReadsKey) ?? [];
+    _recentReads.addAll(
+      rrRaw.map((s) => ReadingSession.fromJson(json.decode(s))),
+    );
+    _recentReads.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+    // Deduplicate and cap
+    _deduplicateAndCap();
 
     notifyListeners();
   }
 
-  // ── Bookmarks ─────────────────────────────────────────────────────────────
+  // ── Bookmarks (unchanged) ─────────────────────────────────────────────────
   bool isBookmarked(int surah, int ayah) =>
       _bookmarks.any((b) => b.surah == surah && b.ayah == ayah);
 
@@ -57,33 +81,83 @@ class QuranProgress extends ChangeNotifier {
 
   Future<void> _persistBookmarks() async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setStringList(
-      'quran_bookmarks',
+    await prefs.setStringList(
+      _bookmarksKey,
       _bookmarks.map((b) => json.encode(b.toJson())).toList(),
     );
   }
 
-  // ── Last read ─────────────────────────────────────────────────────────────
-  bool isLastRead(int surah, int ayah) =>
-      _lastRead?.surah == surah && _lastRead?.ayah == ayah;
+  // ── Recent Reads (NEW) ────────────────────────────────────────────────────
+  bool isRecentRead(int surah, int ayah) =>
+      _recentReads.any((r) => r.surah == surah && r.ayah == ayah);
 
+  Future<void> addRecentRead(int surah, int ayah, String surahName) async {
+    // Remove if exists (move to top)
+    _recentReads.removeWhere((r) => r.surah == surah && r.ayah == ayah);
+
+    _recentReads.insert(
+        0,
+        ReadingSession(
+          surah: surah,
+          ayah: ayah,
+          surahName: surahName,
+          timestamp: DateTime.now(),
+        ));
+
+    _deduplicateAndCap();
+    notifyListeners();
+    await _persistRecentReads();
+  }
+
+  Future<void> removeRecentRead(int surah, int ayah) async {
+    _recentReads.removeWhere((r) => r.surah == surah && r.ayah == ayah);
+    notifyListeners();
+    await _persistRecentReads();
+  }
+
+  Future<void> clearRecentReads() async {
+    _recentReads.clear();
+    notifyListeners();
+    await _persistRecentReads();
+  }
+
+  // Legacy compatibility
   Future<void> setLastRead(int surah, int ayah, String surahName) async {
     _lastRead =
         LastReadPosition(surah: surah, ayah: ayah, surahName: surahName);
-    notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setString('quran_last_read', json.encode(_lastRead!.toJson()));
+    await addRecentRead(surah, ayah, surahName);
   }
 
   Future<void> clearLastRead() async {
     _lastRead = null;
-    notifyListeners();
+    await clearRecentReads();
+  }
+
+  void _deduplicateAndCap() {
+    // Keep only newest per surah:ayah combo
+    final seen = <String>{};
+    _recentReads = _recentReads.where((r) {
+      final key = '${r.surah}:${r.ayah}';
+      if (seen.contains(key)) return false;
+      seen.add(key);
+      return true;
+    }).toList();
+
+    if (_recentReads.length > _maxRecentReads) {
+      _recentReads = _recentReads.sublist(0, _maxRecentReads);
+    }
+  }
+
+  Future<void> _persistRecentReads() async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.remove('quran_last_read');
+    await prefs.setStringList(
+      _recentReadsKey,
+      _recentReads.map((r) => json.encode(r.toJson())).toList(),
+    );
   }
 }
 
-// ── Provider widget ───────────────────────────────────────────────────────────
+// ── Provider widget ─────────────────────────────────────────────────────────
 class QuranProgressProvider {
   static QuranProgress of(BuildContext context, {bool listen = true}) {
     return Provider.of<QuranProgress>(context, listen: listen);

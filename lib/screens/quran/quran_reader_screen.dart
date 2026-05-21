@@ -150,6 +150,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
   // ── Data loading ────────────────────────────────────────────────────────
   Future<void> _loadAyahs() async {
+    if (!mounted) return;
     final settings = QuranSettingsProvider.of(context, listen: false);
     List<AyahData> ayahs = [];
 
@@ -640,6 +641,12 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     final surahNum = widget.surahNumber;
     final itemCount = _displayItems.length + 2;
 
+    // ── OPTIMIZED: Build lookup sets once for O(1) per-ayah checks ──
+    final bookmarkedKeys =
+        progress.bookmarks.map((b) => '${b.surah}:${b.ayah}').toSet();
+    final recentReadKeys =
+        progress.recentReads.map((r) => '${r.surah}:${r.ayah}').toSet();
+
     return ScrollablePositionedList.builder(
       itemScrollController: _itemScrollController,
       itemPositionsListener: _itemPositionsListener,
@@ -658,13 +665,15 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
         final ayahIndex = item as int;
         final ayah = _ayahs[ayahIndex];
+        final ayahKey = '${surahNum}:${ayah.ayahNumber}';
 
         return _AyahCard(
           key: ValueKey(ayah.ayahNumber),
           ayah: ayah,
           settings: settings,
-          isBookmarked: progress.isBookmarked(surahNum, ayah.ayahNumber),
-          isLastRead: progress.isLastRead(surahNum, ayah.ayahNumber),
+          isBookmarked: bookmarkedKeys.contains(ayahKey),
+          isLastRead: recentReadKeys.contains(ayahKey),
+          isRecentRead: recentReadKeys.contains(ayahKey),
           isHighlighted: _highlightedAyah == ayah.ayahNumber,
           sajdah: _sajdahMetadata[ayah.verseKey],
           playingAyahNotifier: _playingAyahNotifier,
@@ -675,12 +684,16 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
           onBookmark: () => progress.toggleBookmark(
               surahNum, ayah.ayahNumber, _surahInfo?.nameEnglish ?? ''),
           onLastRead: () {
-            if (progress.isLastRead(surahNum, ayah.ayahNumber)) {
-              progress.clearLastRead();
-            } else {
-              progress.setLastRead(
-                  surahNum, ayah.ayahNumber, _surahInfo?.nameEnglish ?? '');
-            }
+            progress.addRecentRead(
+                surahNum, ayah.ayahNumber, _surahInfo?.nameEnglish ?? '');
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: const Text('Saved to Recent Reads'),
+              backgroundColor: qt.emeraldDeep,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
+            ));
           },
           onCopy: () => _copyAyah(ayah, settings),
           onPlay: () => _playAyah(ayah.ayahNumber),
@@ -1464,6 +1477,7 @@ class _AyahCard extends StatefulWidget {
   final bool isBookmarked;
   final bool isLastRead;
   final bool isHighlighted;
+  final bool isRecentRead;
   final SajdahMetadata? sajdah;
   final ValueNotifier<int?> playingAyahNotifier;
   final ValueNotifier<int?> selectedAyahNotifier;
@@ -1486,6 +1500,7 @@ class _AyahCard extends StatefulWidget {
     required this.isBookmarked,
     required this.isLastRead,
     required this.isHighlighted,
+    required this.isRecentRead,
     this.sajdah,
     required this.playingAyahNotifier,
     required this.selectedAyahNotifier,
@@ -1778,12 +1793,14 @@ class _AyahCardState extends State<_AyahCard> {
         ),
         const SizedBox(width: 14),
         _iconBtn(
-          widget.isLastRead
+          widget.isRecentRead
               ? Icons.check_circle_rounded
               : Icons.check_circle_outline_rounded,
-          widget.isLastRead ? qt.emeraldLight : qt.textMuted,
+          widget.isRecentRead ? qt.emeraldLight : qt.textMuted,
           widget.onLastRead,
-          tooltip: widget.isLastRead ? 'Clear last read' : 'Mark as last read',
+          tooltip: widget.isRecentRead
+              ? 'Saved to Recent Reads'
+              : 'Save to Recent Reads',
         ),
         const SizedBox(width: 14),
         _iconBtn(Icons.copy_rounded, qt.textMuted, widget.onCopy,
@@ -2060,7 +2077,8 @@ class _SettingsSheet extends StatelessWidget {
 
     final isUrdu = settings.translation == TranslationId.urJalandhari ||
         settings.translation == TranslationId.urWahiuddin ||
-        (customTrans != null && customTrans.language.toLowerCase().contains('urdu'));
+        (customTrans != null &&
+            customTrans.language.toLowerCase().contains('urdu'));
 
     return Container(
       width: double.infinity,

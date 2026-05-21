@@ -251,6 +251,37 @@ class LastReadPosition {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Reading Session (multiple last-read positions with timestamps)
+// ─────────────────────────────────────────────────────────────────────────────
+class ReadingSession {
+  final int surah;
+  final int ayah;
+  final String surahName;
+  final DateTime timestamp;
+
+  const ReadingSession({
+    required this.surah,
+    required this.ayah,
+    required this.surahName,
+    required this.timestamp,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'surah': surah,
+        'ayah': ayah,
+        'surahName': surahName,
+        'timestamp': timestamp.toIso8601String(),
+      };
+
+  factory ReadingSession.fromJson(Map<String, dynamic> json) => ReadingSession(
+        surah: json['surah'] as int,
+        ayah: json['ayah'] as int,
+        surahName: json['surahName'] as String? ?? '',
+        timestamp: DateTime.parse(json['timestamp'] as String),
+      );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Enums
 // ─────────────────────────────────────────────────────────────────────────────
 enum ArabicScript { uthmani, indoPak }
