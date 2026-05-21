@@ -100,11 +100,7 @@ class PrayerService {
   static const List<Map<String, dynamic>> calculationMethods = [
     {'id': 0, 'name': 'Muslim World League', 'short': 'MWL'},
     {'id': 1, 'name': 'Egyptian General Authority', 'short': 'Egypt'},
-    {
-      'id': 2,
-      'name': 'Karachi University of Islamic Sciences',
-      'short': 'Karachi'
-    },
+    {'id': 2, 'name': 'University of Islamic Sciences', 'short': 'South Asia'},
     {'id': 3, 'name': 'Umm al-Qura University, Makkah', 'short': 'Umm al-Qura'},
     {'id': 4, 'name': 'Dubai (UAE)', 'short': 'Dubai'},
     {'id': 5, 'name': 'Moonsighting Committee', 'short': 'Moonsighting'},
@@ -117,6 +113,129 @@ class PrayerService {
     {'id': 12, 'name': 'Jafari / Shia Ithna-Ashari', 'short': 'Jafari'},
   ];
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  //  AUTOMATIC CALCULATION METHOD MAPPING  (Asr method remains user-configurable)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /// Maps country names to their recommended calculation method ID.
+  /// Asr method is NOT mapped here — users keep full control over that.
+  static const Map<String, int> _countryMethodMap = {
+    // South Asia
+    'India': 2,
+    'Pakistan': 2,
+    'Bangladesh': 2,
+    'Afghanistan': 2,
+    'Sri Lanka': 2,
+    'Nepal': 2,
+    'Maldives': 2,
+
+    // Middle East
+    'Saudi Arabia': 3,
+    'Egypt': 1,
+    'United Arab Emirates': 4,
+    'UAE': 4,
+    'Dubai': 4,
+    'Qatar': 8,
+    'Kuwait': 7,
+    'Bahrain': 8,
+    'Oman': 3,
+    'Yemen': 0,
+
+    // Turkey
+    'Turkey': 10,
+    'Türkiye': 10,
+
+    // North America
+    'United States': 6,
+    'USA': 6,
+    'Canada': 6,
+
+    // Europe
+    'United Kingdom': 0,
+    'UK': 0,
+    'Great Britain': 0,
+    'France': 0,
+    'Germany': 0,
+    'Netherlands': 0,
+    'Belgium': 0,
+    'Spain': 0,
+    'Italy': 0,
+    'Sweden': 0,
+    'Norway': 0,
+    'Denmark': 0,
+    'Ireland': 0,
+    'Austria': 0,
+    'Switzerland': 0,
+
+    // Southeast Asia
+    'Singapore': 9,
+    'Malaysia': 9,
+    'Indonesia': 9,
+    'Brunei': 9,
+
+    // East Asia
+    'China': 0,
+    'Japan': 0,
+    'South Korea': 0,
+    'Thailand': 9,
+    'Philippines': 9,
+    'Vietnam': 9,
+
+    // Africa
+    'Nigeria': 1,
+    'South Africa': 0,
+    'Morocco': 0,
+    'Algeria': 0,
+    'Tunisia': 0,
+    'Sudan': 1,
+    'Somalia': 1,
+    'Ethiopia': 1,
+    'Kenya': 0,
+    'Tanzania': 0,
+    'Uganda': 0,
+    'Ghana': 0,
+
+    // Oceania
+    'Australia': 0,
+    'New Zealand': 0,
+
+    // Iran / Shia
+    'Iran': 11,
+    'Iraq': 11,
+
+    // Default fallback
+    'default': 0,
+  };
+
+  /// Automatically detects the best calculation method for a country.
+  /// Returns method ID. Asr method is deliberately NOT handled here.
+  static int detectMethodForCountry(String country) {
+    final normalized = country.trim();
+
+    // Direct match
+    if (_countryMethodMap.containsKey(normalized)) {
+      return _countryMethodMap[normalized]!;
+    }
+
+    // Case-insensitive match
+    final lower = normalized.toLowerCase();
+    for (final entry in _countryMethodMap.entries) {
+      if (entry.key.toLowerCase() == lower) {
+        return entry.value;
+      }
+    }
+
+    // Partial match
+    for (final entry in _countryMethodMap.entries) {
+      if (lower.contains(entry.key.toLowerCase()) ||
+          entry.key.toLowerCase().contains(lower)) {
+        return entry.value;
+      }
+    }
+
+    return _countryMethodMap['default']!;
+  }
+
   // ═══════════════════════════════════════════════════════════════════════
   //  INIT
   // ═══════════════════════════════════════════════════════════════════════
@@ -125,8 +244,9 @@ class PrayerService {
     final prefs = await SharedPreferences.getInstance();
     currentCity = prefs.getString('prayer_city');
     currentCountry = prefs.getString('prayer_country');
+
+    // Asr method: always load user's saved preference (or default 0)
     asrMethod = prefs.getInt('prayer_asr_method') ?? 0;
-    calculationMethod = prefs.getInt('prayer_calc_method') ?? 0;
     hijriAdjustment = prefs.getInt('prayer_hijri_adj') ?? 0;
 
     if (currentCity == null || currentCountry == null) {
@@ -134,6 +254,11 @@ class PrayerService {
       currentCountry = 'India';
       await setLocation('Kolkata', 'India');
     } else {
+      // Auto-detect calculation method based on country
+      // This ensures correct regional method even if user moved or we updated the map
+      calculationMethod = detectMethodForCountry(currentCountry!);
+      await prefs.setInt('prayer_calc_method', calculationMethod);
+
       await _ensureCoordinates();
     }
   }
@@ -207,11 +332,21 @@ class PrayerService {
     currentCountry = country;
     _latitude = null;
     _longitude = null;
+
+    // ── AUTO-DETECT CALCULATION METHOD ONLY ──
+    // Asr method remains whatever the user previously set (or default 0)
+    calculationMethod = detectMethodForCountry(country);
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('prayer_city', city);
     await prefs.setString('prayer_country', country);
     await prefs.remove('prayer_lat');
     await prefs.remove('prayer_lng');
+
+    // Save the auto-detected calculation method
+    await prefs.setInt('prayer_calc_method', calculationMethod);
+    // NOTE: We do NOT touch prayer_asr_method here — user keeps their choice
+
     await _clearPrayerCaches();
 
     // Check if location exists in our predefined list with known coordinates

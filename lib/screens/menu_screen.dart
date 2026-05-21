@@ -37,8 +37,6 @@ class _MenuScreenState extends State<MenuScreen> {
           const SizedBox(height: 10),
           _buildLocationTile(context, qt),
           const SizedBox(height: 8),
-          _buildCalculationMethodTile(context, qt),
-          const SizedBox(height: 8),
           _buildAsrMethodTile(context, qt),
           const SizedBox(height: 8),
           _buildHijriAdjustmentTile(context, qt),
@@ -48,14 +46,17 @@ class _MenuScreenState extends State<MenuScreen> {
           _buildThemeSelector(context, settings),
           const SizedBox(height: 8),
           SwitchListTile(
-            secondary: Icon(Icons.motion_photos_on_outlined, color: qt.emeraldDeep),
+            secondary:
+                Icon(Icons.motion_photos_on_outlined, color: qt.emeraldDeep),
             title: const Text("Bismillah Splash Screen"),
             subtitle: const Text("Show Bismillah animation at launch"),
             value: settings.showBismillahSplash,
             activeTrackColor: qt.emeraldDeep,
             onChanged: (val) => settings.setShowBismillahSplash(val),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            tileColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            tileColor:
+                colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 30),
           _buildSectionHeader("Storage & Data"),
@@ -67,7 +68,8 @@ class _MenuScreenState extends State<MenuScreen> {
             trailing: const Icon(Icons.chevron_right),
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            tileColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            tileColor:
+                colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             onTap: () {
               Navigator.push(
                 context,
@@ -123,7 +125,10 @@ class _MenuScreenState extends State<MenuScreen> {
           "${PrayerService.instance.currentCity ?? 'Unknown'}, ${PrayerService.instance.currentCountry ?? ''}"),
       trailing: const Icon(Icons.edit, size: 20, color: Colors.grey),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      tileColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      tileColor: Theme.of(context)
+          .colorScheme
+          .surfaceContainerHighest
+          .withValues(alpha: 0.3),
       onTap: () => _showLocationBottomSheet(context, qt),
     );
   }
@@ -146,7 +151,10 @@ class _MenuScreenState extends State<MenuScreen> {
       subtitle: Text("${current['name']} (${current['short']})"),
       trailing: const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      tileColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      tileColor: Theme.of(context)
+          .colorScheme
+          .surfaceContainerHighest
+          .withValues(alpha: 0.3),
       onTap: () => _showCalculationMethodSheet(context, qt),
     );
   }
@@ -193,7 +201,8 @@ class _MenuScreenState extends State<MenuScreen> {
               const SizedBox(height: 6),
               Text(
                 "Different regions and Islamic organizations use different astronomical conventions (angles of the sun) to calculate Fajr and Isha prayer times. Select the method recommended for your region to ensure accurate daily timings.",
-                style: TextStyle(fontSize: 13, color: qt.textMuted, height: 1.4),
+                style:
+                    TextStyle(fontSize: 13, color: qt.textMuted, height: 1.4),
               ),
               const SizedBox(height: 16),
               Expanded(
@@ -206,7 +215,9 @@ class _MenuScreenState extends State<MenuScreen> {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: Material(
-                        color: isSelected ? qt.emeraldDeep.withValues(alpha: 0.08) : qt.cardBg,
+                        color: isSelected
+                            ? qt.emeraldDeep.withValues(alpha: 0.08)
+                            : qt.cardBg,
                         borderRadius: BorderRadius.circular(16),
                         child: InkWell(
                           onTap: () async {
@@ -217,11 +228,14 @@ class _MenuScreenState extends State<MenuScreen> {
                           },
                           borderRadius: BorderRadius.circular(16),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 14),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: isSelected ? qt.emeraldDeep : qt.borderGlass,
+                                color: isSelected
+                                    ? qt.emeraldDeep
+                                    : qt.borderGlass,
                                 width: isSelected ? 1.5 : 1.0,
                               ),
                             ),
@@ -231,7 +245,9 @@ class _MenuScreenState extends State<MenuScreen> {
                                   child: Text(
                                     method['name'] as String,
                                     style: TextStyle(
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.w600,
                                       color: qt.textPrimary,
                                       fontSize: 14,
                                     ),
@@ -239,9 +255,11 @@ class _MenuScreenState extends State<MenuScreen> {
                                 ),
                                 const SizedBox(width: 12),
                                 if (isSelected)
-                                  Icon(Icons.check_circle_rounded, color: qt.emeraldDeep)
+                                  Icon(Icons.check_circle_rounded,
+                                      color: qt.emeraldDeep)
                                 else
-                                  Icon(Icons.radio_button_off_rounded, color: qt.borderGlass),
+                                  Icon(Icons.radio_button_off_rounded,
+                                      color: qt.borderGlass),
                               ],
                             ),
                           ),
@@ -271,7 +289,10 @@ class _MenuScreenState extends State<MenuScreen> {
           Text(method == 0 ? "Standard (Shafi, Maliki, Hanbali)" : "Hanafi"),
       trailing: const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      tileColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      tileColor: Theme.of(context)
+          .colorScheme
+          .surfaceContainerHighest
+          .withValues(alpha: 0.3),
       onTap: () => _showAsrMethodSheet(context, qt),
     );
   }
@@ -312,7 +333,8 @@ class _MenuScreenState extends State<MenuScreen> {
               const SizedBox(height: 6),
               Text(
                 "The major Islamic schools of jurisprudence calculate the start of Asr prayer differently. The Standard method (Shafi, Maliki, Hanbali) begins earlier, when the shadow of an object equals its height. The Hanafi method begins later, when the shadow is twice the object's height.",
-                style: TextStyle(fontSize: 13, color: qt.textMuted, height: 1.4),
+                style:
+                    TextStyle(fontSize: 13, color: qt.textMuted, height: 1.4),
               ),
               const SizedBox(height: 20),
               _buildAsrOptionCard(
@@ -333,7 +355,8 @@ class _MenuScreenState extends State<MenuScreen> {
                 context,
                 qt,
                 title: "Hanafi Method",
-                subtitle: "Hanafi school (Later time, when shadow is double object length)",
+                subtitle:
+                    "Hanafi school (Later time, when shadow is double object length)",
                 value: 1,
                 isSelected: currentMethod == 1,
                 onTap: () async {
@@ -379,7 +402,9 @@ class _MenuScreenState extends State<MenuScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: isSelected ? qt.emeraldDeep.withValues(alpha: 0.15) : qt.bg,
+                  color: isSelected
+                      ? qt.emeraldDeep.withValues(alpha: 0.15)
+                      : qt.bg,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -396,7 +421,8 @@ class _MenuScreenState extends State<MenuScreen> {
                     Text(
                       title,
                       style: TextStyle(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.w600,
                         fontSize: 15,
                         color: qt.textPrimary,
                       ),
@@ -446,7 +472,10 @@ class _MenuScreenState extends State<MenuScreen> {
       subtitle: Text(label),
       trailing: const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      tileColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      tileColor: Theme.of(context)
+          .colorScheme
+          .surfaceContainerHighest
+          .withValues(alpha: 0.3),
       onTap: () => _showHijriAdjustmentSheet(context, qt),
     );
   }
@@ -462,7 +491,8 @@ class _MenuScreenState extends State<MenuScreen> {
           final adj = PrayerService.instance.hijriAdjustment;
           final adjustedDate = DateTime.now().add(Duration(days: adj));
           final hijri = HijriCalendar.fromDate(adjustedDate);
-          final formattedHijriDate = "${hijri.hDay} ${hijri.longMonthName} ${hijri.hYear} AH";
+          final formattedHijriDate =
+              "${hijri.hDay} ${hijri.longMonthName} ${hijri.hYear} AH";
           String label;
           if (adj == 0) {
             label = "No adjustment";
@@ -500,12 +530,14 @@ class _MenuScreenState extends State<MenuScreen> {
                 const SizedBox(height: 6),
                 Text(
                   "Because the traditional Islamic calendar is based on actual sightings of the crescent moon, pre-calculated calendar dates may differ by 1 or 2 days from your local community's actual practice. Adjusting this shifts the calculated Hijri dates across the app.",
-                  style: TextStyle(fontSize: 13, color: qt.textMuted, height: 1.4),
+                  style:
+                      TextStyle(fontSize: 13, color: qt.textMuted, height: 1.4),
                 ),
                 const SizedBox(height: 36),
                 Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 16),
                     decoration: BoxDecoration(
                       color: qt.cardBg,
                       borderRadius: BorderRadius.circular(24),
@@ -523,13 +555,16 @@ class _MenuScreenState extends State<MenuScreen> {
                       children: [
                         // Minus Button
                         Material(
-                          color: adj > -2 ? qt.emeraldDeep.withValues(alpha: 0.1) : qt.borderGlass.withValues(alpha: 0.1),
+                          color: adj > -2
+                              ? qt.emeraldDeep.withValues(alpha: 0.1)
+                              : qt.borderGlass.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(16),
                             onTap: adj > -2
                                 ? () async {
-                                    await PrayerService.instance.setHijriAdjustment(adj - 1);
+                                    await PrayerService.instance
+                                        .setHijriAdjustment(adj - 1);
                                     setModalState(() {});
                                     setState(() {});
                                   }
@@ -571,13 +606,16 @@ class _MenuScreenState extends State<MenuScreen> {
                         const SizedBox(width: 32),
                         // Plus Button
                         Material(
-                          color: adj < 2 ? qt.emeraldDeep.withValues(alpha: 0.1) : qt.borderGlass.withValues(alpha: 0.1),
+                          color: adj < 2
+                              ? qt.emeraldDeep.withValues(alpha: 0.1)
+                              : qt.borderGlass.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(16),
                             onTap: adj < 2
                                 ? () async {
-                                    await PrayerService.instance.setHijriAdjustment(adj + 1);
+                                    await PrayerService.instance
+                                        .setHijriAdjustment(adj + 1);
                                     setModalState(() {});
                                     setState(() {});
                                   }
@@ -599,7 +637,8 @@ class _MenuScreenState extends State<MenuScreen> {
                 const SizedBox(height: 24),
                 Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
                     decoration: BoxDecoration(
                       color: qt.emeraldDeep.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(16),
@@ -611,7 +650,8 @@ class _MenuScreenState extends State<MenuScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.event_available_rounded, color: qt.emeraldDeep, size: 20),
+                        Icon(Icons.event_available_rounded,
+                            color: qt.emeraldDeep, size: 20),
                         const SizedBox(width: 8),
                         Text(
                           "Calculated Date: ",
