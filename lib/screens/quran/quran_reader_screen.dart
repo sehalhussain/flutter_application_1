@@ -684,16 +684,28 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
           onBookmark: () => progress.toggleBookmark(
               surahNum, ayah.ayahNumber, _surahInfo?.nameEnglish ?? ''),
           onLastRead: () {
-            progress.addRecentRead(
-                surahNum, ayah.ayahNumber, _surahInfo?.nameEnglish ?? '');
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: const Text('Saved to Recent Reads'),
-              backgroundColor: qt.emeraldDeep,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              duration: const Duration(seconds: 2),
-            ));
+            if (recentReadKeys.contains(ayahKey)) {
+              progress.removeRecentRead(surahNum, ayah.ayahNumber);
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: const Text('Removed from Last Read'),
+                backgroundColor: qt.emeraldDeep,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                duration: const Duration(seconds: 2),
+              ));
+            } else {
+              progress.addRecentRead(
+                  surahNum, ayah.ayahNumber, _surahInfo?.nameEnglish ?? '');
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: const Text('Marked as Last Read'),
+                backgroundColor: qt.emeraldDeep,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                duration: const Duration(seconds: 2),
+              ));
+            }
           },
           onCopy: () => _copyAyah(ayah, settings),
           onPlay: () => _playAyah(ayah.ayahNumber),
@@ -1798,9 +1810,8 @@ class _AyahCardState extends State<_AyahCard> {
               : Icons.check_circle_outline_rounded,
           widget.isRecentRead ? qt.emeraldLight : qt.textMuted,
           widget.onLastRead,
-          tooltip: widget.isRecentRead
-              ? 'Saved to Recent Reads'
-              : 'Save to Recent Reads',
+          tooltip:
+              widget.isRecentRead ? 'Marked as Last Read' : 'Mark as Last Read',
         ),
         const SizedBox(width: 14),
         _iconBtn(Icons.copy_rounded, qt.textMuted, widget.onCopy,

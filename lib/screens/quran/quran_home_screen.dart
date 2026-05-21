@@ -310,7 +310,7 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
                 children: [
                   Icon(Icons.history_rounded, color: qt.emeraldDeep, size: 14),
                   const SizedBox(width: 6),
-                  Text('RECENTLY READ',
+                  Text('CONTINUE READING',
                       style: TextStyle(
                           color: qt.textMuted,
                           fontSize: 10,
