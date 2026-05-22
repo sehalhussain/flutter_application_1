@@ -2,7 +2,7 @@ name: kitably
 description: "A premium Islamic prayer and Quran app."
 publish_to: 'none'
 
-version: 1.0.0+4
+version: 1.0.0+5
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -38,6 +38,11 @@ dependencies:
   # NEW — local calculation + accurate Hijri
   adhan: ^2.0.0+1
   hijri: ^3.0.0
+  flutter_compass:
+    git:
+      url: https://github.com/hemanthrajv/flutter_compass.git
+      ref: master
+
   
 dev_dependencies:
   flutter_test:

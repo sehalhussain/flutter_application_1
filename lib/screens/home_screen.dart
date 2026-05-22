@@ -5,7 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:provider/provider.dart';
-
+import 'dart:math' as math;
 import '../services/data_service.dart';
 import '../models/name_model.dart';
 import '../models/quran_models.dart';
@@ -13,7 +13,7 @@ import '../providers/quran_progress_provider.dart';
 import '../services/quran_service.dart';
 import '../constants/quran_theme.dart';
 import '../services/prayer_service.dart';
-
+import 'package:flutter_compass/flutter_compass.dart'; // ← ADD THIS LINE
 import 'asma_list_screen.dart';
 import 'hadith/hadith_home_screen.dart';
 import 'quran/quran_home_screen.dart';
@@ -134,7 +134,11 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 32),
 
               // --- ESSENTIALS SECTION ---
-              _EssentialsSection(qt: qt, onRefreshAyah: _refreshAyah),
+              _EssentialsSection(
+                qt: qt,
+                onRefreshAyah: _refreshAyah,
+                qiblaDirection: PrayerService.instance.qiblaDirection,
+              ),
               const SizedBox(height: 32),
 
               // --- ASMA UL HUSNA SLIDER ---
@@ -470,14 +474,19 @@ class _PrayerDivider extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ESSENTIALS SECTION
+// ESSENTIALS SECTION — Quran + Hadith (square), Duas (wide), Qibla (wide), Hijri (wide)
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _EssentialsSection extends StatelessWidget {
   final QuranTheme qt;
   final VoidCallback onRefreshAyah;
+  final double? qiblaDirection;
 
-  const _EssentialsSection({required this.qt, required this.onRefreshAyah});
+  const _EssentialsSection({
+    required this.qt,
+    required this.onRefreshAyah,
+    this.qiblaDirection,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -493,6 +502,8 @@ class _EssentialsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
+
+        // Row 1: Quran (left) + Hadith (right) — square cards
         Row(
           children: [
             _EssentialCard(
@@ -513,17 +524,20 @@ class _EssentialsSection extends StatelessWidget {
             ),
             const SizedBox(width: 16),
             _EssentialCard(
-              title: "Daily Duas",
-              subtitle: "Authentic Supplications",
-              color: const Color(0xFFFFF0D1).withOpacity(
+              title: "Hadith Library",
+              subtitle: "Browse authentic narrations",
+              color: Color.fromRGBO(
+                255,
+                243,
+                224,
                 qt.brightness == Brightness.dark ? 0.15 : 1.0,
               ),
-              icon: Icons.front_hand,
-              iconColor: const Color(0xFFFFB74D),
+              icon: Icons.menu_book_rounded,
+              iconColor: const Color(0xFFEF6C00),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const DuasScreen()),
+                  MaterialPageRoute(builder: (_) => const HadithHomeScreen()),
                 );
               },
               qt: qt,
@@ -531,31 +545,37 @@ class _EssentialsSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
+
+        // Row 2: Daily Duas — wide card
         _WideEssentialCard(
-          title: "Hadith Library",
-          subtitle: "Browse authentic narrations and save your favorites",
-          color: Color.fromRGBO(
-            255,
-            243,
-            224,
+          title: "Daily Duas",
+          subtitle: "Authentic supplications for every occasion",
+          color: const Color(0xFFFFF0D1).withOpacity(
             qt.brightness == Brightness.dark ? 0.15 : 1.0,
           ),
-          icon: Icons.menu_book_rounded,
-          iconColor: const Color(0xFFEF6C00),
+          icon: Icons.front_hand,
+          iconColor: const Color(0xFFFFB74D),
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const HadithHomeScreen()),
+              MaterialPageRoute(builder: (_) => const DuasScreen()),
             );
           },
           qt: qt,
         ),
         const SizedBox(height: 16),
+
+        // Row 3: Qibla — wide card, minimal, tap-to-activate compass
+        _QiblaWideCard(
+          qiblaDirection: qiblaDirection,
+          qt: qt,
+        ),
+        const SizedBox(height: 16),
+
+        // Row 4: Hijri Calendar — wide card
         _WideEssentialCard(
           title: "Hijri Calendar",
-          subtitle: qt.brightness == Brightness.dark
-              ? "View Islamic Events"
-              : "View Islamic Events",
+          subtitle: "View Islamic events and dates",
           color: const Color(0xFFE3F2FD).withOpacity(
             qt.brightness == Brightness.dark ? 0.15 : 1.0,
           ),
@@ -1044,6 +1064,252 @@ class _WideEssentialCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+// ═══════════════════════════════════════════════════════════════════════════
+// QIBLA WIDE CARD — minimal, tap-to-activate compass, no expansion
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _QiblaWideCard extends StatefulWidget {
+  final double? qiblaDirection;
+  final QuranTheme qt;
+
+  const _QiblaWideCard({
+    this.qiblaDirection,
+    required this.qt,
+  });
+
+  @override
+  State<_QiblaWideCard> createState() => _QiblaWideCardState();
+}
+
+class _QiblaWideCardState extends State<_QiblaWideCard> {
+  bool _isActive = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final qt = widget.qt;
+    final direction = widget.qiblaDirection;
+
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: () {
+          if (direction != null) {
+            setState(() => _isActive = !_isActive);
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            color: qt.cardBg,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: _isActive
+                  ? qt.emeraldDeep.withValues(alpha: 0.4)
+                  : qt.borderGlass,
+              width: _isActive ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              // Compass circle — minimal
+              SizedBox(
+                width: 56,
+                height: 56,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Outer ring
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _isActive ? qt.emeraldDeep : qt.borderGlass,
+                          width: 1.5,
+                        ),
+                        color: _isActive
+                            ? qt.emeraldDeep.withValues(alpha: 0.06)
+                            : qt.bg,
+                      ),
+                    ),
+                    // Content: static arrow or live compass
+                    if (_isActive && direction != null)
+                      _LiveCompassArrow(
+                        qiblaOffset: direction,
+                        color: qt.emeraldDeep,
+                      )
+                    else if (direction != null)
+                      // Static triangle pointing to Qibla
+                      Transform.rotate(
+                        angle: (direction * math.pi / 180),
+                        child: Icon(
+                          Icons.navigation_rounded,
+                          size: 24,
+                          color: qt.emeraldDeep.withValues(alpha: 0.6),
+                        ),
+                      )
+                    else
+                      Icon(
+                        Icons.explore_off_outlined,
+                        size: 22,
+                        color: qt.textMuted,
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Text
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          "Qibla",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: qt.textPrimary,
+                          ),
+                        ),
+                        if (_isActive) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: qt.emeraldDeep,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    if (direction != null)
+                      Text(
+                        _isActive
+                            ? "Align your device — arrow points to Kaaba"
+                            : "${direction.toStringAsFixed(0)}° ${_getShortDirection(direction)} · Tap to activate",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: _isActive ? qt.emeraldDeep : qt.textMuted,
+                          fontWeight:
+                              _isActive ? FontWeight.w500 : FontWeight.normal,
+                        ),
+                      )
+                    else
+                      Text(
+                        "Set location for Qibla direction",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: qt.textMuted,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              // Chevron or active indicator
+              if (_isActive)
+                Icon(
+                  Icons.sensors_rounded,
+                  size: 20,
+                  color: qt.emeraldDeep,
+                )
+              else
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: qt.textMuted,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getShortDirection(double degrees) {
+    if (degrees >= 337.5 || degrees < 22.5) return "N";
+    if (degrees >= 22.5 && degrees < 67.5) return "NE";
+    if (degrees >= 67.5 && degrees < 112.5) return "E";
+    if (degrees >= 112.5 && degrees < 157.5) return "SE";
+    if (degrees >= 157.5 && degrees < 202.5) return "S";
+    if (degrees >= 202.5 && degrees < 247.5) return "SW";
+    if (degrees >= 247.5 && degrees < 292.5) return "W";
+    return "NW";
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LIVE COMPASS ARROW — streams sensor data only when visible
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _LiveCompassArrow extends StatefulWidget {
+  final double qiblaOffset;
+  final Color color;
+
+  const _LiveCompassArrow({
+    required this.qiblaOffset,
+    required this.color,
+  });
+
+  @override
+  State<_LiveCompassArrow> createState() => _LiveCompassArrowState();
+}
+
+class _LiveCompassArrowState extends State<_LiveCompassArrow> {
+  StreamSubscription<CompassEvent>? _subscription;
+  double? _deviceHeading;
+
+  @override
+  void initState() {
+    super.initState();
+    _initCompass();
+  }
+
+  void _initCompass() {
+    // Only subscribe when this widget is actually created (i.e., user tapped)
+    _subscription = FlutterCompass.events?.listen((event) {
+      if (mounted && event.heading != null) {
+        setState(() => _deviceHeading = event.heading);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // If no sensor data yet, show static arrow
+    if (_deviceHeading == null) {
+      return Icon(
+        Icons.navigation_rounded,
+        size: 24,
+        color: widget.color,
+      );
+    }
+
+    // Calculate relative rotation: Qibla direction minus device heading
+    final rotation = widget.qiblaOffset - _deviceHeading!;
+
+    return AnimatedRotation(
+      turns: rotation / 360,
+      duration: const Duration(milliseconds: 200),
+      child: Icon(
+        Icons.navigation_rounded,
+        size: 24,
+        color: widget.color,
       ),
     );
   }

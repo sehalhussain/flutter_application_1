@@ -420,7 +420,19 @@ class PrayerService {
       await prefs.remove(key);
     }
   }
+  // ═══════════════════════════════════════════════════════════════════════
+  //  QIBLA DIRECTION
+  // ═══════════════════════════════════════════════════════════════════════
 
+  /// Returns Qibla direction in degrees from North (0° = North, 90° = East, etc.)
+  /// Returns null if coordinates not available.
+  double? get qiblaDirection {
+    if (_latitude == null || _longitude == null) return null;
+
+    final coords = adhan.Coordinates(_latitude!, _longitude!);
+    final qibla = adhan.Qibla(coords);
+    return qibla.direction;
+  }
   // ═══════════════════════════════════════════════════════════════════════
   //  CALCULATION PARAMETERS
   // ═══════════════════════════════════════════════════════════════════════

@@ -262,6 +262,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.4.1"
+  flutter_compass:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: master
+      resolved-ref: "6991c945ee629ff6cf973fdcb456af2ebef4edcd"
+      url: "https://github.com/hemanthrajv/flutter_compass.git"
+    source: git
+    version: "0.8.1"
   flutter_launcher_icons:
     dependency: "direct main"
     description:
