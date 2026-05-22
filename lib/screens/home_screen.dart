@@ -503,14 +503,14 @@ class _EssentialsSection extends StatelessWidget {
         ),
         const SizedBox(height: 20),
 
-        // Row 1: Quran (left) + Hadith (right) — square cards
+        // Row 1: Quran (left) + Daily Duas (right) — square cards  ← SWAPPED
         Row(
           children: [
             _EssentialCard(
               title: "Holy Quran",
               subtitle: "Read, Listen & Reflect",
               color: qt.emeraldDeep.withOpacity(0.12),
-              icon: Icons.menu_book,
+              icon: Icons.menu_book_rounded,
               iconColor: qt.emeraldDeep,
               onTap: () async {
                 final surahs = await QuranService.instance.loadSurahList();
@@ -524,20 +524,17 @@ class _EssentialsSection extends StatelessWidget {
             ),
             const SizedBox(width: 16),
             _EssentialCard(
-              title: "Hadith Library",
-              subtitle: "Browse authentic narrations",
-              color: Color.fromRGBO(
-                255,
-                243,
-                224,
+              title: "Authentic Duas",
+              subtitle: "Dua for Every Moment",
+              color: const Color(0xFFFFF0D1).withOpacity(
                 qt.brightness == Brightness.dark ? 0.15 : 1.0,
               ),
-              icon: Icons.menu_book_rounded,
-              iconColor: const Color(0xFFEF6C00),
+              icon: Icons.front_hand_rounded,
+              iconColor: const Color(0xFFFFB74D),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const HadithHomeScreen()),
+                  MaterialPageRoute(builder: (_) => const DuasScreen()),
                 );
               },
               qt: qt,
@@ -546,33 +543,36 @@ class _EssentialsSection extends StatelessWidget {
         ),
         const SizedBox(height: 16),
 
-        // Row 2: Daily Duas — wide card
+        // Row 2: Hadith Library — wide card  ← SWAPPED
         _WideEssentialCard(
-          title: "Daily Duas",
-          subtitle: "Authentic supplications for every occasion",
-          color: const Color(0xFFFFF0D1).withOpacity(
+          title: "Hadith Library",
+          subtitle: "Browse authentic narrations",
+          color: Color.fromRGBO(
+            255,
+            243,
+            224,
             qt.brightness == Brightness.dark ? 0.15 : 1.0,
           ),
-          icon: Icons.front_hand,
-          iconColor: const Color(0xFFFFB74D),
+          icon: Icons.menu_book_rounded,
+          iconColor: const Color(0xFFEF6C00),
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const DuasScreen()),
+              MaterialPageRoute(builder: (_) => const HadithHomeScreen()),
             );
           },
           qt: qt,
         ),
         const SizedBox(height: 16),
 
-        // Row 3: Qibla — wide card, minimal, tap-to-activate compass
-        _QiblaWideCard(
+        // Row 3: Qibla (new premium card)
+        _QiblaCompassCard(
           qiblaDirection: qiblaDirection,
           qt: qt,
         ),
         const SizedBox(height: 16),
 
-        // Row 4: Hijri Calendar — wide card
+        // Row 4: Hijri Calendar — wide card (unchanged)
         _WideEssentialCard(
           title: "Hijri Calendar",
           subtitle: "View Islamic events and dates",
@@ -1069,165 +1069,236 @@ class _WideEssentialCard extends StatelessWidget {
   }
 }
 // ═══════════════════════════════════════════════════════════════════════════
-// QIBLA WIDE CARD — minimal, tap-to-activate compass, no expansion
+// QIBLA COMPASS CARD – premium, intuitive, no raw degrees
 // ═══════════════════════════════════════════════════════════════════════════
 
-class _QiblaWideCard extends StatefulWidget {
-  final double? qiblaDirection;
+class _QiblaCompassCard extends StatefulWidget {
+  final double? qiblaDirection; // bearing from user to Kaaba
   final QuranTheme qt;
 
-  const _QiblaWideCard({
+  const _QiblaCompassCard({
     this.qiblaDirection,
     required this.qt,
   });
 
   @override
-  State<_QiblaWideCard> createState() => _QiblaWideCardState();
+  State<_QiblaCompassCard> createState() => _QiblaCompassCardState();
 }
 
-class _QiblaWideCardState extends State<_QiblaWideCard> {
+class _QiblaCompassCardState extends State<_QiblaCompassCard> {
+  bool _hasCompass = false;
   bool _isActive = false;
+
+  StreamSubscription<CompassEvent>? _compassSub;
+  double? _deviceHeading;
+  bool _isAligned = false;
+
+  static const double _alignmentTolerance = 8.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkCompassAvailability();
+  }
+
+  Future<void> _checkCompassAvailability() async {
+    try {
+      final stream = FlutterCompass.events;
+      if (mounted) setState(() => _hasCompass = stream != null);
+    } catch (_) {
+      if (mounted) setState(() => _hasCompass = false);
+    }
+  }
+
+  void _startCompass() {
+    if (!_hasCompass || _compassSub != null) return;
+    _compassSub = FlutterCompass.events?.listen((event) {
+      if (!mounted || event.heading == null) return;
+      setState(() {
+        _deviceHeading = event.heading;
+        _isAligned = _calculateAlignment(
+          widget.qiblaDirection ?? 0,
+          _deviceHeading!,
+        );
+      });
+    });
+  }
+
+  void _stopCompass() {
+    _compassSub?.cancel();
+    _compassSub = null;
+  }
+
+  bool _calculateAlignment(double qibla, double heading) {
+    double diff = (qibla - heading) % 360;
+    if (diff < 0) diff += 360;
+    return diff <= _alignmentTolerance || diff >= 360 - _alignmentTolerance;
+  }
+
+  void _toggleActive() {
+    if (widget.qiblaDirection == null || !_hasCompass) return;
+    setState(() {
+      _isActive = !_isActive;
+      if (_isActive) {
+        _startCompass();
+      } else {
+        _stopCompass();
+        _deviceHeading = null;
+        _isAligned = false;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _stopCompass();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final qt = widget.qt;
     final direction = widget.qiblaDirection;
 
+    // No location – prompt
+    if (direction == null) {
+      return _buildEmptyCard(qt);
+    }
+
+    // Devices without compass always show static text, no activation
+    if (!_hasCompass) {
+      return _buildStaticInfo(qt, direction, canActivate: false);
+    }
+
+    // Devices with compass – show static text when inactive, compass when active
+    if (!_isActive) {
+      return _buildStaticInfo(qt, direction,
+          canActivate: true, onTap: _toggleActive);
+    }
+
+    // Active – live compass
+    return _buildLiveCompass(qt, direction);
+  }
+
+  // ──────────── EMPTY STATE ────────────
+  Widget _buildEmptyCard(QuranTheme qt) {
+    return RepaintBoundary(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: qt.cardBg,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: qt.borderGlass),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.explore_off_outlined, size: 28, color: qt.textMuted),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Qibla Direction",
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: qt.textPrimary)),
+                  const SizedBox(height: 4),
+                  Text("Set your location to find the direction",
+                      style: TextStyle(fontSize: 12, color: qt.textMuted)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ──────── STATIC INFO (inactive state for both) ────────
+  Widget _buildStaticInfo(
+    QuranTheme qt,
+    double direction, {
+    required bool canActivate,
+    VoidCallback? onTap,
+  }) {
+    final dirName = _getDirectionName(direction);
+    final degreeText = "${direction.toStringAsFixed(0)}°";
+
     return RepaintBoundary(
       child: GestureDetector(
-        onTap: () {
-          if (direction != null) {
-            setState(() => _isActive = !_isActive);
-          }
-        },
+        onTap: canActivate ? onTap : null,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
             color: qt.cardBg,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: _isActive
-                  ? qt.emeraldDeep.withValues(alpha: 0.4)
-                  : qt.borderGlass,
-              width: _isActive ? 1.5 : 1,
-            ),
+            border: Border.all(color: qt.borderGlass),
           ),
           child: Row(
             children: [
-              // Compass circle — minimal
-              SizedBox(
+              // No compass face – just a simple icon
+              Container(
                 width: 56,
                 height: 56,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Outer ring
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: _isActive ? qt.emeraldDeep : qt.borderGlass,
-                          width: 1.5,
-                        ),
-                        color: _isActive
-                            ? qt.emeraldDeep.withValues(alpha: 0.06)
-                            : qt.bg,
-                      ),
-                    ),
-                    // Content: static arrow or live compass
-                    if (_isActive && direction != null)
-                      _LiveCompassArrow(
-                        qiblaOffset: direction,
-                        color: qt.emeraldDeep,
-                      )
-                    else if (direction != null)
-                      // Static triangle pointing to Qibla
-                      Transform.rotate(
-                        angle: (direction * math.pi / 180),
-                        child: Icon(
-                          Icons.navigation_rounded,
-                          size: 24,
-                          color: qt.emeraldDeep.withValues(alpha: 0.6),
-                        ),
-                      )
-                    else
-                      Icon(
-                        Icons.explore_off_outlined,
-                        size: 22,
-                        color: qt.textMuted,
-                      ),
-                  ],
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: qt.emeraldDeep.withOpacity(0.06),
                 ),
+                child: Icon(Icons.explore_rounded,
+                    size: 28, color: qt.emeraldDeep.withOpacity(0.7)),
               ),
               const SizedBox(width: 16),
-              // Text
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          "Qibla",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: qt.textPrimary,
+                    Text(
+                      "Qibla Direction",
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: qt.textPrimary),
+                    ),
+                    const SizedBox(height: 4),
+                    RichText(
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 13, color: qt.emeraldDeep),
+                        children: [
+                          TextSpan(
+                            text: "Kaaba is to the $dirName  ",
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
-                        ),
-                        if (_isActive) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: qt.emeraldDeep,
+                          TextSpan(
+                            text: degreeText,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: qt.textMuted,
+                              fontWeight: FontWeight.normal,
                             ),
                           ),
                         ],
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 4),
-                    if (direction != null)
-                      Text(
-                        _isActive
-                            ? "Align your device — arrow points to Kaaba"
-                            : "${direction.toStringAsFixed(0)}° ${_getShortDirection(direction)} · Tap to activate",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: _isActive ? qt.emeraldDeep : qt.textMuted,
-                          fontWeight:
-                              _isActive ? FontWeight.w500 : FontWeight.normal,
-                        ),
-                      )
-                    else
-                      Text(
-                        "Set location for Qibla direction",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: qt.textMuted,
+                    if (canActivate)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          "Tap to activate compass",
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: qt.textMuted,
+                              fontWeight: FontWeight.w400),
                         ),
                       ),
                   ],
                 ),
               ),
-              // Chevron or active indicator
-              if (_isActive)
-                Icon(
-                  Icons.sensors_rounded,
-                  size: 20,
-                  color: qt.emeraldDeep,
-                )
-              else
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: qt.textMuted,
-                ),
+              if (canActivate)
+                Icon(Icons.chevron_right_rounded,
+                    size: 20, color: qt.textMuted),
             ],
           ),
         ),
@@ -1235,81 +1306,175 @@ class _QiblaWideCardState extends State<_QiblaWideCard> {
     );
   }
 
-  String _getShortDirection(double degrees) {
-    if (degrees >= 337.5 || degrees < 22.5) return "N";
-    if (degrees >= 22.5 && degrees < 67.5) return "NE";
-    if (degrees >= 67.5 && degrees < 112.5) return "E";
-    if (degrees >= 112.5 && degrees < 157.5) return "SE";
-    if (degrees >= 157.5 && degrees < 202.5) return "S";
-    if (degrees >= 202.5 && degrees < 247.5) return "SW";
-    if (degrees >= 247.5 && degrees < 292.5) return "W";
-    return "NW";
+  // ──────────── LIVE COMPASS (active) ────────────
+  Widget _buildLiveCompass(QuranTheme qt, double direction) {
+    final rotation =
+        _deviceHeading != null ? (direction - _deviceHeading!) : direction;
+    final isAligned = _isAligned;
+
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: _toggleActive, // tap again to deactivate
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            color: qt.cardBg,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isAligned
+                  ? const Color(0xFFD4AF37)
+                  : qt.emeraldDeep.withOpacity(0.6),
+              width: isAligned ? 2.0 : 1.0,
+            ),
+            boxShadow: isAligned
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFFD4AF37).withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    )
+                  ]
+                : null,
+          ),
+          child: Row(
+            children: [
+              // Compass face with rotating arrow
+              _buildCompassFace(
+                qt,
+                rotation: rotation,
+                arrowColor:
+                    isAligned ? const Color(0xFFD4AF37) : qt.emeraldDeep,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Qibla Direction",
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: qt.textPrimary),
+                    ),
+                    const SizedBox(height: 4),
+                    if (isAligned)
+                      const Text(
+                        "Kaaba is straight ahead",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFFD4AF37),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    else
+                      Text(
+                        "Rotate your device slowly",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: qt.emeraldDeep,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Icon(
+                isAligned ? Icons.check_circle_rounded : Icons.sensors_rounded,
+                size: 20,
+                color: isAligned ? const Color(0xFFD4AF37) : qt.emeraldDeep,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ──── SHARED COMPASS FACE (used only when active) ────
+  Widget _buildCompassFace(
+    QuranTheme qt, {
+    required double rotation,
+    required Color arrowColor,
+  }) {
+    final arrowRad = rotation * math.pi / 180;
+
+    return SizedBox(
+      width: 56,
+      height: 56,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: qt.emeraldDeep.withOpacity(0.3)),
+              color: qt.bg,
+            ),
+          ),
+          _CardinalLabel(text: 'N', top: 2),
+          _CardinalLabel(text: 'S', bottom: 2),
+          _CardinalLabel(text: 'E', right: 2),
+          _CardinalLabel(text: 'W', left: 2),
+          Transform.rotate(
+            angle: arrowRad,
+            child: Icon(
+              Icons.navigation_rounded,
+              size: 24,
+              color: arrowColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getDirectionName(double degrees) {
+    final dirs = [
+      'North',
+      'Northeast',
+      'East',
+      'Southeast',
+      'South',
+      'Southwest',
+      'West',
+      'Northwest'
+    ];
+    final index = ((degrees + 22.5) ~/ 45) % 8;
+    return dirs[index];
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// LIVE COMPASS ARROW — streams sensor data only when visible
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _LiveCompassArrow extends StatefulWidget {
-  final double qiblaOffset;
-  final Color color;
-
-  const _LiveCompassArrow({
-    required this.qiblaOffset,
-    required this.color,
+// Tiny helper for cardinal labels (unchanged)
+class _CardinalLabel extends StatelessWidget {
+  final String text;
+  final double? top, bottom, left, right;
+  const _CardinalLabel({
+    required this.text,
+    this.top,
+    this.bottom,
+    this.left,
+    this.right,
   });
 
   @override
-  State<_LiveCompassArrow> createState() => _LiveCompassArrowState();
-}
-
-class _LiveCompassArrowState extends State<_LiveCompassArrow> {
-  StreamSubscription<CompassEvent>? _subscription;
-  double? _deviceHeading;
-
-  @override
-  void initState() {
-    super.initState();
-    _initCompass();
-  }
-
-  void _initCompass() {
-    // Only subscribe when this widget is actually created (i.e., user tapped)
-    _subscription = FlutterCompass.events?.listen((event) {
-      if (mounted && event.heading != null) {
-        setState(() => _deviceHeading = event.heading);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // If no sensor data yet, show static arrow
-    if (_deviceHeading == null) {
-      return Icon(
-        Icons.navigation_rounded,
-        size: 24,
-        color: widget.color,
-      );
-    }
-
-    // Calculate relative rotation: Qibla direction minus device heading
-    final rotation = widget.qiblaOffset - _deviceHeading!;
-
-    return AnimatedRotation(
-      turns: rotation / 360,
-      duration: const Duration(milliseconds: 200),
-      child: Icon(
-        Icons.navigation_rounded,
-        size: 24,
-        color: widget.color,
+    return Positioned(
+      top: top,
+      bottom: bottom,
+      left: left,
+      right: right,
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 7,
+          fontWeight: FontWeight.w800,
+          color: Colors.black.withOpacity(0.25),
+        ),
       ),
     );
   }
