@@ -10,6 +10,7 @@ import '/models/quran_models.dart';
 import '/models/downloadable_translation.dart';
 import '/services/quran_service.dart';
 import '/services/translation_download_service.dart';
+import '/services/quran_audio_handler.dart'; // 1. IMPORT GLOBAL BACKGROUND AUDIO HANDLER
 import '/providers/quran_settings_provider.dart';
 import '/providers/quran_progress_provider.dart';
 import '/constants/quran_theme.dart';
@@ -56,8 +57,11 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
   // ── Playback state ──────────────────────────────────────────────────────
   bool _isAutoContinuing = false;
-  final _ayahAudio = AudioPlayer();
-  final _surahAudio = AudioPlayer();
+  final ValueNotifier<bool> _isSurahSourceArmedNotifier = ValueNotifier(false);
+
+  // 2. REFERENCE THE CORE HANDLER PLAYERS GLOBALLY
+  late final AudioPlayer _ayahAudio;
+  late final AudioPlayer _surahAudio;
 
   // ── UI state ────────────────────────────────────────────────────────────
   bool _isNavOpen = false;
@@ -85,34 +89,44 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       .where((s) => s.number == widget.surahNumber + 1)
       .firstOrNull;
 
-  // ── Lifecycle ───────────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
+
+    _ayahAudio = QuranAudioHandler.instance.ayahPlayer;
+    _surahAudio = QuranAudioHandler.instance.surahPlayer;
+
     _configureAudioSession();
     _initConstantData();
     _loadAyahs();
 
-    _ayahAudio.playerStateStream.listen((state) {
-      if (state.processingState == ProcessingState.completed) _onAyahComplete();
+    // 1. Sync Ayah Play State
+    _ayahAudio.playingStream.listen((playing) {
+      if (mounted) _isAyahAudioPlayingNotifier.value = playing;
     });
 
-    // Listen to playing states and update notifiers WITHOUT calling setState
-    _ayahAudio.playingStream.listen((playing) {
-      _isAyahAudioPlayingNotifier.value = playing;
+    // 2. Sync Surah Play State
+    _surahAudio.playingStream.listen((playing) {
+      if (mounted) _isPlayingSurahNotifier.value = playing;
+    });
+
+    // 3. Keep completion logic
+    _ayahAudio.playerStateStream.listen((state) {
+      if (state.processingState == ProcessingState.completed) {
+        _onAyahComplete();
+      }
     });
 
     _surahAudio.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
-        _isPlayingSurahNotifier.value = false;
+        if (mounted) _isPlayingSurahNotifier.value = false;
       }
     });
   }
 
   @override
   void dispose() {
-    _ayahAudio.dispose();
-    _surahAudio.dispose();
+    // 4. DO NOT DISPOSE SINGLETON PLAYERS (to preserve background playback)
     _playingAyahNotifier.dispose();
     _selectedAyahNotifier.dispose();
     _openMenuAyahNotifier.dispose();
@@ -121,6 +135,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     _isAyahAudioPlayingNotifier.dispose();
     _downloadProgressNotifier.dispose();
     _isSurahDownloadedNotifier.dispose();
+    _isSurahSourceArmedNotifier.dispose(); // ← ADD THIS
     super.dispose();
   }
 
@@ -148,7 +163,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     _displayItems = items;
   }
 
-  // ── Data loading ────────────────────────────────────────────────────────
   Future<void> _loadAyahs() async {
     if (!mounted) return;
     final settings = QuranSettingsProvider.of(context, listen: false);
@@ -240,7 +254,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     }
   }
 
-  // ── Audio session ───────────────────────────────────────────────────────
   Future<void> _configureAudioSession() async {
     try {
       final session = await AudioSession.instance;
@@ -288,7 +301,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     }
   }
 
-  // ── Ayah playback ──────────────────────────────────────────────────────
   Future<void> _playAyah(int ayahNumber, {bool scroll = true}) async {
     final ayah = _ayahs.firstWhere((a) => a.ayahNumber == ayahNumber,
         orElse: () => _ayahs.first);
@@ -316,7 +328,14 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       }
       final session = await AudioSession.instance;
       await session.setActive(true);
-      await _ayahAudio.setUrl(ayah.audioUrl!);
+
+      // 5. ATTACH THE LOCK SCREEN METADATA CHANNELS VIA SINGLETON FOR Android
+      await QuranAudioHandler.instance.setAyahSource(
+        ayah.audioUrl!,
+        surahName: _surahInfo?.nameEnglish ?? "Surah ${widget.surahNumber}",
+        ayahNumber: ayahNumber,
+      );
+
       await _ayahAudio.play();
     } catch (_) {
       if (mounted) _playingAyahNotifier.value = null;
@@ -355,35 +374,56 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     if (mounted) _playingAyahNotifier.value = null;
   }
 
-  // ── Surah playback ─────────────────────────────────────────────────────
   Future<void> _toggleSurahPlay() async {
-    if (_playingAyahNotifier.value != null) await _stopAyahPlay();
-
+    // If playing, just pause. The playingStream listener will update the UI.
     if (_isPlayingSurahNotifier.value) {
       await _surahAudio.pause();
-      _isPlayingSurahNotifier.value = false;
-    } else {
-      _isPlayingSurahNotifier.value = true;
-      final settings = QuranSettingsProvider.of(context, listen: false);
-      final offlinePath = await QuranService.instance.getDownloadedSurahPath(
-          widget.surahNumber, settings.selectedReciterId);
-      try {
-        await _surahAudio.stop();
-        if (offlinePath != null) {
-          await _surahAudio.setFilePath(offlinePath);
-        } else {
-          final url =
-              _surahAudioData?.reciters[settings.selectedReciterId]?.url;
-          if (url == null) {
-            _isPlayingSurahNotifier.value = false;
-            return;
-          }
-          await _surahAudio.setUrl(url);
-        }
-        await _surahAudio.play();
-      } catch (_) {
-        _isPlayingSurahNotifier.value = false;
+      return;
+    }
+
+    // If the surah source was previously armed (was paused, not stopped), just resume.
+    if (_isSurahSourceArmedNotifier.value) {
+      await _surahAudio.play();
+      return;
+    }
+
+    // Otherwise, start playing logic...
+    if (_playingAyahNotifier.value != null) await _stopAyahPlay();
+
+    final settings = QuranSettingsProvider.of(context, listen: false);
+    final offlinePath = await QuranService.instance
+        .getDownloadedSurahPath(widget.surahNumber, settings.selectedReciterId);
+
+    try {
+      await _surahAudio.stop();
+
+      final surahName =
+          _surahInfo?.nameEnglish ?? "Surah ${widget.surahNumber}";
+      final reciterName =
+          _surahAudioData?.reciters[settings.selectedReciterId]?.reciterName;
+
+      if (offlinePath != null) {
+        await QuranAudioHandler.instance.setSurahSource(
+          offlinePath,
+          surahName: surahName,
+          reciterName: reciterName,
+          isLocal: true,
+        );
+      } else {
+        final url = _surahAudioData?.reciters[settings.selectedReciterId]?.url;
+        if (url == null) return;
+        await QuranAudioHandler.instance.setSurahSource(
+          url,
+          surahName: surahName,
+          reciterName: reciterName,
+          isLocal: false,
+        );
       }
+      _isSurahSourceArmedNotifier.value = true;
+      await _surahAudio.play();
+    } catch (_) {
+      _isSurahSourceArmedNotifier.value = false;
+      if (mounted) _isPlayingSurahNotifier.value = false;
     }
   }
 
@@ -436,6 +476,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
   Future<void> _stopSurahPlay() async {
     await _surahAudio.stop();
+    _isSurahSourceArmedNotifier.value = false;
     if (mounted) _isPlayingSurahNotifier.value = false;
   }
 
@@ -455,7 +496,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     ));
   }
 
-  // ── Build ───────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final settings = QuranSettingsProvider.of(context);
@@ -511,15 +551,21 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
               _playingAyahNotifier,
               _selectedAyahNotifier,
               _isPlayingSurahNotifier,
+              _isAyahAudioPlayingNotifier,
               _downloadProgressNotifier,
               _isSurahDownloadedNotifier,
+              _isSurahSourceArmedNotifier, // ← ADD THIS
             ]),
             builder: (context, child) {
+              final isSurahActive = _isPlayingSurahNotifier.value ||
+                  _isSurahSourceArmedNotifier.value;
+              final isAyahActuallyPlaying = _isAyahAudioPlayingNotifier.value;
               return _FloatingAudioPill(
                 settings: settings,
                 qt: qt,
-                isAnyPlaying: _isPlayingSurahNotifier.value ||
-                    _playingAyahNotifier.value != null,
+                isAnyPlaying:
+                    isSurahActive || _playingAyahNotifier.value != null,
+                isAyahPlaying: isAyahActuallyPlaying,
                 playingAyah: _playingAyahNotifier.value,
                 selectedAyah: _selectedAyahNotifier.value,
                 isPlayingSurah: _isPlayingSurahNotifier.value,
@@ -555,7 +601,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     final bool isDark = qt.brightness == Brightness.dark;
 
     return Container(
-      // Removed the manual MediaQuery top padding that caused the gap
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: qt.bg,
@@ -625,7 +670,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          // Avoid solid black: use a slight tint in dark mode
           color: isDark ? Colors.white.withOpacity(0.1) : qt.glassWhite,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: qt.borderGlass),
@@ -635,7 +679,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     );
   }
 
-  // ── Reader list ─────────────────────────────────────────────────────────
   Widget _buildReaderList(
       QuranSettings settings, QuranProgress progress, QuranTheme qt) {
     final surahNum = widget.surahNumber;
@@ -754,7 +797,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
   // ── Bismillah ───────────────────────────────────────────────────────────
   Widget _buildBismillah(QuranTheme qt) {
-    // Hide for Surah Taubah (9) and Fatihah (1) if handled elsewhere
     if (widget.surahNumber == 9 || widget.surahNumber == 1) {
       return const SizedBox(height: 16);
     }
@@ -762,12 +804,10 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     final bool isDark = qt.brightness == Brightness.dark;
 
     return Container(
-      // Replaced Expanded/Flexible with Container
       width: double.infinity,
       margin: const EdgeInsets.fromLTRB(16, 20, 16, 8),
       padding: const EdgeInsets.symmetric(vertical: 24),
       decoration: BoxDecoration(
-        // Use a gradient or adaptive color to prevent "Black Box" look
         color: isDark ? Colors.white.withOpacity(0.03) : qt.cardBg,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: qt.borderGlass),
@@ -848,7 +888,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     );
   }
 
-  // ── Nav footer ──────────────────────────────────────────────────────────
   Widget _buildNavFooter(QuranTheme qt) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
@@ -886,7 +925,6 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   }
 
   Widget _navBtn(String name, {required bool isNext, required QuranTheme qt}) {
-    // Optimized: Removed expensive BackdropFilter.
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -1138,6 +1176,7 @@ class _FloatingAudioPill extends StatelessWidget {
   final QuranSettings settings;
   final QuranTheme qt;
   final bool isAnyPlaying;
+  final bool isAyahPlaying;
   final int? playingAyah;
   final int? selectedAyah;
   final bool isPlayingSurah;
@@ -1154,6 +1193,7 @@ class _FloatingAudioPill extends StatelessWidget {
     required this.settings,
     required this.qt,
     required this.isAnyPlaying,
+    required this.isAyahPlaying,
     required this.playingAyah,
     required this.selectedAyah,
     required this.isPlayingSurah,
@@ -1171,10 +1211,9 @@ class _FloatingAudioPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final showStop =
         (settings.playMode == PlayMode.ayah && playingAyah != null) ||
-            (settings.playMode == PlayMode.surah && isPlayingSurah);
+            (settings.playMode == PlayMode.surah && isAnyPlaying);
 
     return Center(
-      // Optimized: Removed heavy blur processing, replaced with highly opaque container.
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
@@ -1208,7 +1247,7 @@ class _FloatingAudioPill extends StatelessWidget {
           const SizedBox(width: 8),
           Tooltip(
             message: (settings.playMode == PlayMode.ayah
-                    ? (playingAyah != null && isAnyPlaying)
+                    ? isAyahPlaying
                     : isPlayingSurah)
                 ? 'Pause'
                 : 'Play',
@@ -1224,7 +1263,7 @@ class _FloatingAudioPill extends StatelessWidget {
                 ),
                 child: Icon(
                   (settings.playMode == PlayMode.ayah
-                          ? (playingAyah != null && isAnyPlaying)
+                          ? isAyahPlaying
                           : isPlayingSurah)
                       ? Icons.pause_rounded
                       : Icons.play_arrow_rounded,
@@ -1478,9 +1517,6 @@ class _PillBtn extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Ayah Card (Optimized: Replaced Rebuilds with Localized AnimatedBuilder)
-// ─────────────────────────────────────────────────────────────────────────────
-// ─────────────────────────────────────────────────────────────────────────────
 // Ayah Card (Highly Optimized: Targeted Rebuilds)
 // ─────────────────────────────────────────────────────────────────────────────
 class _AyahCard extends StatefulWidget {
@@ -1547,7 +1583,6 @@ class _AyahCardState extends State<_AyahCard> {
   void initState() {
     super.initState();
     _updateStateFlags();
-    // Listen to global states
     widget.playingAyahNotifier.addListener(_onStateChanged);
     widget.selectedAyahNotifier.addListener(_onStateChanged);
     widget.openTafsirAyahNotifier.addListener(_onStateChanged);
@@ -1557,13 +1592,11 @@ class _AyahCardState extends State<_AyahCard> {
   @override
   void didUpdateWidget(_AyahCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Ensure state remains synced if the parent passes new data (like bookmarks)
     _updateStateFlags();
   }
 
   @override
   void dispose() {
-    // Prevent memory leaks when the card scrolls out of view
     widget.playingAyahNotifier.removeListener(_onStateChanged);
     widget.selectedAyahNotifier.removeListener(_onStateChanged);
     widget.openTafsirAyahNotifier.removeListener(_onStateChanged);
@@ -1579,8 +1612,6 @@ class _AyahCardState extends State<_AyahCard> {
         widget.openTafsirAyahNotifier.value == widget.ayah.ayahNumber;
   }
 
-  // ONLY rebuilds this specific card if ITS state changed.
-  // Prevents all other 19 visible cards from rebuilding during audio transitions.
   void _onStateChanged() {
     final newIsPlaying =
         widget.playingAyahNotifier.value == widget.ayah.ayahNumber &&

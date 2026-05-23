@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:just_audio_background/just_audio_background.dart'; // 1. ADD THIS IMPORT
 import 'providers/quran_settings_provider.dart';
 import 'providers/quran_progress_provider.dart';
 import 'providers/hadith_progress_provider.dart';
@@ -15,18 +16,19 @@ import 'constants/quran_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 2. INITIALIZE JUST AUDIO BACKGROUND
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.kitably.app.channel.audio',
+    androidNotificationChannelName: 'Kitably Quran Playback',
+    androidNotificationOngoing: true,
+  );
+
   // Enable edge-to-edge
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     systemNavigationBarColor: Colors.transparent,
     statusBarColor: Colors.transparent,
   ));
-
-  // NOTE: No blocking pre-load here.
-  // QuranService.loadSurahList() is now lazy-loaded on first demand.
-  // PrayerService geolocation services are only initialized when the user
-  // taps "detect location" — we already have 37 cities with built-in
-  // lat/lng coordinates for offline use.
 
   runApp(
     MultiProvider(
@@ -71,9 +73,6 @@ class AsSalahApp extends StatelessWidget {
   }
 }
 
-/// Shows a splash with app logo, Bismillah, and English translation with a
-/// slow zoom + fade-in effect while providers settle. Then transitions to
-/// the main navigation with a cross-fade for perceived performance.
 class _SplashWrapper extends StatefulWidget {
   const _SplashWrapper();
 
@@ -109,7 +108,6 @@ class _SplashWrapperState extends State<_SplashWrapper>
       ),
     );
 
-    // Safely check settings in the next frame to see if splash is disabled
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final settings = Provider.of<QuranSettings>(context, listen: false);
@@ -119,7 +117,6 @@ class _SplashWrapperState extends State<_SplashWrapper>
         });
       } else {
         _controller.forward();
-        // Start the fade out after the splash animation finishes
         Future.delayed(const Duration(milliseconds: 3500), () {
           if (mounted && _splashOpacity > 0.0) {
             setState(() {
@@ -157,9 +154,7 @@ class _SplashWrapperState extends State<_SplashWrapper>
 
     return Stack(
       children: [
-        // Home screen content, pre-rendering underneath the splash screen
         const MainNavigation(),
-
         if (!_splashRemoved)
           Positioned.fill(
             child: AnimatedOpacity(
@@ -200,60 +195,57 @@ class _SplashWrapperState extends State<_SplashWrapper>
                           },
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Bismillah in Arabic
-                            Text(
-                              '\u{0628}\u{0650}\u{0633}\u{0652}\u{0645}\u{0650} '
-                              '\u{0627}\u{0644}\u{0644}\u{0651}\u{064e}\u{0647}\u{0650} '
-                              '\u{0627}\u{0644}\u{0631}\u{0651}\u{064e}\u{062d}\u{0652}\u{0645}\u{064e}\u{0646}\u{0650} '
-                              '\u{0627}\u{0644}\u{0631}\u{0651}\u{064e}\u{062d}\u{0650}\u{064a}\u{0645}\u{0650}',
-                              style: TextStyle(
-                                fontSize: 28,
-                                color: fg,
-                                fontWeight: FontWeight.w400,
-                                fontFamily: 'QPC Hafs',
+                            children: [
+                              Text(
+                                '\u{0628}\u{0650}\u{0633}\u{0652}\u{0645}\u{0650} '
+                                '\u{0627}\u{0644}\u{0644}\u{0651}\u{064e}\u{0647}\u{0650} '
+                                '\u{0627}\u{0644}\u{0631}\u{0651}\u{064e}\u{062d}\u{0652}\u{0645}\u{064e}\u{0646}\u{0650} '
+                                '\u{0627}\u{0644}\u{0631}\u{0651}\u{064e}\u{062d}\u{0650}\u{064a}\u{0645}\u{0650}',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  color: fg,
+                                  fontWeight: FontWeight.w400,
+                                  fontFamily: 'QPC Hafs',
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 12),
-
-                            // English translation
-                            Text(
-                              'In the name of Allah,\nthe Most Gracious, the Most Merciful',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: muted,
-                                fontWeight: FontWeight.w400,
-                                height: 1.5,
+                              const SizedBox(height: 12),
+                              Text(
+                                'In the name of Allah,\nthe Most Gracious, the Most Merciful',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: muted,
+                                  fontWeight: FontWeight.w400,
+                                  height: 1.5,
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 40,
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: Text(
-                          'Tap anywhere to skip',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: muted.withOpacity(0.6),
-                            letterSpacing: 0.8,
-                            fontWeight: FontWeight.w500,
+                            ],
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                      Positioned(
+                        bottom: 40,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: Text(
+                            'Tap anywhere to skip',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: muted.withOpacity(0.6),
+                              letterSpacing: 0.8,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
       ],
     );
   }

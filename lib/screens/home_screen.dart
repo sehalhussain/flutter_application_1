@@ -1068,6 +1068,10 @@ class _WideEssentialCard extends StatelessWidget {
     );
   }
 }
+
+/// ═══════════════════════════════════════════════════════════════════════════
+// QIBLA COMPASS CARD – premium, intuitive, no raw degrees
+// ═══════════════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════════════
 // QIBLA COMPASS CARD – premium, intuitive, no raw degrees
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1238,7 +1242,7 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
           ),
           child: Row(
             children: [
-              // No compass face – just a simple icon
+              // Simple icon, no compass face
               Container(
                 width: 56,
                 height: 56,
@@ -1263,35 +1267,50 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
                           color: qt.textPrimary),
                     ),
                     const SizedBox(height: 4),
-                    RichText(
-                      text: TextSpan(
-                        style: TextStyle(fontSize: 13, color: qt.emeraldDeep),
+                    if (!canActivate)
+                      // Non-compass device: show direction + note
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          TextSpan(
-                            text: "Kaaba is to the $dirName  ",
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          TextSpan(
-                            text: degreeText,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: qt.textMuted,
-                              fontWeight: FontWeight.normal,
+                          RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                  fontSize: 13, color: qt.emeraldDeep),
+                              children: [
+                                TextSpan(
+                                  text: "Kaaba is to the $dirName  ",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600),
+                                ),
+                                TextSpan(
+                                  text: degreeText,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: qt.textMuted,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "Based on your city, not your facing",
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: qt.textMuted,
+                                fontWeight: FontWeight.w400),
+                          ),
                         ],
-                      ),
-                    ),
-                    if (canActivate)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          "Tap to activate compass",
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: qt.textMuted,
-                              fontWeight: FontWeight.w400),
-                        ),
+                      )
+                    else
+                      // Compass device, not yet activated
+                      Text(
+                        "Tap to activate compass",
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: qt.textMuted,
+                            fontWeight: FontWeight.w400),
                       ),
                   ],
                 ),
@@ -1311,6 +1330,8 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
     final rotation =
         _deviceHeading != null ? (direction - _deviceHeading!) : direction;
     final isAligned = _isAligned;
+    final dirName = _getDirectionName(direction);
+    final degreeText = "${direction.toStringAsFixed(0)}°";
 
     return RepaintBoundary(
       child: GestureDetector(
@@ -1322,15 +1343,14 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
             color: qt.cardBg,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: isAligned
-                  ? const Color(0xFFD4AF37)
-                  : qt.emeraldDeep.withOpacity(0.6),
+              color:
+                  isAligned ? qt.emeraldDeep : qt.emeraldDeep.withOpacity(0.6),
               width: isAligned ? 2.0 : 1.0,
             ),
             boxShadow: isAligned
                 ? [
                     BoxShadow(
-                      color: const Color(0xFFD4AF37).withOpacity(0.3),
+                      color: qt.emeraldDeep.withOpacity(0.25),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     )
@@ -1339,12 +1359,11 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
           ),
           child: Row(
             children: [
-              // Compass face with rotating arrow
+              // Compass face with rotating arrow + Kaaba dot
               _buildCompassFace(
                 qt,
                 rotation: rotation,
-                arrowColor:
-                    isAligned ? const Color(0xFFD4AF37) : qt.emeraldDeep,
+                arrowColor: qt.emeraldDeep,
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -1360,12 +1379,33 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
                           color: qt.textPrimary),
                     ),
                     const SizedBox(height: 4),
+                    // Always show direction details when compass is active
+                    RichText(
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 13, color: qt.emeraldDeep),
+                        children: [
+                          TextSpan(
+                            text: "Kaaba is to the $dirName  ",
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          TextSpan(
+                            text: degreeText,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: qt.textMuted,
+                              fontWeight: FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 2),
                     if (isAligned)
-                      const Text(
-                        "Kaaba is straight ahead",
+                      Text(
+                        "Straight ahead",
                         style: TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFFD4AF37),
+                          fontSize: 12,
+                          color: qt.emeraldDeep,
                           fontWeight: FontWeight.bold,
                         ),
                       )
@@ -1374,7 +1414,7 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
                         "Rotate your device slowly",
                         style: TextStyle(
                           fontSize: 12,
-                          color: qt.emeraldDeep,
+                          color: qt.textMuted,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -1384,7 +1424,7 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
               Icon(
                 isAligned ? Icons.check_circle_rounded : Icons.sensors_rounded,
                 size: 20,
-                color: isAligned ? const Color(0xFFD4AF37) : qt.emeraldDeep,
+                color: qt.emeraldDeep,
               ),
             ],
           ),
@@ -1416,10 +1456,19 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
               color: qt.bg,
             ),
           ),
-          _CardinalLabel(text: 'N', top: 2),
-          _CardinalLabel(text: 'S', bottom: 2),
-          _CardinalLabel(text: 'E', right: 2),
-          _CardinalLabel(text: 'W', left: 2),
+          // Kaaba indicator dot at top
+          Positioned(
+            top: 6,
+            child: Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: qt.emeraldDeep,
+              ),
+            ),
+          ),
+          // Rotating arrow points toward Kaaba
           Transform.rotate(
             angle: arrowRad,
             child: Icon(
@@ -1446,36 +1495,5 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
     ];
     final index = ((degrees + 22.5) ~/ 45) % 8;
     return dirs[index];
-  }
-}
-
-// Tiny helper for cardinal labels (unchanged)
-class _CardinalLabel extends StatelessWidget {
-  final String text;
-  final double? top, bottom, left, right;
-  const _CardinalLabel({
-    required this.text,
-    this.top,
-    this.bottom,
-    this.left,
-    this.right,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: top,
-      bottom: bottom,
-      left: left,
-      right: right,
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 7,
-          fontWeight: FontWeight.w800,
-          color: Colors.black.withOpacity(0.25),
-        ),
-      ),
-    );
   }
 }

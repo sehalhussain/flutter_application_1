@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
@@ -6,6 +5,7 @@ import '/models/quran_models.dart';
 import '/providers/quran_progress_provider.dart';
 import '/providers/quran_settings_provider.dart';
 import '/services/quran_service.dart';
+import '/services/quran_audio_handler.dart';
 import '/constants/juz_data.dart';
 import '/constants/quran_theme.dart';
 import 'quran_reader_screen.dart';
@@ -21,9 +21,8 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
     with SingleTickerProviderStateMixin {
   List<SurahInfo> _surahList = [];
   List<SurahInfo> _filtered = [];
-  bool _loading = true;
-  String _search = '';
   int _tabIndex = 0;
+  bool _loading = true;
 
   // Cache for frequently accessed data
   final Map<int, SurahInfo> _surahCache = {};
@@ -33,6 +32,10 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
   Timer? _debounceTimer;
 
   final _searchCtrl = TextEditingController();
+
+  // Tracks which bookmark currently owns the global player.
+  final ValueNotifier<QuranBookmark?> _playingBookmarkNotifier =
+      ValueNotifier(null);
 
   @override
   void initState() {
@@ -48,6 +51,7 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
     _debounceTimer?.cancel();
     _searchCtrl.dispose();
     _scrollController.dispose();
+    _playingBookmarkNotifier.dispose();
     super.dispose();
   }
 
@@ -68,7 +72,9 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
       });
     } catch (e) {
       debugPrint("Error loading surahs: $e");
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -78,15 +84,20 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
       if (!mounted) return;
       final lq = q.toLowerCase();
       setState(() {
-        _search = q;
         _filtered = q.isEmpty
             ? _surahList
             : _surahList.where((s) {
                 // Early bailout for performance
-                if (s.number.toString() == q) return true;
+                if (s.number.toString() == q) {
+                  return true;
+                }
                 final nameEn = s.nameEnglish.toLowerCase();
-                if (nameEn.contains(lq)) return true;
-                if (s.nameMeaning.toLowerCase().contains(lq)) return true;
+                if (nameEn.contains(lq)) {
+                  return true;
+                }
+                if (s.nameMeaning.toLowerCase().contains(lq)) {
+                  return true;
+                }
                 return false;
               }).toList();
       });
@@ -217,25 +228,29 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(0, 0, 0, 80),
       itemCount: itemCount,
-      addRepaintBoundaries: true, // Performance boost
-      addAutomaticKeepAlives: true, // Keep widgets alive
-      cacheExtent: 500, // Cache more items for smooth scrolling
+      addRepaintBoundaries: true,
+      addAutomaticKeepAlives: true,
+      cacheExtent: 500,
       itemBuilder: (context, index) {
-        if (index == 0)
+        if (index == 0) {
           return RepaintBoundary(child: _buildRecentReadsStrip(qt));
-        if (index == 1)
+        }
+        if (index == 1) {
           return RepaintBoundary(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: _buildSearchBar(qt),
             ),
           );
+        }
 
         final listIndex = index - 2;
 
         switch (_tabIndex) {
           case 0:
-            if (_filtered.isEmpty) return _emptyState('No surahs found', qt);
+            if (_filtered.isEmpty) {
+              return _emptyState('No surahs found', qt);
+            }
             return RepaintBoundary(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -255,7 +270,9 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
             );
           case 2:
             final bms = QuranProgressProvider.of(context).bookmarks;
-            if (bms.isEmpty) return _emptyState('No bookmarks yet', qt);
+            if (bms.isEmpty) {
+              return _emptyState('No bookmarks yet', qt);
+            }
             final bm = bms[listIndex];
             final s = _surahCache[bm.surah] ?? _surahList.first;
             return RepaintBoundary(
@@ -266,6 +283,7 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
                   surah: s,
                   translation: QuranSettingsProvider.of(context).translation,
                   onOpen: () => _openReader(bm.surah, initialAyah: bm.ayah),
+                  playingBookmarkNotifier: _playingBookmarkNotifier,
                 ),
               ),
             );
@@ -297,7 +315,9 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
     final progress = QuranProgressProvider.of(context);
     final sessions = progress.recentReads;
 
-    if (sessions.isEmpty) return const SizedBox(height: 16);
+    if (sessions.isEmpty) {
+      return const SizedBox(height: 16);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,7 +344,7 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: qt.emeraldDeep.withOpacity(0.1),
+                    color: qt.emeraldDeep.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text('${sessions.length}',
@@ -360,12 +380,12 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
                       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                       decoration: BoxDecoration(
                         color: isFirst
-                            ? qt.emeraldDeep.withOpacity(0.08)
+                            ? qt.emeraldDeep.withValues(alpha: 0.08)
                             : qt.cardBg,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isFirst
-                              ? qt.emeraldDeep.withOpacity(0.25)
+                              ? qt.emeraldDeep.withValues(alpha: 0.25)
                               : qt.borderGlass,
                           width: isFirst ? 1.5 : 1,
                         ),
@@ -446,10 +466,18 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
     final now = DateTime.now();
     final diff = now.difference(dt);
 
-    if (diff.inMinutes < 1) return 'Just now';
-    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
-    if (diff.inDays < 1) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    if (diff.inMinutes < 1) {
+      return 'Just now';
+    }
+    if (diff.inHours < 1) {
+      return '${diff.inMinutes}m ago';
+    }
+    if (diff.inDays < 1) {
+      return '${diff.inHours}h ago';
+    }
+    if (diff.inDays < 7) {
+      return '${diff.inDays}d ago';
+    }
     return '${dt.day}/${dt.month}';
   }
 
@@ -488,17 +516,18 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
                   progress.toggleBookmark(
                       session.surah, session.ayah, session.surahName);
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: const Text('Added to bookmarks'),
-                    backgroundColor: qt.emeraldDeep,
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                    content: Text('Added to bookmarks'),
+                    backgroundColor: Color(0xFF26A69A),
                     behavior: SnackBarBehavior.floating,
-                    duration: const Duration(seconds: 2),
+                    duration: Duration(seconds: 2),
                   ));
                 },
               ),
               Divider(height: 1, color: qt.borderGlass, indent: 16),
               ListTile(
-                leading: Icon(Icons.delete_outline, color: Colors.redAccent),
+                leading:
+                    const Icon(Icons.delete_outline, color: Colors.redAccent),
                 title: Text('Remove from Recent',
                     style: TextStyle(
                         color: qt.textPrimary, fontWeight: FontWeight.w600)),
@@ -682,17 +711,22 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Bookmark Card (Global Singleton Audio Handler)
+// ─────────────────────────────────────────────────────────────────────────────
 class _BookmarkCard extends StatefulWidget {
   final QuranBookmark bookmark;
   final SurahInfo surah;
   final TranslationId translation;
   final VoidCallback onOpen;
+  final ValueNotifier<QuranBookmark?> playingBookmarkNotifier;
 
   const _BookmarkCard({
     required this.bookmark,
     required this.surah,
     required this.translation,
     required this.onOpen,
+    required this.playingBookmarkNotifier,
   });
 
   @override
@@ -703,36 +737,66 @@ class _BookmarkCardState extends State<_BookmarkCard>
     with AutomaticKeepAliveClientMixin {
   bool _expanded = false;
   Future<AyahData?>? _ayahFuture;
-  late final AudioPlayer _player;
+  late final AudioPlayer _ayahAudio;
   bool _isPlaying = false;
+  StreamSubscription<PlayerState>? _playerStateSub;
 
   @override
-  bool get wantKeepAlive => true; // Keep state when scrolling
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
-    _player = AudioPlayer();
-    _player.playerStateStream.listen((state) {
-      if (!mounted) return;
-      bool isPlaying = false;
-      if (state.processingState == ProcessingState.ready ||
-          state.processingState == ProcessingState.buffering ||
-          state.processingState == ProcessingState.loading) {
-        isPlaying = state.playing;
-      } else if (state.processingState == ProcessingState.completed) {
-        isPlaying = false;
-      }
-      if (mounted && _isPlaying != isPlaying) {
-        setState(() => _isPlaying = isPlaying);
-      }
-    });
+    _ayahAudio = QuranAudioHandler.instance.ayahPlayer;
+
+    _playerStateSub =
+        _ayahAudio.playerStateStream.listen(_onPlayerStateChanged);
+    widget.playingBookmarkNotifier.addListener(_onNotifierChanged);
   }
 
   @override
   void dispose() {
-    _player.dispose();
+    _playerStateSub?.cancel();
+    widget.playingBookmarkNotifier.removeListener(_onNotifierChanged);
     super.dispose();
+  }
+
+  void _onPlayerStateChanged(PlayerState state) {
+    if (!mounted) return;
+
+    if (state.processingState == ProcessingState.completed ||
+        state.processingState == ProcessingState.idle) {
+      if (_isThisBookmarkActive) {
+        widget.playingBookmarkNotifier.value = null;
+      }
+    }
+    _syncPlayingState();
+  }
+
+  void _onNotifierChanged() {
+    if (!mounted) return;
+    _syncPlayingState();
+  }
+
+  void _syncPlayingState() {
+    final state = _ayahAudio.playerState;
+    final isActuallyPlaying = state.playing &&
+        (state.processingState == ProcessingState.ready ||
+            state.processingState == ProcessingState.buffering);
+
+    final isThisActive = _isThisBookmarkActive;
+    final shouldShowPlaying = isActuallyPlaying && isThisActive;
+
+    if (_isPlaying != shouldShowPlaying) {
+      setState(() => _isPlaying = shouldShowPlaying);
+    }
+  }
+
+  bool get _isThisBookmarkActive {
+    final active = widget.playingBookmarkNotifier.value;
+    if (active == null) return false;
+    return active.surah == widget.bookmark.surah &&
+        active.ayah == widget.bookmark.ayah;
   }
 
   void _toggleExpanded() {
@@ -752,21 +816,40 @@ class _BookmarkCardState extends State<_BookmarkCard>
     if (url == null) return;
     try {
       if (_isPlaying) {
-        await _player.pause();
-      } else {
-        if (_player.audioSource == null) {
-          await _player.setUrl(url);
-        }
-        await _player.play();
+        await _ayahAudio.pause();
+        _syncPlayingState();
+        return;
       }
+
+      // Stop any surah playback that might be active via the same singleton
+      final surahAudio = QuranAudioHandler.instance.surahPlayer;
+      if (surahAudio.playing) {
+        await surahAudio.stop();
+      }
+
+      // Set this bookmark as the active one and load source with metadata
+      widget.playingBookmarkNotifier.value = widget.bookmark;
+
+      await QuranAudioHandler.instance.setAyahSource(
+        url,
+        surahName: widget.surah.nameEnglish,
+        ayahNumber: widget.bookmark.ayah,
+      );
+
+      await _ayahAudio.play();
+      _syncPlayingState();
     } catch (e) {
       debugPrint('Bookmark audio error: $e');
+      if (mounted) {
+        widget.playingBookmarkNotifier.value = null;
+        setState(() => _isPlaying = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    super.build(context);
     final qt = QuranTheme.of(context);
     final settings = QuranSettingsProvider.of(context);
     final bm = widget.bookmark;
@@ -931,7 +1014,7 @@ class _BookmarkCardState extends State<_BookmarkCard>
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 10),
                             decoration: BoxDecoration(
-                              color: qt.emeraldDeep.withOpacity(0.12),
+                              color: qt.emeraldDeep.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(children: [
@@ -1064,7 +1147,7 @@ class _SurahTile extends StatelessWidget {
   Widget _pill(String label, Color bg, QuranTheme qt) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
         decoration: BoxDecoration(
-          color: bg.withOpacity(0.1),
+          color: bg.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(label,
