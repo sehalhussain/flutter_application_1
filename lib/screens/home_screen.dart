@@ -645,7 +645,7 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
               title: "Holy Quran",
               subtitle: "Read, Listen & Reflect",
               color: qt.emeraldDeep.withOpacity(0.12),
-              icon: FlutterIslamicIcons.solidQuran,
+              icon: Icons.book_rounded,
               iconColor: qt.brightness == Brightness.dark
                   ? const Color.fromARGB(255, 155, 255, 213)
                   : qt.emeraldDeep,
@@ -936,6 +936,12 @@ class _AsmaSliderState extends State<_AsmaSlider> {
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
+                                    Text(name.number.toString().padLeft(2, '0'),
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 8,
+                                          color: qt.textMuted,
+                                        )),
                                     Text(
                                       name.name,
                                       textAlign: TextAlign.center,
