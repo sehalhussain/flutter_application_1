@@ -4,23 +4,20 @@ import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:intl/intl.dart' hide TextDirection;
-import 'package:provider/provider.dart';
 import 'dart:math' as math;
-import '../services/data_service.dart';
 import '../models/name_model.dart';
 import '../models/quran_models.dart';
-import '../providers/quran_progress_provider.dart';
 import '../services/quran_service.dart';
 import '../constants/quran_theme.dart';
 import '../services/prayer_service.dart';
-import 'package:flutter_compass/flutter_compass.dart'; // ← ADD THIS LINE
+import 'package:flutter_compass/flutter_compass.dart';
 import 'asma_list_screen.dart';
 import 'hadith/hadith_home_screen.dart';
 import 'quran/quran_home_screen.dart';
 import 'quran/quran_reader_screen.dart';
-import 'prayer_screen.dart';
 import 'duas_screen.dart';
 import 'hijri_calendar_screen.dart';
+import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ISOLATE-FRIENDLY PARSERS
@@ -223,7 +220,10 @@ class _PrayerCard extends StatefulWidget {
   final Map<String, dynamic>? timings;
   final QuranTheme qt;
 
-  const _PrayerCard({required this.timings, required this.qt});
+  const _PrayerCard({
+    required this.timings,
+    required this.qt,
+  });
 
   @override
   State<_PrayerCard> createState() => _PrayerCardState();
@@ -237,15 +237,80 @@ class _PrayerCardState extends State<_PrayerCard> {
   void initState() {
     super.initState();
     _now = DateTime.now();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() => _now = DateTime.now());
-    });
+    _timer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) {
+        if (mounted) {
+          setState(() {
+            _now = DateTime.now();
+          });
+        }
+      },
+    );
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  IconData _getPrayerIcon(String prayer) {
+    switch (prayer) {
+      case 'Fajr':
+        return Icons.wb_twilight_rounded;
+      case 'Dhuhr':
+        return Icons.wb_sunny_rounded;
+      case 'Asr':
+        return Icons.sunny;
+      case 'Maghrib':
+        return Icons.brightness_4_rounded;
+      case 'Isha':
+        return Icons.nightlight_round;
+      default:
+        return Icons.access_time_rounded;
+    }
+  }
+
+  double _calculatePrayerProgress(
+    String current,
+    String next,
+    DateTime now,
+  ) {
+    DateTime parse(String t) {
+      final p = t.split(':');
+      return DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(p[0]),
+        int.parse(p[1]),
+      );
+    }
+
+    final start = parse(current);
+    var end = parse(next);
+
+    // Handle midnight wrapping for Isha -> Fajr calculation
+    if (end.isBefore(start)) {
+      end = end.add(const Duration(days: 1));
+    }
+
+    final total = end.difference(start).inSeconds;
+    final passed = now.difference(start).inSeconds;
+
+    if (total == 0) return 0.0;
+    return (passed / total).clamp(0.0, 1.0);
+  }
+
+  String _formatTime(String time) {
+    try {
+      final p = time.split(':');
+      final dt = DateTime(2026, 1, 1, int.parse(p[0]), int.parse(p[1]));
+      return DateFormat.jm().format(dt);
+    } catch (_) {
+      return time;
+    }
   }
 
   @override
@@ -255,14 +320,16 @@ class _PrayerCardState extends State<_PrayerCard> {
 
     if (timings == null) {
       return Container(
-        padding: const EdgeInsets.all(24),
-        height: 200,
+        height: 220,
         decoration: BoxDecoration(
-          color: qt.emeraldMid,
+          color: qt.emeraldDeep,
           borderRadius: BorderRadius.circular(24),
         ),
         child: const Center(
-          child: CircularProgressIndicator(color: Colors.white),
+          child: CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 3,
+          ),
         ),
       );
     }
@@ -270,8 +337,8 @@ class _PrayerCardState extends State<_PrayerCard> {
     final pTimings = timings['timings'];
     final timeStr =
         "${_now.hour.toString().padLeft(2, '0')}:${_now.minute.toString().padLeft(2, '0')}";
-
     final prayerOrder = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+
     String nextPrayer = 'Fajr';
     String nextTimeStr = pTimings['Fajr'].toString().split(' ')[0];
 
@@ -296,20 +363,21 @@ class _PrayerCardState extends State<_PrayerCard> {
       int.parse(parts[0]),
       int.parse(parts[1]),
     );
+
     if (targetDate.isBefore(_now)) {
       targetDate = targetDate.add(const Duration(days: 1));
     }
-    final diff = targetDate.difference(_now);
-    final hours = diff.inHours.toString().padLeft(2, '0');
-    final mins = (diff.inMinutes % 60).toString().padLeft(2, '0');
-    final secs = (diff.inSeconds % 60).toString().padLeft(2, '0');
-    final countdown = "-$hours:$mins:$secs";
 
-    String formatTime(String time) {
-      final p = time.split(':');
-      final dt = DateTime(2022, 1, 1, int.parse(p[0]), int.parse(p[1]));
-      return DateFormat.jm().format(dt);
-    }
+    final diff = targetDate.difference(_now);
+    final countdown = "${diff.inHours.toString().padLeft(2, '0')}:"
+        "${(diff.inMinutes % 60).toString().padLeft(2, '0')}:"
+        "${(diff.inSeconds % 60).toString().padLeft(2, '0')}";
+
+    final progress = _calculatePrayerProgress(
+      currentTimeStr,
+      nextTimeStr,
+      _now,
+    );
 
     final otherPrayers = prayerOrder
         .where((p) => p != currentPrayer && p != nextPrayer)
@@ -322,153 +390,211 @@ class _PrayerCardState extends State<_PrayerCard> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [qt.emeraldDeep, qt.emeraldMid],
+            colors: [
+              qt.emeraldMid,
+              qt.emeraldDeep,
+            ],
           ),
           borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.1),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            )
+          ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
+            // Header Section: Current vs Next
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "CURRENT: ${currentPrayer.toUpperCase()}",
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
+                // Current Prayer Left Column
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _getPrayerIcon(currentPrayer),
+                            size: 13,
+                            color: Colors.white.withOpacity(0.65),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            "CURRENT",
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.65),
+                              fontSize: 10,
+                              letterSpacing: 1.2,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          )
+                        ],
                       ),
-                    ),
-                    Text(
-                      formatTime(currentTimeStr),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(height: 6),
+                      Text(
+                        currentPrayer,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 26,
+                          height: 1.1,
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatTime(currentTimeStr),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.75),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      )
+                    ],
+                  ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      "NEXT: ${nextPrayer.toUpperCase()}",
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
+
+                // Gap
+                const SizedBox(width: 16),
+
+                // Next Prayer Right Column
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _getPrayerIcon(nextPrayer),
+                            size: 13,
+                            color: Colors.white.withOpacity(0.65),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            "NEXT",
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.65),
+                              fontSize: 10,
+                              letterSpacing: 1.2,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          )
+                        ],
                       ),
-                    ),
-                    Text(
-                      formatTime(nextTimeStr),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(height: 6),
+                      Text(
+                        nextPrayer,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          height: 1.1,
+                        ),
                       ),
-                    ),
-                    Text(
-                      countdown,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.08),
+                          ),
+                        ),
+                        child: Text(
+                          countdown,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
+                )
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // Linear Progress Section
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(100),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 6,
+                    backgroundColor: Colors.white.withOpacity(0.12),
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+
+            const SizedBox(height: 20),
+
+            // Other Prayers Horizontal Panel
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.05),
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _PrayerTime(
-                    name: otherPrayers[0],
-                    time: formatTime(
-                        pTimings[otherPrayers[0]].toString().split(' ')[0]),
-                    isNext: false,
-                  ),
-                  _PrayerDivider(),
-                  _PrayerTime(
-                    name: otherPrayers[1],
-                    time: formatTime(
-                        pTimings[otherPrayers[1]].toString().split(' ')[0]),
-                    isNext: false,
-                  ),
-                  _PrayerDivider(),
-                  _PrayerTime(
-                    name: otherPrayers[2],
-                    time: formatTime(
-                        pTimings[otherPrayers[2]].toString().split(' ')[0]),
-                    isNext: false,
-                  ),
-                ],
+                children: otherPrayers.map(
+                  (prayer) {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          prayer,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.6),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _formatTime(
+                              pTimings[prayer].toString().split(' ')[0]),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        )
+                      ],
+                    );
+                  },
+                ).toList(),
               ),
-            ),
+            )
           ],
         ),
       ),
-    );
-  }
-}
-
-class _PrayerTime extends StatelessWidget {
-  final String name;
-  final String time;
-  final bool isNext;
-
-  const _PrayerTime({
-    required this.name,
-    required this.time,
-    required this.isNext,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          name,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
-            fontSize: 10,
-            fontWeight: isNext ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          time,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PrayerDivider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 20,
-      width: 1,
-      color: Colors.white.withOpacity(0.2),
     );
   }
 }
@@ -477,7 +603,7 @@ class _PrayerDivider extends StatelessWidget {
 // ESSENTIALS SECTION — Quran + Hadith (square), Duas (wide), Qibla (wide), Hijri (wide)
 // ═══════════════════════════════════════════════════════════════════════════
 
-class _EssentialsSection extends StatelessWidget {
+class _EssentialsSection extends StatefulWidget {
   final QuranTheme qt;
   final VoidCallback onRefreshAyah;
   final double? qiblaDirection;
@@ -489,7 +615,16 @@ class _EssentialsSection extends StatelessWidget {
   });
 
   @override
+  State<_EssentialsSection> createState() => _EssentialsSectionState();
+}
+
+class _EssentialsSectionState extends State<_EssentialsSection> {
+  bool _isExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final qt = widget.qt;
+
     return Column(
       children: [
         Text(
@@ -503,22 +638,24 @@ class _EssentialsSection extends StatelessWidget {
         ),
         const SizedBox(height: 20),
 
-        // Row 1: Quran (left) + Daily Duas (right) — square cards  ← SWAPPED
+        // Row 1: Quran (left) + Daily Duas (right)
         Row(
           children: [
             _EssentialCard(
               title: "Holy Quran",
               subtitle: "Read, Listen & Reflect",
               color: qt.emeraldDeep.withOpacity(0.12),
-              icon: Icons.menu_book_rounded,
-              iconColor: qt.emeraldDeep,
+              icon: FlutterIslamicIcons.solidQuran,
+              iconColor: qt.brightness == Brightness.dark
+                  ? const Color.fromARGB(255, 155, 255, 213)
+                  : qt.emeraldDeep,
               onTap: () async {
-                final surahs = await QuranService.instance.loadSurahList();
+                await QuranService.instance.loadSurahList();
                 if (!context.mounted) return;
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const QuranHomeScreen()),
-                ).then((_) => onRefreshAyah());
+                ).then((_) => widget.onRefreshAyah());
               },
               qt: qt,
             ),
@@ -526,11 +663,13 @@ class _EssentialsSection extends StatelessWidget {
             _EssentialCard(
               title: "Authentic Duas",
               subtitle: "Dua for Every Moment",
-              color: const Color(0xFFFFF0D1).withOpacity(
+              color: const Color.fromARGB(255, 252, 245, 233).withOpacity(
                 qt.brightness == Brightness.dark ? 0.15 : 1.0,
               ),
-              icon: Icons.front_hand_rounded,
-              iconColor: const Color(0xFFFFB74D),
+              icon: FlutterIslamicIcons.solidPrayingPerson,
+              iconColor: qt.brightness == Brightness.dark
+                  ? const Color.fromARGB(255, 155, 255, 213)
+                  : const Color(0xFFFFB74D),
               onTap: () {
                 Navigator.push(
                   context,
@@ -543,18 +682,17 @@ class _EssentialsSection extends StatelessWidget {
         ),
         const SizedBox(height: 16),
 
-        // Row 2: Hadith Library — wide card  ← SWAPPED
+        // Row 2: Hadith Library — wide card
         _WideEssentialCard(
           title: "Hadith Library",
           subtitle: "Browse authentic narrations",
-          color: Color.fromRGBO(
-            255,
-            243,
-            224,
+          color: const Color(0xFFE3F2FD).withOpacity(
             qt.brightness == Brightness.dark ? 0.15 : 1.0,
           ),
-          icon: Icons.menu_book_rounded,
-          iconColor: const Color(0xFFEF6C00),
+          icon: FlutterIslamicIcons.solidMohammad,
+          iconColor: qt.brightness == Brightness.dark
+              ? const Color(0xFFFFB74D)
+              : Colors.blue.shade600,
           onTap: () {
             Navigator.push(
               context,
@@ -565,14 +703,7 @@ class _EssentialsSection extends StatelessWidget {
         ),
         const SizedBox(height: 16),
 
-        // Row 3: Qibla (new premium card)
-        _QiblaCompassCard(
-          qiblaDirection: qiblaDirection,
-          qt: qt,
-        ),
-        const SizedBox(height: 16),
-
-        // Row 4: Hijri Calendar — wide card (unchanged)
+        // Row 3: Hijri Calendar — always visible
         _WideEssentialCard(
           title: "Hijri Calendar",
           subtitle: "View Islamic events and dates",
@@ -580,7 +711,9 @@ class _EssentialsSection extends StatelessWidget {
             qt.brightness == Brightness.dark ? 0.15 : 1.0,
           ),
           icon: Icons.calendar_month_rounded,
-          iconColor: Colors.blue.shade600,
+          iconColor: qt.brightness == Brightness.dark
+              ? const Color(0xFFFFB74D)
+              : Colors.blue.shade600,
           onTap: () {
             Navigator.push(
               context,
@@ -588,6 +721,80 @@ class _EssentialsSection extends StatelessWidget {
             );
           },
           qt: qt,
+        ),
+        const SizedBox(height: 16),
+
+        // ─── Expandable: Qibla + future tools ───
+        AnimatedCrossFade(
+          firstChild: const SizedBox(width: double.infinity),
+          secondChild: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _QiblaCompassCard(
+                qiblaDirection: widget.qiblaDirection,
+                qt: qt,
+              ),
+              // Add future tools here — they'll appear inside the expanded area
+            ],
+          ),
+          crossFadeState: _isExpanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 280),
+          firstCurve: Curves.easeInOut,
+          secondCurve: Curves.easeInOut,
+          sizeCurve: Curves.easeInOut,
+        ),
+
+        const SizedBox(height: 12),
+
+        // ─── Toggle Pill ───
+        GestureDetector(
+          onTap: () => setState(() => _isExpanded = !_isExpanded),
+          behavior: HitTestBehavior.opaque,
+          child: Center(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              decoration: BoxDecoration(
+                color: qt.cardBg,
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(color: qt.borderGlass),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _isExpanded ? "Show Less" : "More Tools",
+                    style: TextStyle(
+                      color: qt.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  AnimatedRotation(
+                    turns: _isExpanded ? 0.5 : 0.0,
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 18,
+                      color: qt.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -923,6 +1130,7 @@ class _AyahCard extends StatelessWidget {
 // ESSENTIAL CARDS
 // ═══════════════════════════════════════════════════════════════════════════
 
+// --- Optimized Component Cards ---
 class _EssentialCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -949,40 +1157,51 @@ class _EssentialCard extends StatelessWidget {
         child: GestureDetector(
           onTap: onTap,
           child: Container(
-            padding: const EdgeInsets.all(20),
-            height: 180,
+            padding: const EdgeInsets.all(16),
+            height: 160, // Sized down beautifully from 180 to fit grid balance
             decoration: BoxDecoration(
-              color: qt.cardBg,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: qt.borderGlass),
-            ),
+                color: qt.cardBg,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: qt.borderGlass, width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  )
+                ]),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: color,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(icon, color: iconColor, size: 28),
+                  child: Icon(icon, color: iconColor, size: 24),
                 ),
                 const Spacer(),
                 Text(
                   title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: qt.textPrimary,
+                    letterSpacing: -0.2,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 11,
                     color: qt.textMuted,
-                    height: 1.3,
+                    height: 1.25,
                   ),
                 ),
               ],
@@ -994,6 +1213,7 @@ class _EssentialCard extends StatelessWidget {
   }
 }
 
+/// Wide-style essential card (full width, horizontal layout)
 class _WideEssentialCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -1070,9 +1290,6 @@ class _WideEssentialCard extends StatelessWidget {
 }
 
 /// ═══════════════════════════════════════════════════════════════════════════
-// QIBLA COMPASS CARD – premium, intuitive, no raw degrees
-// ═══════════════════════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════════════════════
 // QIBLA COMPASS CARD – premium, intuitive, no raw degrees
 // ═══════════════════════════════════════════════════════════════════════════
 
