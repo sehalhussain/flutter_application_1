@@ -445,7 +445,8 @@ class _PrayerCardState extends State<_PrayerCard> {
                   const SizedBox(height: 6), // Reduced from 8
                   // English translation
                   Text(
-                    'Indeed, the prayer is prescribed for the believers at specified times',
+                    'Indeed, the prayer is prescribed for the believers at specified times. '
+                    "(Quran 4:103)",
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.white.withOpacity(0.6),
@@ -531,7 +532,7 @@ class _PrayerCardState extends State<_PrayerCard> {
                       Text(
                         countdown,
                         style: const TextStyle(
-                          color: Colors.white70,
+                          color: Color.fromARGB(230, 255, 255, 255),
                           fontWeight: FontWeight.w500,
                           fontSize: 10,
                           fontFeatures: [FontFeature.tabularFigures()],
