@@ -3,6 +3,7 @@ import '../services/prayer_service.dart';
 import '../constants/quran_theme.dart';
 import '../constants/locations.dart';
 import 'package:intl/intl.dart';
+import 'menu_screen.dart';
 
 class PrayerScreen extends StatefulWidget {
   final VoidCallback? onBackToHome;
@@ -22,6 +23,18 @@ class _PrayerScreenState extends State<PrayerScreen> {
   @override
   void initState() {
     super.initState();
+    _fetchCalendar();
+    // React to PrayerService changes (location, asr, hijri adj changed in other screens)
+    PrayerService.instance.addListener(_onPrayerServiceChanged);
+  }
+
+  @override
+  void dispose() {
+    PrayerService.instance.removeListener(_onPrayerServiceChanged);
+    super.dispose();
+  }
+
+  void _onPrayerServiceChanged() {
     _fetchCalendar();
   }
 
@@ -127,7 +140,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
         children: [
           // --- IMMERSIVE HEADER SECTION ---
           Container(
-            padding: const EdgeInsets.fromLTRB(20, 40, 20, 40),
+            padding: const EdgeInsets.fromLTRB(20, 50, 20, 50),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
@@ -137,7 +150,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
             ),
             child: Column(
               children: [
-                // Top row: Back arrow (L) | Month name (center) | Year (R)
+                // Top row: Back arrow (L) | Month name (center) | Settings (R)
                 Row(
                   children: [
                     SizedBox(
@@ -161,18 +174,32 @@ class _PrayerScreenState extends State<PrayerScreen> {
                             fontWeight: FontWeight.bold,
                             color: Colors.white)),
                     const Spacer(),
-                    SizedBox(
-                      width: 48,
-                      height: 48,
-                      child: Center(
-                        child: Text(yearNum,
-                            style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.white70,
-                                letterSpacing: 1.2)),
-                      ),
+                    // ← GLASS SETTINGS BUTTON REPLACES YEAR
+                    _glassBtn(
+                      const Icon(Icons.tune_rounded,
+                          color: Colors.white, size: 18),
+                      qt,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MenuScreen(),
+                          ),
+                        );
+                      },
                     ),
                   ],
+                ),
+                const SizedBox(height: 6),
+
+                // ── YEAR MOVED HERE ──
+                Text(
+                  yearNum,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.white70,
+                    letterSpacing: 1.2,
+                  ),
                 ),
                 const SizedBox(height: 6),
 
@@ -760,6 +787,23 @@ class _PrayerScreenState extends State<PrayerScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _glassBtn(Widget child, QuranTheme qt, {VoidCallback? onTap}) {
+    final bool isDark = qt.brightness == Brightness.dark;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withOpacity(0.1) : qt.glassWhite,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: qt.borderGlass),
+        ),
+        child: Center(child: child),
       ),
     );
   }

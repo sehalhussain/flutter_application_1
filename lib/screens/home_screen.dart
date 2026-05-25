@@ -51,6 +51,18 @@ class _HomeScreenState extends State<HomeScreen> {
     _refreshAyah();
     _initPrayerTimings();
     _namesFuture = _loadNamesInIsolate();
+    // Listen for PrayerService changes (location, asr, hijri adj changed in other screens)
+    PrayerService.instance.addListener(_onPrayerServiceChanged);
+  }
+
+  @override
+  void dispose() {
+    PrayerService.instance.removeListener(_onPrayerServiceChanged);
+    super.dispose();
+  }
+
+  void _onPrayerServiceChanged() {
+    _initPrayerTimings();
   }
 
   /// Offload JSON parsing to background isolate.
@@ -411,145 +423,169 @@ class _PrayerCardState extends State<_PrayerCard> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header Section: Current vs Next
+            // ── HEADER: Current | Timer | Next ──
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Current Prayer Left Column
+                // Current Prayer Left
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _getPrayerIcon(currentPrayer),
-                            size: 13,
-                            color: Colors.white.withOpacity(0.65),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            "CURRENT",
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.65),
-                              fontSize: 10,
-                              letterSpacing: 1.2,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          )
-                        ],
+                      // Label only
+                      Text(
+                        "CURRENT",
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.65),
+                          fontSize: 10,
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       const SizedBox(height: 6),
+                      // Name alone
                       Text(
                         currentPrayer,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 26,
+                          fontSize: 24,
                           height: 1.1,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        _formatTime(currentTimeStr),
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.75),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      )
-                    ],
-                  ),
-                ),
-
-                // Gap
-                const SizedBox(width: 16),
-
-                // Next Prayer Right Column
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
+                      // Icon + Time inline
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            _getPrayerIcon(nextPrayer),
-                            size: 13,
-                            color: Colors.white.withOpacity(0.65),
+                            _getPrayerIcon(currentPrayer),
+                            size: 14,
+                            color: Colors.white.withOpacity(0.7),
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            "NEXT",
+                            _formatTime(currentTimeStr),
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.65),
-                              fontSize: 10,
-                              letterSpacing: 1.2,
-                              fontWeight: FontWeight.w700,
+                              color: Colors.white.withOpacity(0.75),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
                             ),
-                          )
+                          ),
                         ],
                       ),
+                    ],
+                  ),
+                ),
+
+                // ── CENTER: Countdown Timer ──
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(255, 248, 248, 248)
+                        .withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.08),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        countdown,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "REMAINING",
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize: 8,
+                          letterSpacing: 1.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Next Prayer Right
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      // Label only
+                      Text(
+                        "NEXT",
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.65),
+                          fontSize: 10,
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                       const SizedBox(height: 6),
+                      // Name alone
                       Text(
                         nextPrayer,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 26,
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
                           height: 1.1,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.08),
+                      const SizedBox(height: 4),
+                      // Time + Icon inline (mirrored)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            _formatTime(nextTimeStr),
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.75),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          countdown,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                            fontFeatures: [FontFeature.tabularFigures()],
+                          const SizedBox(width: 6),
+                          Icon(
+                            _getPrayerIcon(nextPrayer),
+                            size: 14,
+                            color: Colors.white.withOpacity(0.7),
                           ),
-                        ),
-                      )
+                        ],
+                      ),
                     ],
                   ),
                 )
               ],
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
             // Linear Progress Section
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(100),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 6,
-                    backgroundColor: Colors.white.withOpacity(0.12),
-                    valueColor:
-                        const AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                ),
-              ],
+            ClipRRect(
+              borderRadius: BorderRadius.circular(100),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 6,
+                backgroundColor: Colors.white.withOpacity(0.12),
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // Other Prayers Horizontal Panel
             Container(

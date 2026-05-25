@@ -7,6 +7,7 @@ import 'providers/quran_progress_provider.dart';
 import 'providers/hadith_progress_provider.dart';
 import 'providers/hadith_reader_settings_provider.dart';
 import 'providers/dua_settings_provider.dart';
+import 'services/prayer_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/menu_screen.dart';
 import 'screens/quran/quran_home_screen.dart';
@@ -15,6 +16,9 @@ import 'constants/quran_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize PrayerService before app runs
+  await PrayerService.instance.initLocation();
 
   await JustAudioBackground.init(
     androidNotificationChannelId: 'com.kitably.app.channel.audio',
@@ -36,6 +40,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => HadithProgress()..load()),
         ChangeNotifierProvider(create: (_) => HadithReaderSettings()..load()),
         ChangeNotifierProvider(create: (_) => DuaSettings()..load()),
+        // Expose PrayerService as a ChangeNotifier so screens can react to changes
+        ChangeNotifierProvider.value(value: PrayerService.instance),
       ],
       child: const AsSalahApp(),
     ),

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:adhan/adhan.dart' as adhan;
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:hijri/hijri_calendar.dart';
@@ -78,10 +79,10 @@ class _HijriMonthCalcInput {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  PRAYER SERVICE
+//  PRAYER SERVICE  —  now a ChangeNotifier so screens can react to changes
 // ═══════════════════════════════════════════════════════════════════════════
 
-class PrayerService {
+class PrayerService with ChangeNotifier {
   PrayerService._();
   static final PrayerService instance = PrayerService._();
 
@@ -303,7 +304,7 @@ class PrayerService {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  //  SETTERS
+  //  SETTERS  —  each calls notifyListeners() so listening screens refresh
   // ═══════════════════════════════════════════════════════════════════════
 
   Future<void> setAsrMethod(int method) async {
@@ -311,6 +312,7 @@ class PrayerService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('prayer_asr_method', method);
     await _clearPrayerCaches();
+    notifyListeners();
   }
 
   Future<void> setCalculationMethod(int method) async {
@@ -318,6 +320,7 @@ class PrayerService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('prayer_calc_method', method);
     await _clearPrayerCaches();
+    notifyListeners();
   }
 
   Future<void> setHijriAdjustment(int adjustment) async {
@@ -325,6 +328,7 @@ class PrayerService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('prayer_hijri_adj', adjustment);
     await _clearPrayerCaches();
+    notifyListeners();
   }
 
   Future<void> setLocation(String city, String country) async {
@@ -369,6 +373,8 @@ class PrayerService {
       // Custom location — need internet for geocoding
       await _geocodeCurrentLocation();
     }
+
+    notifyListeners();
   }
 
   Future<bool> fetchDeviceLocation() async {
@@ -402,6 +408,7 @@ class PrayerService {
         await prefs.setDouble('prayer_lat', _latitude!);
         await prefs.setDouble('prayer_lng', _longitude!);
         await _clearPrayerCaches();
+        notifyListeners();
         return true;
       }
     } catch (e) {
