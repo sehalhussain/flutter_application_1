@@ -303,7 +303,6 @@ class _PrayerCardState extends State<_PrayerCard> {
     final start = parse(current);
     var end = parse(next);
 
-    // Handle midnight wrapping for Isha -> Fajr calculation
     if (end.isBefore(start)) {
       end = end.add(const Duration(days: 1));
     }
@@ -423,7 +422,48 @@ class _PrayerCardState extends State<_PrayerCard> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ── HEADER: Current | Timer | Next ──
+            // ═══════════════════════════════════════════════════════
+            //  AYAH HEADER — Spiritual anchor
+            // ═══════════════════════════════════════════════════════
+            Container(
+              padding: const EdgeInsets.only(bottom: 12), // Reduced from 16
+              child: Column(
+                children: [
+                  // Arabic calligraphy
+                  const Text(
+                    'إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.white,
+                      height: 1.6,
+                      fontFamily: 'QPC Hafs',
+                    ),
+                    textAlign: TextAlign.center,
+                    textDirection: TextDirection.rtl,
+                  ),
+                  const SizedBox(height: 6), // Reduced from 8
+                  // English translation
+                  Text(
+                    'Indeed, the prayer is prescribed for the believers at specified times',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withOpacity(0.6),
+                      fontWeight: FontWeight.w400,
+                      height: 1.4,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 2), // Reduced from 12
+                ],
+              ),
+            ),
+            // Reduced from 20
+
+            // ═══════════════════════════════════════════════════════
+            //  PRAYER ROW — Current | Timer | Next
+            // ═══════════════════════════════════════════════════════
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -432,43 +472,40 @@ class _PrayerCardState extends State<_PrayerCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Label only
                       Text(
                         "CURRENT",
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.65),
-                          fontSize: 10,
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize: 9,
                           letterSpacing: 1.2,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 6),
-                      // Name alone
                       Text(
                         currentPrayer,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 24,
+                          fontSize: 22,
                           height: 1.1,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      // Icon + Time inline
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             _getPrayerIcon(currentPrayer),
-                            size: 14,
-                            color: Colors.white.withOpacity(0.7),
+                            size: 12,
+                            color: Colors.white.withOpacity(0.6),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 5),
                           Text(
                             _formatTime(currentTimeStr),
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.75),
-                              fontSize: 13,
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -478,19 +515,15 @@ class _PrayerCardState extends State<_PrayerCard> {
                   ),
                 ),
 
-                // ── CENTER: Countdown Timer ──
+                // ── CENTER: Whisper timer ──
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
+                    horizontal: 12,
+                    vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 248, 248, 248)
-                        .withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.08),
-                    ),
+                    color: Colors.white.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -498,20 +531,21 @@ class _PrayerCardState extends State<_PrayerCard> {
                       Text(
                         countdown,
                         style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 10,
                           fontFeatures: [FontFeature.tabularFigures()],
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        "REMAINING",
+                        "Hasten to prayer",
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
-                          fontSize: 8,
-                          letterSpacing: 1.5,
-                          fontWeight: FontWeight.w700,
+                          color: Colors.white
+                              .withOpacity(0.5), // Increased from 0.3
+                          fontSize: 10, // Increased from 8
+                          letterSpacing: 0.8, // Increased from 0.5
+                          fontWeight: FontWeight.w500, // Increased from w400
                         ),
                       ),
                     ],
@@ -523,29 +557,26 @@ class _PrayerCardState extends State<_PrayerCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      // Label only
                       Text(
                         "NEXT",
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.65),
-                          fontSize: 10,
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize: 9,
                           letterSpacing: 1.2,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 6),
-                      // Name alone
                       Text(
                         nextPrayer,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 24,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                           height: 1.1,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      // Time + Icon inline (mirrored)
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.end,
@@ -553,16 +584,16 @@ class _PrayerCardState extends State<_PrayerCard> {
                           Text(
                             _formatTime(nextTimeStr),
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.75),
-                              fontSize: 13,
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 5),
                           Icon(
                             _getPrayerIcon(nextPrayer),
-                            size: 14,
-                            color: Colors.white.withOpacity(0.7),
+                            size: 12,
+                            color: Colors.white.withOpacity(0.6),
                           ),
                         ],
                       ),
@@ -574,27 +605,27 @@ class _PrayerCardState extends State<_PrayerCard> {
 
             const SizedBox(height: 20),
 
-            // Linear Progress Section
+            // Linear Progress
             ClipRRect(
               borderRadius: BorderRadius.circular(100),
               child: LinearProgressIndicator(
                 value: progress,
-                minHeight: 6,
-                backgroundColor: Colors.white.withOpacity(0.12),
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                minHeight: 5,
+                backgroundColor: Colors.white.withOpacity(0.1),
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white70),
               ),
             ),
 
             const SizedBox(height: 16),
 
-            // Other Prayers Horizontal Panel
+            // Other Prayers
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.06),
-                borderRadius: BorderRadius.circular(16),
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withOpacity(0.04),
                 ),
               ),
               child: Row(
@@ -607,18 +638,18 @@ class _PrayerCardState extends State<_PrayerCard> {
                         Text(
                           prayer,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
-                            fontSize: 11,
+                            color: Colors.white.withOpacity(0.55),
+                            fontSize: 10,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         Text(
                           _formatTime(
                               pTimings[prayer].toString().split(' ')[0]),
                           style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
+                            color: Colors.white70,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
                         )
