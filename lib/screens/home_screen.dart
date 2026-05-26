@@ -241,14 +241,28 @@ class _PrayerCard extends StatefulWidget {
   State<_PrayerCard> createState() => _PrayerCardState();
 }
 
-class _PrayerCardState extends State<_PrayerCard> {
+class _PrayerCardState extends State<_PrayerCard>
+    with SingleTickerProviderStateMixin {
   Timer? _timer;
   late DateTime _now;
+  bool _isExpanded = false;
+  late final AnimationController _expandController;
+  late final Animation<double> _expandAnimation;
 
   @override
   void initState() {
     super.initState();
     _now = DateTime.now();
+
+    _expandController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _expandAnimation = CurvedAnimation(
+      parent: _expandController,
+      curve: Curves.easeInOut,
+    );
+
     _timer = Timer.periodic(
       const Duration(seconds: 1),
       (_) {
@@ -264,7 +278,19 @@ class _PrayerCardState extends State<_PrayerCard> {
   @override
   void dispose() {
     _timer?.cancel();
+    _expandController.dispose();
     super.dispose();
+  }
+
+  void _toggleExpand() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+    });
+    if (_isExpanded) {
+      _expandController.forward();
+    } else {
+      _expandController.reverse();
+    }
   }
 
   IconData _getPrayerIcon(String prayer) {
@@ -395,272 +421,326 @@ class _PrayerCardState extends State<_PrayerCard> {
         .toList();
 
     return RepaintBoundary(
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              qt.emeraldMid,
-              qt.emeraldDeep,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.1),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            )
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ═══════════════════════════════════════════════════════
-            //  AYAH HEADER — Spiritual anchor
-            // ═══════════════════════════════════════════════════════
-            Container(
-              padding: const EdgeInsets.only(bottom: 12), // Reduced from 16
-              child: Column(
-                children: [
-                  // Arabic calligraphy
-                  const Text(
-                    'إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white,
-                      height: 1.6,
-                      fontFamily: 'QPC Hafs',
-                    ),
-                    textAlign: TextAlign.center,
-                    textDirection: TextDirection.rtl,
-                  ),
-                  const SizedBox(height: 6), // Reduced from 8
-                  // English translation
-                  Text(
-                    'Indeed, the prayer is prescribed for the believers at specified times. '
-                    "(Quran 4:103)",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white.withOpacity(0.6),
-                      fontWeight: FontWeight.w400,
-                      height: 1.4,
-                      fontStyle: FontStyle.italic,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 2), // Reduced from 12
-                ],
-              ),
-            ),
-            // Reduced from 20
-
-            // ═══════════════════════════════════════════════════════
-            //  PRAYER ROW — Current | Timer | Next
-            // ═══════════════════════════════════════════════════════
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Current Prayer Left
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "CURRENT",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
-                          fontSize: 9,
-                          letterSpacing: 1.2,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        currentPrayer,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 22,
-                          height: 1.1,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _getPrayerIcon(currentPrayer),
-                            size: 12,
-                            color: Colors.white.withOpacity(0.6),
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            _formatTime(currentTimeStr),
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // ── CENTER: Whisper timer ──
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        countdown,
-                        style: const TextStyle(
-                          color: Color.fromARGB(230, 255, 255, 255),
-                          fontWeight: FontWeight.w500,
-                          fontSize: 10,
-                          fontFeatures: [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        "Hasten to prayer",
-                        style: TextStyle(
-                          color: Colors.white
-                              .withOpacity(0.5), // Increased from 0.3
-                          fontSize: 10, // Increased from 8
-                          letterSpacing: 0.8, // Increased from 0.5
-                          fontWeight: FontWeight.w500, // Increased from w400
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Next Prayer Right
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        "NEXT",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
-                          fontSize: 9,
-                          letterSpacing: 1.2,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        nextPrayer,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          height: 1.1,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Text(
-                            _formatTime(nextTimeStr),
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(width: 5),
-                          Icon(
-                            _getPrayerIcon(nextPrayer),
-                            size: 12,
-                            color: Colors.white.withOpacity(0.6),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                )
+      child: GestureDetector(
+        onTap: _toggleExpand,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          padding:
+              const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                qt.emeraldMid,
+                qt.emeraldDeep,
               ],
             ),
-
-            const SizedBox(height: 20),
-
-            // Linear Progress
-            ClipRRect(
-              borderRadius: BorderRadius.circular(100),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 5,
-                backgroundColor: Colors.white.withOpacity(0.1),
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white70),
-              ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.1),
+              width: 1,
             ),
-
-            const SizedBox(height: 16),
-
-            // Other Prayers
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.04),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              )
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ═══════════════════════════════════════════════════════
+              //  AYAH HEADER
+              // ═══════════════════════════════════════════════════════
+              Container(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Column(
+                  children: [
+                    Text(
+                      'إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white.withOpacity(0.9),
+                        height: 1.6,
+                        fontFamily: 'QPC Hafs',
+                      ),
+                      textAlign: TextAlign.center,
+                      textDirection: TextDirection.rtl,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Indeed, the prayer is prescribed for the believers at specified times. (Quran 4:103)',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withOpacity(0.8),
+                        fontWeight: FontWeight.w400,
+                        height: 1.4,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: otherPrayers.map(
-                  (prayer) {
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
+
+              const SizedBox(height: 4),
+
+              // ═══════════════════════════════════════════════════════
+              //  NOW & NEXT with inline countdown
+              // ═══════════════════════════════════════════════════════
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end, // Align to bottom
+                children: [
+                  // Now
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          prayer,
+                          "Now",
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.55),
-                            fontSize: 10,
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 4),
                         Text(
-                          _formatTime(
-                              pTimings[prayer].toString().split(' ')[0]),
+                          currentPrayer,
                           style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 28,
+                            height: 1.1,
                           ),
-                        )
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _getPrayerIcon(currentPrayer),
+                              size: 12,
+                              color: Colors.white.withOpacity(1),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              _formatTime(currentTimeStr),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
-                    );
-                  },
-                ).toList(),
+                    ),
+                  ),
+
+                  // ── CENTER: Inline countdown ──
+                  Padding(
+                    padding: const EdgeInsets.only(
+                        bottom: 2), // Slight offset to align with time row
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          countdown,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(.7),
+                            fontWeight: FontWeight.w500,
+                            fontSize: 11,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          "Remaining",
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.6),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Next
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          "Next",
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          nextPrayer,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 28,
+                            height: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              _formatTime(nextTimeStr),
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Icon(
+                              _getPrayerIcon(nextPrayer),
+                              size: 12,
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            )
-          ],
+
+              const SizedBox(height: 12),
+
+              // Progress bar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(100),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 6,
+                  backgroundColor: Colors.white.withOpacity(0.1),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Colors.white70,
+                  ),
+                ),
+              ),
+
+              // ═══════════════════════════════════════════════════════
+              //  EXPANDED: Other prayers only
+              // ═══════════════════════════════════════════════════════
+              SizeTransition(
+                sizeFactor: _expandAnimation,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 16),
+
+                    // Other prayers panel with dividers
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.04),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: otherPrayers.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final prayer = entry.value;
+                          final isLast = index == otherPrayers.length - 1;
+
+                          return Expanded(
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        prayer,
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.55),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _formatTime(pTimings[prayer]
+                                            .toString()
+                                            .split(' ')[0]),
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Divider between prayers (not after last)
+                                if (!isLast)
+                                  Container(
+                                    width: 1,
+                                    height: 24,
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 8),
+                                    color: Colors.white.withOpacity(0.1),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ═══════════════════════════════════════════════════════
+              //  TAP HINT — Visually centered
+              // ═══════════════════════════════════════════════════════
+              const SizedBox(height: 12),
+              Center(
+                child: GestureDetector(
+                  onTap: _toggleExpand,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min, // ← KEY: shrink to content
+                    children: [
+                      Text(
+                        _isExpanded ? "Tap to collapse" : "Tap to expand",
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.6),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 0), // Add this to control bottom padding
+            ],
+          ),
         ),
       ),
     );
@@ -823,29 +903,32 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
           child: Center(
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               decoration: BoxDecoration(
-                color: qt.cardBg,
                 borderRadius: BorderRadius.circular(100),
-                border: Border.all(color: qt.borderGlass),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                border: Border.all(
+                  color: qt.emeraldDeep.withOpacity(0.3), // Colored border
+                  width: 1.5,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Icon(
+                    _isExpanded
+                        ? Icons.expand_less_rounded
+                        : Icons.apps_rounded,
+                    size: 16,
+                    color: qt.emeraldDeep,
+                  ),
+                  const SizedBox(width: 6),
                   Text(
                     _isExpanded ? "Show Less" : "More Tools",
                     style: TextStyle(
-                      color: qt.textMuted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
+                      color: qt.emeraldDeep, // Brand color instead of muted
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700, // Bolder
+                      letterSpacing: 0.3,
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -856,7 +939,7 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
                     child: Icon(
                       Icons.keyboard_arrow_down_rounded,
                       size: 18,
-                      color: qt.textMuted,
+                      color: qt.emeraldDeep,
                     ),
                   ),
                 ],
