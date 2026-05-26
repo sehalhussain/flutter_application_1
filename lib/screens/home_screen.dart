@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
@@ -18,6 +19,8 @@ import 'quran/quran_reader_screen.dart';
 import 'duas_screen.dart';
 import 'hijri_calendar_screen.dart';
 import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
+import 'prayer_tracker_screen.dart';
+import '../providers/prayer_tracker_provider.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ISOLATE-FRIENDLY PARSERS
@@ -882,7 +885,33 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
                 qiblaDirection: widget.qiblaDirection,
                 qt: qt,
               ),
-              // Add future tools here — they'll appear inside the expanded area
+              const SizedBox(height: 16),
+              // Prayer Tracker card
+              Consumer<PrayerTracker>(
+                builder: (context, tracker, _) {
+                  final todayCount = tracker.todayPrayedCount;
+                  final streak = tracker.currentStreak;
+                  return _WideEssentialCard(
+                    title: "Prayer Tracker",
+                    subtitle: todayCount > 0
+                        ? "$todayCount/5 today · $streak-day streak"
+                        : "Track your daily prayers",
+                    color: Colors.green.withOpacity(
+                      qt.brightness == Brightness.dark ? 0.15 : 0.08,
+                    ),
+                    icon: Icons.mosque_rounded,
+                    iconColor: Colors.green.shade600,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const PrayerTrackerScreen()),
+                      );
+                    },
+                    qt: qt,
+                  );
+                },
+              ),
             ],
           ),
           crossFadeState: _isExpanded
