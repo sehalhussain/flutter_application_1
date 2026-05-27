@@ -44,6 +44,7 @@ dependencies:
       url: https://github.com/hemanthrajv/flutter_compass.git
       ref: master
   flutter_islamic_icons: ^1.0.2
+  confetti: ^0.8.0  # or latest version
 
   
 dev_dependencies:

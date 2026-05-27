@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -76,11 +77,125 @@ class PrayerTracker extends ChangeNotifier {
     return streak;
   }
 
+  /// Get the best streak ever recorded.
+  int get bestStreak {
+    if (_prayerLog.isEmpty) return 0;
+    final keys = sortedDateKeys;
+    int best = 0;
+    int current = 0;
+
+    // Iterate from oldest to newest
+    final sortedAsc = keys.reversed.toList();
+    for (final key in sortedAsc) {
+      if (prayedCountForDate(key) == 5) {
+        current++;
+        if (current > best) best = current;
+      } else {
+        current = 0;
+      }
+    }
+    return best;
+  }
+
+  /// Get completion percentage for a specific prayer across all logged days.
+  double prayerCompletionRate(String prayer) {
+    if (_prayerLog.isEmpty) return 0.0;
+    int total = 0;
+    int prayed = 0;
+    for (final day in _prayerLog.values) {
+      if (day.containsKey(prayer)) {
+        total++;
+        if (day[prayer] == true) prayed++;
+      }
+    }
+    return total == 0 ? 0.0 : prayed / total;
+  }
+
+  /// Get monthly completion rate (days with 5/5 prayers / total days in month that have passed).
+  double monthlyCompletionRate(int year, int month) {
+    final now = DateTime.now();
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+    final lastDay =
+        (year == now.year && month == now.month) ? now.day : daysInMonth;
+
+    int completeDays = 0;
+
+    for (int d = 1; d <= lastDay; d++) {
+      final date = DateTime(year, month, d);
+      final key = _dateKey(date);
+      if (_prayerLog.containsKey(key) && prayedCountForDate(key) == 5) {
+        completeDays++;
+      }
+    }
+    return lastDay == 0 ? 0.0 : completeDays / lastDay;
+  }
+
+  /// Get completion data for the last N months.
+  List<Map<String, dynamic>> getMonthlyTrend(int months) {
+    final result = <Map<String, dynamic>>[];
+    final now = DateTime.now();
+    for (int i = months - 1; i >= 0; i--) {
+      final date = DateTime(now.year, now.month - i, 1);
+      final rate = monthlyCompletionRate(date.year, date.month);
+      result.add({
+        'month': DateFormat('MMM').format(date),
+        'year': date.year,
+        'rate': rate,
+      });
+    }
+    return result;
+  }
+
+  /// Get heatmap data for the last 52 weeks.
+  List<Map<String, dynamic>> getWeeklyHeatmap() {
+    final result = <Map<String, dynamic>>[];
+    final now = DateTime.now();
+    final start = now.subtract(const Duration(days: 364));
+
+    for (int i = 0; i < 365; i++) {
+      final date = start.add(Duration(days: i));
+      final key = _dateKey(date);
+      final count = prayedCountForDate(key);
+      result.add({
+        'date': key,
+        'count': count,
+        'weekday': date.weekday % 7,
+      });
+    }
+    return result;
+  }
+
   /// Get all stored date keys sorted descending (newest first).
   List<String> get sortedDateKeys {
     final keys = _prayerLog.keys.toList();
     keys.sort((a, b) => b.compareTo(a));
     return keys;
+  }
+
+  /// Total prayers logged lifetime.
+  int get totalPrayersLogged {
+    return _prayerLog.values
+        .fold<int>(0, (sum, day) => sum + day.values.where((v) => v).length);
+  }
+
+  /// Check if a milestone is achieved.
+  bool hasMilestone(String milestone) {
+    switch (milestone) {
+      case 'first_prayer':
+        return totalPrayersLogged >= 1;
+      case 'streak_7':
+        return bestStreak >= 7;
+      case 'streak_30':
+        return bestStreak >= 30;
+      case 'perfect_week':
+        return bestStreak >= 7;
+      case 'centurion':
+        return totalPrayersLogged >= 100;
+      case 'year_of_light':
+        return bestStreak >= 365;
+      default:
+        return false;
+    }
   }
 
   // ── Init ──────────────────────────────────────────────────────────────────

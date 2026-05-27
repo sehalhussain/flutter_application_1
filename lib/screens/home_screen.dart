@@ -19,7 +19,7 @@ import 'quran/quran_reader_screen.dart';
 import 'duas_screen.dart';
 import 'hijri_calendar_screen.dart';
 import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
-import 'prayer_tracker_screen.dart';
+import 'prayer_stats_screen.dart';
 import '../providers/prayer_tracker_provider.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -905,7 +905,7 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const PrayerTrackerScreen()),
+                            builder: (_) => const PrayerStatsScreen()),
                       );
                     },
                     qt: qt,
