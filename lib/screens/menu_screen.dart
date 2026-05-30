@@ -88,7 +88,7 @@ class _MenuScreenState extends State<MenuScreen> {
           const ListTile(
             leading: Icon(Icons.info_outline),
             title: Text("App Version"),
-            trailing: Text("1.0.5", style: TextStyle(color: Colors.grey)),
+            trailing: Text("1.1.0", style: TextStyle(color: Colors.grey)),
           ),
           const ListTile(
             leading: Icon(Icons.favorite_border),
