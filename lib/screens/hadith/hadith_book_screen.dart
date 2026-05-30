@@ -213,127 +213,187 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
     final settings = HadithReaderSettingsProvider.of(context, listen: true);
+    final topPadding = MediaQuery.of(context).padding.top;
 
     return Scaffold(
       backgroundColor: qt.bg,
-      appBar: AppBar(
-        backgroundColor: qt.cardBg,
-        elevation: 0,
-        centerTitle: true,
-        iconTheme: IconThemeData(color: qt.textPrimary),
-        title: Text(widget.book.title, style: TextStyle(color: qt.textPrimary)),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-          child: FutureBuilder<HadithBook>(
-            future: _bookFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(
-                    child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation(qt.emeraldLight)));
-              }
-              if (snapshot.hasError || !snapshot.hasData) {
-                return Center(
-                  child: Text('Unable to load book',
-                      style: TextStyle(color: qt.textMuted)),
-                );
-              }
-
-              final book = snapshot.data!;
-              if (book.allBooks.isEmpty) {
-                return Center(
-                  child: Text('No chapters found',
-                      style: TextStyle(color: qt.textMuted)),
-                );
-              }
-
-              // Build search indices once
-              if (_chapterIndices.isEmpty) {
-                _allChapters = book.allBooks;
-                _chapterIndices = _allChapters
-                    .map((c) => _ChapterSearchIndex(c))
-                    .toList(growable: false);
-              }
-
-              final List<_SearchResult> displayList =
-                  _isSearching ? _filteredResultsDisplay : [];
-              final bool showAllChapters = !_isSearching;
-
-              return Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('${book.numBooks} Chapters',
-                            style: TextStyle(
-                                color: qt.emeraldDeep,
-                                fontWeight: FontWeight.bold)),
-                        Text('${book.numHadiths} Hadiths',
-                            style: TextStyle(
-                                color: qt.emeraldDeep,
-                                fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _searchController,
-                    focusNode: _searchFocusNode,
-                    decoration: InputDecoration(
-                      hintText: 'Search chapters or hadiths...',
-                      prefixIcon: Icon(Icons.search, color: qt.textMuted),
-                      suffixIcon: _isSearching
+      body: Column(
+        children: [
+          // ── Immersive Header ──
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.fromLTRB(16, topPadding + 8, 16, 20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [qt.emeraldDeep, qt.emeraldMid],
+              ),
+            ),
+            child: Column(
+              children: [
+                // Top row: Back | Title (center) | Spacer
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Navigator.canPop(context)
                           ? IconButton(
-                              icon: Icon(Icons.clear, color: qt.textMuted),
-                              onPressed: _clearSearch,
+                              icon: const Icon(Icons.arrow_back_rounded,
+                                  color: Colors.white, size: 22),
+                              onPressed: () => Navigator.pop(context),
                             )
-                          : null,
-                      filled: true,
-                      fillColor: qt.cardBg,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(color: qt.borderGlass),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(color: qt.borderGlass),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(color: qt.emeraldDeep),
-                      ),
+                          : const SizedBox.shrink(),
                     ),
-                    style: TextStyle(color: qt.textPrimary),
-                  ),
-                  const SizedBox(height: 16),
-                  if (_isSearching)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          '$_totalResultCount result${_totalResultCount == 1 ? '' : 's'}${_isCapped ? ' (showing $_initialSearchLimit)' : ''}',
-                          style: TextStyle(
-                              color: qt.emeraldLight,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500),
+                    Expanded(
+                      child: Text(
+                        widget.book.title,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                  Expanded(
-                    child: showAllChapters
-                        ? _buildChapterList(qt, _allChapters)
-                        : _buildSearchResults(qt, settings, displayList),
+                    const SizedBox(width: 44),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // ── Search Bar (inside header) ──
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
                   ),
-                ],
-              );
-            },
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search_rounded,
+                          color: Colors.white70, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          focusNode: _searchFocusNode,
+                          decoration: InputDecoration(
+                            hintText: 'Search chapters or hadiths...',
+                            hintStyle:
+                                TextStyle(color: Colors.white60, fontSize: 14),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            suffixIcon: _isSearching
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear,
+                                        color: Colors.white60, size: 18),
+                                    onPressed: _clearSearch,
+                                  )
+                                : null,
+                          ),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+
+          // ── Body Content ──
+          Expanded(
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                child: FutureBuilder<HadithBook>(
+                  future: _bookFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return Center(
+                          child: CircularProgressIndicator(
+                              valueColor:
+                                  AlwaysStoppedAnimation(qt.emeraldLight)));
+                    }
+                    if (snapshot.hasError || !snapshot.hasData) {
+                      return Center(
+                        child: Text('Unable to load book',
+                            style: TextStyle(color: qt.textMuted)),
+                      );
+                    }
+
+                    final book = snapshot.data!;
+                    if (book.allBooks.isEmpty) {
+                      return Center(
+                        child: Text('No chapters found',
+                            style: TextStyle(color: qt.textMuted)),
+                      );
+                    }
+
+                    // Build search indices once
+                    if (_chapterIndices.isEmpty) {
+                      _allChapters = book.allBooks;
+                      _chapterIndices = _allChapters
+                          .map((c) => _ChapterSearchIndex(c))
+                          .toList(growable: false);
+                    }
+
+                    final List<_SearchResult> displayList =
+                        _isSearching ? _filteredResultsDisplay : [];
+                    final bool showAllChapters = !_isSearching;
+
+                    return Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.fromLTRB(4, 10, 4, 20),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('${book.numBooks} Chapters',
+                                  style: TextStyle(
+                                      color: qt.emeraldDeep,
+                                      fontWeight: FontWeight.bold)),
+                              Text('${book.numHadiths} Hadiths',
+                                  style: TextStyle(
+                                      color: qt.emeraldDeep,
+                                      fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                        if (_isSearching)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                '$_totalResultCount result${_totalResultCount == 1 ? '' : 's'}${_isCapped ? ' (showing $_initialSearchLimit)' : ''}',
+                                style: TextStyle(
+                                    color: qt.emeraldLight,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ),
+                        Expanded(
+                          child: showAllChapters
+                              ? _buildChapterList(qt, _allChapters)
+                              : _buildSearchResults(qt, settings, displayList),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -345,6 +405,7 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
       );
     }
     return ListView.separated(
+      padding: const EdgeInsets.only(top: 2, bottom: 16),
       itemCount: chapters.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
@@ -365,6 +426,7 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
     final int itemCount = results.length + (_isCapped ? 1 : 0);
 
     return ListView.builder(
+      padding: const EdgeInsets.only(top: 2, bottom: 16),
       itemCount: itemCount,
       itemBuilder: (context, index) {
         // "Show more" button at the end

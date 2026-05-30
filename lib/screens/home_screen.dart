@@ -16,7 +16,7 @@ import 'asma_list_screen.dart';
 import 'hadith/hadith_home_screen.dart';
 import 'quran/quran_home_screen.dart';
 import 'quran/quran_reader_screen.dart';
-import 'duas_screen.dart';
+import 'duas/duas_screen.dart';
 import 'hijri_calendar_screen.dart';
 import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
 import 'prayer_stats_screen.dart';
@@ -477,7 +477,7 @@ class _PrayerCardState extends State<_PrayerCard>
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Indeed, the prayer is prescribed for the believers at specified times. (Quran 4:103)',
+                      'Indeed, the prayer is prescribed for the believers \n at specified times. (Quran 4:103)',
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.white.withOpacity(0.8),
@@ -892,10 +892,10 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
                   final todayCount = tracker.todayPrayedCount;
                   final streak = tracker.currentStreak;
                   return _WideEssentialCard(
-                    title: "Prayer Tracker",
+                    title: "Prayer Stats",
                     subtitle: todayCount > 0
                         ? "$todayCount/5 today · $streak-day streak"
-                        : "Track your daily prayers",
+                        : "Check your prayer consistency",
                     color: Colors.green.withOpacity(
                       qt.brightness == Brightness.dark ? 0.15 : 0.08,
                     ),

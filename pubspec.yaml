@@ -85,3 +85,6 @@ flutter:
     - family: Urdu
       fonts:
         - asset: assets/fonts/NotoNastaliqUrdu-VariableFont_wght.ttf
+    - family: IndopakN
+      fonts:
+        - asset: assets/fonts/indopak-nastaleeq.ttf

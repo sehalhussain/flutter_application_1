@@ -7,6 +7,7 @@ import 'providers/quran_progress_provider.dart';
 import 'providers/hadith_progress_provider.dart';
 import 'providers/hadith_reader_settings_provider.dart';
 import 'providers/dua_settings_provider.dart';
+import 'providers/dua_progress_provider.dart';
 import 'providers/prayer_tracker_provider.dart';
 import 'services/prayer_service.dart';
 import 'screens/home_screen.dart';
@@ -41,6 +42,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => HadithProgress()..load()),
         ChangeNotifierProvider(create: (_) => HadithReaderSettings()..load()),
         ChangeNotifierProvider(create: (_) => DuaSettings()..load()),
+        ChangeNotifierProvider(create: (_) => DuaProgress()..load()),
         ChangeNotifierProvider(create: (_) => PrayerTracker()..load()),
         // Expose PrayerService as a ChangeNotifier so screens can react to changes
         ChangeNotifierProvider.value(value: PrayerService.instance),

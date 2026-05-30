@@ -57,62 +57,83 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
   @override
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
+    final topPadding = MediaQuery.of(context).padding.top;
 
     return Scaffold(
       backgroundColor: qt.bg,
-      appBar: AppBar(
-        backgroundColor: qt.cardBg,
-        elevation: 0,
-        centerTitle: true,
-        iconTheme: IconThemeData(color: qt.textPrimary),
-        title: Text(
-          widget.chapter.englishTitle,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: qt.textPrimary,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 20.0),
-            child: GestureDetector(
-              onTap: _openSettings,
-              child: Center(
-                child: _glassBtn(
-                    Icon(Icons.tune_rounded, color: qt.textPrimary, size: 18),
-                    qt),
+      body: Column(
+        children: [
+          // ── Immersive Header ──
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.fromLTRB(16, topPadding + 8, 16, 20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [qt.emeraldDeep, qt.emeraldMid],
               ),
             ),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+            child: Column(
+              children: [
+                // Top row: Back | Title (center) | Settings
+                Row(
                   children: [
-                    const SizedBox(height: 8),
-                    Text(
-                      '${widget.chapter.hadithList.length} hadiths',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: qt.emeraldLight,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                    SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Navigator.canPop(context)
+                          ? IconButton(
+                              icon: const Icon(Icons.arrow_back_rounded,
+                                  color: Colors.white, size: 22),
+                              onPressed: () => Navigator.pop(context),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                    Expanded(
+                      child: Text(
+                        widget.chapter.englishTitle,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: IconButton(
+                        icon: const Icon(Icons.tune_rounded,
+                            color: Colors.white, size: 22),
+                        onPressed: _openSettings,
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
+                const SizedBox(height: 8),
+                Text(
+                  '${widget.chapter.hadithList.length} hadiths',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.7),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Body Content ──
+          Expanded(
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                 child: HadithListView(
                   hadiths: widget.chapter.hadithList,
                   bookAsset: widget.bookAsset,
@@ -121,9 +142,9 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
                   initialSearchQuery: widget.initialSearchQuery,
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

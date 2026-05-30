@@ -69,6 +69,7 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
     final progress = HadithProgressProvider.of(context, listen: true);
+    final topPadding = MediaQuery.of(context).padding.top;
     final currentKey = progress.favorites
         .map((favorite) => '${favorite.assetPath}|${favorite.hadithUuid}')
         .join(',');
@@ -79,44 +80,117 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
 
     return Scaffold(
       backgroundColor: qt.bg,
-      appBar: AppBar(
-        backgroundColor: qt.cardBg,
-        elevation: 0,
-        centerTitle: true,
-        title: Text('Hadith Library', style: TextStyle(color: qt.textPrimary)),
-        iconTheme: IconThemeData(color: qt.textPrimary),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: qt.emeraldDeep,
-          labelColor: qt.emeraldDeep,
-          unselectedLabelColor: qt.textMuted,
-          tabs: const [
-            Tab(text: 'Books'),
-            Tab(text: 'Liked'),
-          ],
-        ),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-          child: Column(
-            children: [
-              if (progress.lastRead != null) ...[
-                _buildLastReadBanner(progress.lastRead!, qt),
-                const SizedBox(height: 16),
-              ],
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
+      body: Column(
+        children: [
+          // ── Immersive Header ──
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.fromLTRB(16, topPadding + 8, 16, 20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [qt.emeraldDeep, qt.emeraldMid],
+              ),
+            ),
+            child: Column(
+              children: [
+                // Top row: Back | Title (center) | Spacer
+                Row(
                   children: [
-                    _buildBooksTab(qt),
-                    _buildFavoritesTab(qt),
+                    SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Navigator.canPop(context)
+                          ? IconButton(
+                              icon: const Icon(Icons.arrow_back_rounded,
+                                  color: Colors.white, size: 22),
+                              onPressed: () => Navigator.pop(context),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                    const Expanded(
+                      child: Text(
+                        'Hadith Library',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 22,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 44),
                   ],
                 ),
-              ),
-            ],
+                // Subtitle
+                Text(
+                  '"The best among you are those who learn \n the Quran and teach it."',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                    color: Colors.white.withOpacity(0.7),
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Sahih al-Bukhari 5027',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white.withOpacity(0.5),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+
+          // ── Tab Bar (on gradient) ──
+          Container(
+            color: qt.emeraldMid,
+            child: TabBar(
+              controller: _tabController,
+              indicatorColor: Colors.white,
+              indicatorWeight: 3,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white60,
+              labelStyle:
+                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              unselectedLabelStyle:
+                  const TextStyle(fontWeight: FontWeight.w400, fontSize: 14),
+              tabs: const [
+                Tab(text: 'Books'),
+                Tab(text: 'Liked'),
+              ],
+            ),
+          ),
+
+          // ── Tab Content ──
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+              child: Column(
+                children: [
+                  if (progress.lastRead != null) ...[
+                    _buildLastReadBanner(progress.lastRead!, qt),
+                    const SizedBox(height: 16),
+                  ],
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildBooksTab(qt),
+                        _buildFavoritesTab(qt),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
