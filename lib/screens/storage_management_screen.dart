@@ -2,8 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../services/quran_service.dart';
 import '../services/backup_service.dart';
-import '../services/translation_download_service.dart';
-import '../models/downloadable_translation.dart';
+import '../constants/quran_theme.dart';
 
 class StorageManagementScreen extends StatefulWidget {
   const StorageManagementScreen({super.key});
@@ -16,7 +15,6 @@ class StorageManagementScreen extends StatefulWidget {
 class _StorageManagementScreenState extends State<StorageManagementScreen> {
   List<File> _audioFiles = [];
   List<File> _tafsirFiles = [];
-  List<File> _translationFiles = [];
   bool _isLoading = true;
 
   @override
@@ -29,12 +27,9 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
     setState(() => _isLoading = true);
     final audioFiles = await QuranService.instance.getDownloadedAudioFiles();
     final tafsirFiles = await QuranService.instance.getDownloadedTafsirs();
-    final translationFiles = await TranslationDownloadService.instance
-        .getDownloadedTranslationFiles();
     setState(() {
       _audioFiles = audioFiles;
       _tafsirFiles = tafsirFiles;
-      _translationFiles = translationFiles;
       _isLoading = false;
     });
   }
@@ -65,115 +60,161 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
 
   String _formatBytes(int bytes) {
     if (bytes <= 0) return "0 B";
-    const suffixes = ["B", "KB", "MB", "GB", "TB"];
-    var i = (bytes > 0)
-        ? (bytes
-            .toDouble()
-            .toStringAsExponential(2)
-            .split('e')[1]
-            .replaceAll('+', ''))
-        : '0';
-    int idx = (int.parse(i) / 3).floor();
     return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final qt = QuranTheme.of(context);
+    final isDark = qt.brightness == Brightness.dark;
 
     return DefaultTabController(
-        length: 3,
+        length: 2,
         child: Scaffold(
-          backgroundColor: theme.colorScheme.surface,
+          backgroundColor: qt.bg,
           appBar: AppBar(
-            title: const Text("Manage Storage",
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(
+              "Manage Storage",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: qt.textPrimary,
+                fontSize: 20,
+              ),
+            ),
+            elevation: 0,
+            backgroundColor: Colors.transparent,
             centerTitle: true,
+            iconTheme: IconThemeData(color: qt.textPrimary),
           ),
           body: Column(
             children: [
-              // Backup & Restore Section
-              Container(
+              // Backup & Restore Section (Matching Menu Screen Premium Theme)
+              Padding(
                 padding: const EdgeInsets.all(20),
-                color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Backup & Restore",
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16)),
-                    const SizedBox(height: 8),
-                    Text(
-                        "Export your reading progress, bookmarks, and settings to move to another device.",
-                        style: TextStyle(
-                            color: theme.colorScheme.onSurface.withOpacity(0.7),
-                            fontSize: 13)),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF26A69A),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: qt.cardBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.cloud_sync_rounded,
+                              color: qt.emeraldDeep, size: 22),
+                          const SizedBox(width: 8),
+                          Text(
+                            "Backup & Restore",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: qt.textPrimary,
                             ),
-                            icon: const Icon(Icons.upload_file),
-                            label: const Text("Export Data"),
-                            onPressed: () =>
-                                BackupService.exportBackup(context),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Export your reading progress, bookmarks, and settings to move them securely to another device.",
+                        style: TextStyle(
+                          color: qt.textMuted,
+                          fontSize: 12,
+                          height: 1.4,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF26A69A),
-                              side: const BorderSide(color: Color(0xFF26A69A)),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12)),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 44,
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: qt.emeraldDeep,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                ),
+                                icon: const Icon(Icons.upload_file_rounded,
+                                    size: 18),
+                                label: const Text(
+                                  "Export",
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13),
+                                ),
+                                onPressed: () =>
+                                    BackupService.exportBackup(context),
+                              ),
                             ),
-                            icon: const Icon(Icons.download),
-                            label: const Text("Restore Data"),
-                            onPressed: () =>
-                                BackupService.importBackup(context),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: SizedBox(
+                              height: 44,
+                              child: OutlinedButton.icon(
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: qt.textPrimary,
+                                  side: BorderSide(color: qt.borderGlass),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                ),
+                                icon: const Icon(Icons.download_rounded,
+                                    size: 18),
+                                label: const Text(
+                                  "Restore",
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13),
+                                ),
+                                onPressed: () =>
+                                    BackupService.importBackup(context),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
-              const Divider(height: 1),
-
-              const TabBar(
-                labelColor: Color(0xFF26A69A),
-                indicatorColor: Color(0xFF26A69A),
-                unselectedLabelColor: Colors.grey,
-                tabs: [
+              TabBar(
+                labelColor: qt.emeraldDeep,
+                indicatorColor: qt.emeraldDeep,
+                unselectedLabelColor: qt.textMuted,
+                labelStyle:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                unselectedLabelStyle:
+                    const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                indicatorSize: TabBarIndicatorSize.label,
+                tabs: const [
                   Tab(text: "Audio Downloads"),
                   Tab(text: "Saved Tafsirs"),
-                  Tab(text: "Saved Translations"),
                 ],
               ),
+              const SizedBox(height: 10),
 
               Expanded(
                 child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? Center(
+                        child: CircularProgressIndicator(color: qt.emeraldDeep))
                     : TabBarView(
                         children: [
                           // Audio Tab
-                          _buildFileList(_audioFiles, Icons.audio_file,
-                              "No downloaded audio files", theme, true),
+                          _buildFileList(_audioFiles, Icons.audiotrack_rounded,
+                              "No downloaded audio files found", qt, true),
                           // Tafsir Tab
-                          _buildFileList(_tafsirFiles, Icons.text_snippet,
-                              "No saved tafsirs", theme, false),
-                          // Translation Tab
-                          _buildTranslationFileList(theme),
+                          _buildFileList(
+                              _tafsirFiles,
+                              Icons.text_snippet_rounded,
+                              "No saved tafsirs found",
+                              qt,
+                              false),
                         ],
                       ),
               ),
@@ -182,165 +223,109 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
         ));
   }
 
-  Widget _buildTranslationFileList(ThemeData theme) {
-    if (_translationFiles.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.translate,
-                size: 64, color: theme.colorScheme.onSurface.withOpacity(0.2)),
-            const SizedBox(height: 16),
-            Text("No downloaded translations",
-                style: TextStyle(
-                    color: theme.colorScheme.onSurface.withOpacity(0.5))),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: _translationFiles.length,
-      itemBuilder: (context, index) {
-        final file = _translationFiles[index];
-        final name = file.path.split('/').last.split('\\').last;
-        final size = file.lengthSync();
-
-        // Find the matching display name
-        String displayName = name;
-        for (final t in kDownloadableTranslations) {
-          if (name.contains(t.id)) {
-            displayName = t.displayName;
-            break;
-          }
-        }
-
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: ListTile(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            leading: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF26A69A).withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.translate, color: Color(0xFF26A69A)),
-            ),
-            title: Text(displayName,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            subtitle: Text(_formatBytes(size),
-                style: const TextStyle(color: Colors.grey, fontSize: 12)),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text("Delete Translation"),
-                    content:
-                        Text("Are you sure you want to delete $displayName?"),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text("Cancel"),
-                      ),
-                      TextButton(
-                        onPressed: () async {
-                          Navigator.pop(ctx);
-                          // Find id from filename
-                          String? id;
-                          for (final t in kDownloadableTranslations) {
-                            if (name.contains(t.id)) {
-                              id = t.id;
-                              break;
-                            }
-                          }
-                          if (id != null) {
-                            await TranslationDownloadService.instance
-                                .deleteTranslation(id);
-                          } else {
-                            await file.delete();
-                          }
-                          _loadFiles();
-                        },
-                        child: const Text("Delete",
-                            style: TextStyle(color: Colors.red)),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildFileList(List<File> files, IconData emptyIcon, String emptyText,
-      ThemeData theme, bool isAudio) {
+  Widget _buildFileList(
+    List<File> files,
+    IconData emptyIcon,
+    String emptyText,
+    QuranTheme qt,
+    bool isAudio,
+  ) {
     if (files.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(emptyIcon,
-                size: 64, color: theme.colorScheme.onSurface.withOpacity(0.2)),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: qt.textMuted.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(emptyIcon,
+                  size: 48, color: qt.textMuted.withOpacity(0.4)),
+            ),
             const SizedBox(height: 16),
-            Text(emptyText,
-                style: TextStyle(
-                    color: theme.colorScheme.onSurface.withOpacity(0.5))),
+            Text(
+              emptyText,
+              style: TextStyle(
+                  color: qt.textMuted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500),
+            ),
           ],
         ),
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       itemCount: files.length,
       itemBuilder: (context, index) {
         final file = files[index];
         final name = file.path.split('/').last.split('\\').last;
         final size = file.lengthSync();
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: qt.cardBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
+          ),
           child: ListTile(
             contentPadding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             leading: Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF26A69A).withOpacity(0.1),
-                shape: BoxShape.circle,
+                color: qt.emeraldDeep.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(emptyIcon, color: const Color(0xFF26A69A)),
+              child: Icon(
+                  isAudio
+                      ? Icons.music_note_rounded
+                      : Icons.description_rounded,
+                  color: qt.emeraldDeep,
+                  size: 20),
             ),
-            title: Text(name,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            subtitle: Text(_formatBytes(size),
-                style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            title: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: qt.textPrimary),
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 2.0),
+              child: Text(
+                _formatBytes(size),
+                style: TextStyle(color: qt.textMuted, fontSize: 12),
+              ),
+            ),
             trailing: IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              icon: const Icon(Icons.delete_outline_rounded,
+                  color: Colors.redAccent, size: 22),
               onPressed: () {
                 showDialog(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    title: const Text("Delete File"),
-                    content: Text("Are you sure you want to delete $name?"),
+                    backgroundColor: qt.bg,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                    title: Text("Delete File",
+                        style: TextStyle(
+                            color: qt.textPrimary,
+                            fontWeight: FontWeight.bold)),
+                    content: Text(
+                        "Are you sure you want to delete this downloaded item? ($name)",
+                        style: TextStyle(color: qt.textSecondary)),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(ctx),
-                        child: const Text("Cancel"),
+                        child: Text("Cancel",
+                            style: TextStyle(color: qt.textMuted)),
                       ),
                       TextButton(
                         onPressed: () {
@@ -352,7 +337,9 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
                           }
                         },
                         child: const Text("Delete",
-                            style: TextStyle(color: Colors.red)),
+                            style: TextStyle(
+                                color: Colors.redAccent,
+                                fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),

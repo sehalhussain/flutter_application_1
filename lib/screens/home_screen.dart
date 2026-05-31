@@ -54,7 +54,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _refreshAyah();
     _initPrayerTimings();
     _namesFuture = _loadNamesInIsolate();
-    // Listen for PrayerService changes (location, asr, hijri adj changed in other screens)
     PrayerService.instance.addListener(_onPrayerServiceChanged);
   }
 
@@ -68,7 +67,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _initPrayerTimings();
   }
 
-  /// Offload JSON parsing to background isolate.
   Future<List<AsmaName>> _loadNamesInIsolate() async {
     final jsonString =
         await rootBundle.loadString('assets/data/names/asmaulhusna.json');
@@ -169,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// DATE HEADER ( Stateless — no rebuild issues )
+// DATE HEADER
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _DateHeader extends StatelessWidget {
@@ -225,11 +223,8 @@ class _DateHeader extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PRAYER CARD — ISOLATED COUNTDOWN ( THE BIG FIX )
+// PRAYER CARD — ISOLATED COUNTDOWN
 // ═══════════════════════════════════════════════════════════════════════════
-//
-// CRITICAL: This widget has its OWN Timer and setState.
-// The 1-second countdown ONLY rebuilds this card, NOT the entire HomeScreen.
 
 class _PrayerCard extends StatefulWidget {
   final Map<String, dynamic>? timings;
@@ -464,19 +459,6 @@ class _PrayerCardState extends State<_PrayerCard>
                 child: Column(
                   children: [
                     Text(
-                      'إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.white.withOpacity(0.9),
-                        height: 1.6,
-                        fontFamily: 'QPC Hafs',
-                      ),
-                      textAlign: TextAlign.center,
-                      textDirection: TextDirection.rtl,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
                       'Indeed, the prayer is prescribed for the believers \n at specified times. (Quran 4:103)',
                       style: TextStyle(
                         fontSize: 11,
@@ -497,7 +479,7 @@ class _PrayerCardState extends State<_PrayerCard>
               //  NOW & NEXT with inline countdown
               // ═══════════════════════════════════════════════════════
               Row(
-                crossAxisAlignment: CrossAxisAlignment.end, // Align to bottom
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   // Now
                   Expanded(
@@ -505,11 +487,12 @@ class _PrayerCardState extends State<_PrayerCard>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Now",
+                          "NOW",
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withOpacity(0.65),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -548,8 +531,7 @@ class _PrayerCardState extends State<_PrayerCard>
 
                   // ── CENTER: Inline countdown ──
                   Padding(
-                    padding: const EdgeInsets.only(
-                        bottom: 2), // Slight offset to align with time row
+                    padding: const EdgeInsets.only(bottom: 2),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -582,11 +564,12 @@ class _PrayerCardState extends State<_PrayerCard>
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          "Next",
+                          "NEXT",
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withOpacity(0.65),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -650,8 +633,6 @@ class _PrayerCardState extends State<_PrayerCard>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const SizedBox(height: 16),
-
-                    // Other prayers panel with dividers
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -700,7 +681,6 @@ class _PrayerCardState extends State<_PrayerCard>
                                     ],
                                   ),
                                 ),
-                                // Divider between prayers (not after last)
                                 if (!isLast)
                                   Container(
                                     width: 1,
@@ -720,14 +700,14 @@ class _PrayerCardState extends State<_PrayerCard>
               ),
 
               // ═══════════════════════════════════════════════════════
-              //  TAP HINT — Visually centered
+              //  TAP HINT
               // ═══════════════════════════════════════════════════════
               const SizedBox(height: 12),
               Center(
                 child: GestureDetector(
                   onTap: _toggleExpand,
                   child: Row(
-                    mainAxisSize: MainAxisSize.min, // ← KEY: shrink to content
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         _isExpanded ? "Tap to collapse" : "Tap to expand",
@@ -737,11 +717,22 @@ class _PrayerCardState extends State<_PrayerCard>
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+                      const SizedBox(width: 4),
+                      AnimatedRotation(
+                        turns: _isExpanded ? 0.5 : 0.0,
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOut,
+                        child: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 16,
+                          color: Colors.white.withOpacity(0.6),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 0), // Add this to control bottom padding
+              const SizedBox(height: 0),
             ],
           ),
         ),
@@ -751,7 +742,7 @@ class _PrayerCardState extends State<_PrayerCard>
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ESSENTIALS SECTION — Quran + Hadith (square), Duas (wide), Qibla (wide), Hijri (wide)
+// ESSENTIALS SECTION — Premium tile style matching menu_screen
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _EssentialsSection extends StatefulWidget {
@@ -778,16 +769,23 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
 
     return Column(
       children: [
-        Text(
-          "Essentials",
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: qt.textPrimary,
-          ),
+        // Section Header (uppercase, letter-spaced)
+        Row(
+          children: [
+            Icon(Icons.grid_view_rounded, size: 14, color: qt.emeraldLight),
+            const SizedBox(width: 8),
+            Text(
+              "ESSENTIALS",
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: qt.textMuted,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
 
         // Row 1: Quran (left) + Daily Duas (right)
         Row(
@@ -833,17 +831,17 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
         ),
         const SizedBox(height: 16),
 
-        // Row 2: Hadith Library — wide card
-        _WideEssentialCard(
-          title: "Hadith Library",
-          subtitle: "Browse authentic narrations",
-          color: const Color(0xFFE3F2FD).withOpacity(
-            qt.brightness == Brightness.dark ? 0.15 : 1.0,
-          ),
+        // Row 2: Hadith Library — premium list tile style
+        _PremiumEssentialTile(
           icon: FlutterIslamicIcons.solidMohammad,
           iconColor: qt.brightness == Brightness.dark
               ? const Color(0xFFFFB74D)
               : Colors.blue.shade600,
+          iconBg: qt.brightness == Brightness.dark
+              ? const Color(0xFFFFB74D).withOpacity(0.12)
+              : const Color(0xFFE3F2FD),
+          title: "Hadith Library",
+          subtitle: "Browse authentic narrations",
           onTap: () {
             Navigator.push(
               context,
@@ -854,17 +852,17 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
         ),
         const SizedBox(height: 16),
 
-        // Row 3: Hijri Calendar — always visible
-        _WideEssentialCard(
-          title: "Hijri Calendar",
-          subtitle: "View Islamic events and dates",
-          color: const Color(0xFFE3F2FD).withOpacity(
-            qt.brightness == Brightness.dark ? 0.15 : 1.0,
-          ),
+        // Row 3: Hijri Calendar
+        _PremiumEssentialTile(
           icon: Icons.calendar_month_rounded,
           iconColor: qt.brightness == Brightness.dark
               ? const Color(0xFFFFB74D)
               : Colors.blue.shade600,
+          iconBg: qt.brightness == Brightness.dark
+              ? const Color(0xFFFFB74D).withOpacity(0.12)
+              : const Color(0xFFE3F2FD),
+          title: "Hijri Calendar",
+          subtitle: "View Islamic events and dates",
           onTap: () {
             Navigator.push(
               context,
@@ -875,7 +873,7 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
         ),
         const SizedBox(height: 16),
 
-        // ─── Expandable: Qibla + future tools ───
+        // ─── Expandable: Qibla + Prayer Stats ───
         AnimatedCrossFade(
           firstChild: const SizedBox(width: double.infinity),
           secondChild: Column(
@@ -886,21 +884,20 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
                 qt: qt,
               ),
               const SizedBox(height: 16),
-              // Prayer Tracker card
               Consumer<PrayerTracker>(
                 builder: (context, tracker, _) {
                   final todayCount = tracker.todayPrayedCount;
                   final streak = tracker.currentStreak;
-                  return _WideEssentialCard(
+                  return _PremiumEssentialTile(
+                    icon: Icons.mosque_rounded,
+                    iconColor: Colors.green.shade600,
+                    iconBg: Colors.green.withOpacity(
+                      qt.brightness == Brightness.dark ? 0.12 : 0.08,
+                    ),
                     title: "Prayer Stats",
                     subtitle: todayCount > 0
                         ? "$todayCount/5 today · $streak-day streak"
                         : "Check your prayer consistency",
-                    color: Colors.green.withOpacity(
-                      qt.brightness == Brightness.dark ? 0.15 : 0.08,
-                    ),
-                    icon: Icons.mosque_rounded,
-                    iconColor: Colors.green.shade600,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -936,7 +933,7 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(100),
                 border: Border.all(
-                  color: qt.emeraldDeep.withOpacity(0.3), // Colored border
+                  color: qt.emeraldDeep.withOpacity(0.3),
                   width: 1.5,
                 ),
               ),
@@ -954,9 +951,9 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
                   Text(
                     _isExpanded ? "Show Less" : "More Tools",
                     style: TextStyle(
-                      color: qt.emeraldDeep, // Brand color instead of muted
+                      color: qt.emeraldDeep,
                       fontSize: 13,
-                      fontWeight: FontWeight.w700, // Bolder
+                      fontWeight: FontWeight.w700,
                       letterSpacing: 0.3,
                     ),
                   ),
@@ -982,7 +979,7 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ASMA SLIDER — OPTIMIZED WITH PAGINATION & REPAINBOUNDARY
+// ASMA SLIDER
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _AsmaSlider extends StatefulWidget {
@@ -1026,16 +1023,25 @@ class _AsmaSliderState extends State<_AsmaSlider> {
 
     return Column(
       children: [
+        // Section Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              "Asma ul Husna",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: qt.textPrimary,
-              ),
+            Row(
+              children: [
+                Icon(Icons.auto_awesome_rounded,
+                    size: 14, color: qt.emeraldLight),
+                const SizedBox(width: 8),
+                Text(
+                  "ASMA UL HUSNA",
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: qt.textMuted,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
             ),
             GestureDetector(
               onTap: () => Navigator.push(
@@ -1087,12 +1093,11 @@ class _AsmaSliderState extends State<_AsmaSlider> {
                         margin: const EdgeInsets.only(right: 16),
                         child: Stack(
                           children: [
-                            // Card Background
                             Positioned.fill(
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: qt.cardBg,
-                                  borderRadius: BorderRadius.circular(32),
+                                  borderRadius: BorderRadius.circular(24),
                                   border: Border.all(color: qt.borderGlass),
                                   boxShadow: [
                                     BoxShadow(
@@ -1105,7 +1110,6 @@ class _AsmaSliderState extends State<_AsmaSlider> {
                                 ),
                               ),
                             ),
-                            // Content
                             Align(
                               alignment: Alignment.center,
                               child: Padding(
@@ -1187,14 +1191,21 @@ class _AyahSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          "Guidance from Quran",
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: qt.textPrimary,
-          ),
+        // Section Header
+        Row(
+          children: [
+            Icon(Icons.format_quote_rounded, size: 14, color: qt.emeraldLight),
+            const SizedBox(width: 8),
+            Text(
+              "GUIDANCE FROM QURAN",
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: qt.textMuted,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         FutureBuilder<AyahData>(
@@ -1214,7 +1225,6 @@ class _AyahSection extends StatelessWidget {
                 style: TextStyle(color: qt.textMuted),
               );
             }
-            // Wrap in SizedBox to force full width matching parent ListView padding
             return SizedBox(
               width: double.infinity,
               child: _AyahCard(ayah: snapshot.data!, qt: qt),
@@ -1313,10 +1323,9 @@ class _AyahCard extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ESSENTIAL CARDS
+// ESSENTIAL CARD — square tile style
 // ═══════════════════════════════════════════════════════════════════════════
 
-// --- Optimized Component Cards ---
 class _EssentialCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -1344,7 +1353,7 @@ class _EssentialCard extends StatelessWidget {
           onTap: onTap,
           child: Container(
             padding: const EdgeInsets.all(16),
-            height: 160, // Sized down beautifully from 180 to fit grid balance
+            height: 160,
             decoration: BoxDecoration(
                 color: qt.cardBg,
                 borderRadius: BorderRadius.circular(24),
@@ -1399,22 +1408,25 @@ class _EssentialCard extends StatelessWidget {
   }
 }
 
-/// Wide-style essential card (full width, horizontal layout)
-class _WideEssentialCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final Color color;
+/// ═══════════════════════════════════════════════════════════════════════════
+// PREMIUM ESSENTIAL TILE — horizontal list tile style matching menu_screen
+/// ═══════════════════════════════════════════════════════════════════════════
+
+class _PremiumEssentialTile extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
+  final Color iconBg;
+  final String title;
+  final String subtitle;
   final VoidCallback onTap;
   final QuranTheme qt;
 
-  const _WideEssentialCard({
-    required this.title,
-    required this.subtitle,
-    required this.color,
+  const _PremiumEssentialTile({
     required this.icon,
     required this.iconColor,
+    required this.iconBg,
+    required this.title,
+    required this.subtitle,
     required this.onTap,
     required this.qt,
   });
@@ -1436,7 +1448,7 @@ class _WideEssentialCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color,
+                  color: iconBg,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(icon, color: iconColor, size: 28),
@@ -1476,11 +1488,11 @@ class _WideEssentialCard extends StatelessWidget {
 }
 
 /// ═══════════════════════════════════════════════════════════════════════════
-// QIBLA COMPASS CARD – premium, intuitive, no raw degrees
-// ═══════════════════════════════════════════════════════════════════════════
+// QIBLA COMPASS CARD
+/// ═══════════════════════════════════════════════════════════════════════════
 
 class _QiblaCompassCard extends StatefulWidget {
-  final double? qiblaDirection; // bearing from user to Kaaba
+  final double? qiblaDirection;
   final QuranTheme qt;
 
   const _QiblaCompassCard({
@@ -1567,27 +1579,22 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
     final qt = widget.qt;
     final direction = widget.qiblaDirection;
 
-    // No location – prompt
     if (direction == null) {
       return _buildEmptyCard(qt);
     }
 
-    // Devices without compass always show static text, no activation
     if (!_hasCompass) {
       return _buildStaticInfo(qt, direction, canActivate: false);
     }
 
-    // Devices with compass – show static text when inactive, compass when active
     if (!_isActive) {
       return _buildStaticInfo(qt, direction,
           canActivate: true, onTap: _toggleActive);
     }
 
-    // Active – live compass
     return _buildLiveCompass(qt, direction);
   }
 
-  // ──────────── EMPTY STATE ────────────
   Widget _buildEmptyCard(QuranTheme qt) {
     return RepaintBoundary(
       child: Container(
@@ -1623,7 +1630,6 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
     );
   }
 
-  // ──────── STATIC INFO (inactive state for both) ────────
   Widget _buildStaticInfo(
     QuranTheme qt,
     double direction, {
@@ -1645,7 +1651,6 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
           ),
           child: Row(
             children: [
-              // Simple icon, no compass face
               Container(
                 width: 56,
                 height: 56,
@@ -1671,7 +1676,6 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
                     ),
                     const SizedBox(height: 4),
                     if (!canActivate)
-                      // Non-compass device: show direction + note
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1707,7 +1711,6 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
                         ],
                       )
                     else
-                      // Compass device, not yet activated
                       Text(
                         "Tap to activate compass",
                         style: TextStyle(
@@ -1728,7 +1731,6 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
     );
   }
 
-  // ──────────── LIVE COMPASS (active) ────────────
   Widget _buildLiveCompass(QuranTheme qt, double direction) {
     final rotation =
         _deviceHeading != null ? (direction - _deviceHeading!) : direction;
@@ -1738,7 +1740,7 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
 
     return RepaintBoundary(
       child: GestureDetector(
-        onTap: _toggleActive, // tap again to deactivate
+        onTap: _toggleActive,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -1762,7 +1764,6 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
           ),
           child: Row(
             children: [
-              // Compass face with rotating arrow + Kaaba dot
               _buildCompassFace(
                 qt,
                 rotation: rotation,
@@ -1782,7 +1783,6 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
                           color: qt.textPrimary),
                     ),
                     const SizedBox(height: 4),
-                    // Always show direction details when compass is active
                     RichText(
                       text: TextSpan(
                         style: TextStyle(fontSize: 13, color: qt.emeraldDeep),
@@ -1836,7 +1836,6 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
     );
   }
 
-  // ──── SHARED COMPASS FACE (used only when active) ────
   Widget _buildCompassFace(
     QuranTheme qt, {
     required double rotation,
@@ -1859,7 +1858,6 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
               color: qt.bg,
             ),
           ),
-          // Kaaba indicator dot at top
           Positioned(
             top: 6,
             child: Container(
@@ -1871,7 +1869,6 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
               ),
             ),
           ),
-          // Rotating arrow points toward Kaaba
           Transform.rotate(
             angle: arrowRad,
             child: Icon(

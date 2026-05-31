@@ -92,6 +92,10 @@ class PrayerService with ChangeNotifier {
   double? _latitude;
   double? _longitude;
 
+  // ── First-time setup flag ──
+  bool _hasCompletedSetup = false;
+  bool get hasCompletedSetup => _hasCompletedSetup;
+
   // ── Calculation Settings ──
   int asrMethod = 0; // 0 = Shafi, 1 = Hanafi
   int calculationMethod = 0; // see _methodList below
@@ -241,10 +245,27 @@ class PrayerService with ChangeNotifier {
   //  INIT
   // ═══════════════════════════════════════════════════════════════════════
 
+  /// Load the setup completed flag from SharedPreferences.
+  Future<void> _loadSetupFlag() async {
+    final prefs = await SharedPreferences.getInstance();
+    _hasCompletedSetup = prefs.getBool('prayer_setup_completed') ?? false;
+  }
+
+  /// Mark the first-time setup as complete.
+  Future<void> setSetupCompleted() async {
+    _hasCompletedSetup = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('prayer_setup_completed', true);
+    notifyListeners();
+  }
+
   Future<void> initLocation() async {
     final prefs = await SharedPreferences.getInstance();
     currentCity = prefs.getString('prayer_city');
     currentCountry = prefs.getString('prayer_country');
+
+    // Load first-time setup flag
+    await _loadSetupFlag();
 
     // Asr method: always load user's saved preference (or default 0)
     asrMethod = prefs.getInt('prayer_asr_method') ?? 0;

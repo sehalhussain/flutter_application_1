@@ -196,6 +196,7 @@ class _PrayerScreenState extends State<PrayerScreen>
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
     final tracker = context.watch<PrayerTracker>();
+    final prayerService = context.watch<PrayerService>();
     final monthName = DateFormat('MMMM').format(_displayDate);
     final yearNum = _displayDate.year.toString();
 
@@ -321,7 +322,7 @@ class _PrayerScreenState extends State<PrayerScreen>
                                   color: Colors.white, size: 14),
                               const SizedBox(width: 6),
                               Text(
-                                "${PrayerService.instance.currentCity ?? 'Unknown'}, ${PrayerService.instance.currentCountry ?? ''}",
+                                "${prayerService.currentCity ?? 'Unknown'}, ${prayerService.currentCountry ?? ''}",
                                 style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 12,

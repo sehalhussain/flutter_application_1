@@ -20,56 +20,91 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<QuranSettings>();
-    final colorScheme = Theme.of(context).colorScheme;
     final qt = QuranTheme.of(context);
+    final isDark = qt.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: qt.bg,
       appBar: AppBar(
-        title: const Text("Settings",
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          "Settings",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: qt.textPrimary,
+            fontSize: 20,
+          ),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
         centerTitle: true,
+        iconTheme: IconThemeData(color: qt.textPrimary),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         children: [
           _buildSectionHeader("Prayer Configuration"),
           const SizedBox(height: 10),
-          _buildLocationTile(context, qt),
-          const SizedBox(height: 8),
-          _buildAsrMethodTile(context, qt),
-          const SizedBox(height: 8),
-          _buildHijriAdjustmentTile(context, qt),
+
+          // Combined Location & Auto-Calculation Info Card
+          _buildPremiumTile(
+            qt,
+            icon: Icons.location_on_rounded,
+            title: "Prayer Location",
+            subtitle:
+                "${PrayerService.instance.currentCity ?? 'Unknown'}, ${PrayerService.instance.currentCountry ?? ''}",
+            additionalInfo:
+                "Method: ${_getCalculationMethodLabel(shortOnly: true)} (Auto-detected)",
+            isConfigured: PrayerService.instance.currentCity != null,
+            onTap: () => _showLocationBottomSheet(context, qt),
+          ),
+          const SizedBox(height: 10),
+
+          _buildPremiumTile(
+            qt,
+            icon: Icons.timelapse_rounded,
+            title: "Asr Calculation Method",
+            subtitle: PrayerService.instance.asrMethod == 0
+                ? "Standard (Shafi'i, Maliki, Hanbali)"
+                : "Hanafi School Rules",
+            isConfigured: true,
+            onTap: () => _showAsrMethodSheet(context, qt),
+          ),
+          const SizedBox(height: 10),
+
+          _buildPremiumTile(
+            qt,
+            icon: Icons.calendar_today_rounded,
+            title: "Hijri Calendar Correction",
+            subtitle: _hijriLabel(),
+            isConfigured: PrayerService.instance.hijriAdjustment != 0,
+            onTap: () => _showHijriAdjustmentSheet(context, qt),
+          ),
+
           const SizedBox(height: 30),
           _buildSectionHeader("Appearance"),
           const SizedBox(height: 10),
-          _buildThemeSelector(context, settings),
-          const SizedBox(height: 8),
-          SwitchListTile(
-            secondary:
-                Icon(Icons.motion_photos_on_outlined, color: qt.emeraldDeep),
-            title: const Text("Bismillah Splash Screen"),
-            subtitle: const Text("Show Bismillah animation at launch"),
-            value: settings.showBismillahSplash,
-            activeTrackColor: qt.emeraldDeep,
-            onChanged: (val) => settings.setShowBismillahSplash(val),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            tileColor:
-                colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-          ),
-          const SizedBox(height: 30),
-          _buildSectionHeader("Storage & Data"),
+          _buildThemeSelector(context, settings, qt, isDark),
           const SizedBox(height: 10),
-          ListTile(
-            leading: Icon(Icons.storage, color: qt.emeraldDeep),
-            title: const Text("Manage Downloads"),
-            subtitle: const Text("Delete downloaded Surah audio files"),
-            trailing: const Icon(Icons.chevron_right),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            tileColor:
-                colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+          _buildSwitchTile(
+            qt: qt,
+            isDark: isDark,
+            icon: Icons.motion_photos_on_outlined,
+            title: "Bismillah Splash Screen",
+            subtitle: "Show Bismillah animation at launch",
+            value: settings.showBismillahSplash,
+            onChanged: (val) => settings.setShowBismillahSplash(val),
+          ),
+
+          const SizedBox(height: 30),
+          _buildSectionHeader("Storage & Downloads"),
+          const SizedBox(height: 10),
+
+          _buildPremiumTile(
+            qt,
+            icon: Icons.audiotrack_rounded,
+            title: "Manage Audio Downloads",
+            subtitle: "View and delete cached Surah audio recitations",
+            isConfigured: false,
             onTap: () {
               Navigator.push(
                 context,
@@ -78,23 +113,14 @@ class _MenuScreenState extends State<MenuScreen> {
               );
             },
           ),
-          const SizedBox(height: 30),
-          _buildSectionHeader("Translations"),
           const SizedBox(height: 10),
-          _buildTranslationManagement(context),
+
+          _buildTranslationManagement(context, qt, isDark),
+
           const SizedBox(height: 30),
           _buildSectionHeader("About"),
           const SizedBox(height: 10),
-          const ListTile(
-            leading: Icon(Icons.info_outline),
-            title: Text("App Version"),
-            trailing: Text("1.1.0", style: TextStyle(color: Colors.grey)),
-          ),
-          const ListTile(
-            leading: Icon(Icons.favorite_border),
-            title: Text("Credits"),
-            subtitle: Text("Built with passion by Sehal Hussain"),
-          ),
+          _buildAboutSection(qt),
           const SizedBox(height: 40),
         ],
       ),
@@ -102,200 +128,119 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   Widget _buildSectionHeader(String title) {
-    return Text(
-      title.toUpperCase(),
-      style: const TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.bold,
-        color: Colors.grey,
-        letterSpacing: 1.2,
+    return Padding(
+        padding: const EdgeInsets.only(left: 4, bottom: 4),
+        child: Text(
+          title,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey.withOpacity(0.8),
+            letterSpacing: 1.5,
+          ),
+        ));
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  //  UNIVERSAL PREMIUM LIST TILE STYLE
+  // ═══════════════════════════════════════════════════════════════════════
+
+  Widget _buildPremiumTile(
+    QuranTheme qt, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    String? additionalInfo,
+    required bool isConfigured,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: qt.cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isConfigured
+                ? qt.emeraldDeep.withOpacity(0.08)
+                : qt.textMuted.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon,
+              color: isConfigured ? qt.emeraldDeep : qt.textMuted, size: 20),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+              fontWeight: FontWeight.w600, fontSize: 14, color: qt.textPrimary),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 2.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                subtitle,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: isConfigured ? qt.textSecondary : qt.textMuted),
+              ),
+              if (additionalInfo != null) ...[
+                const SizedBox(height: 4),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: qt.emeraldDeep.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    additionalInfo,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: qt.emeraldDeep,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        trailing:
+            Icon(Icons.chevron_right_rounded, size: 18, color: qt.textMuted),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        onTap: onTap,
       ),
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  //  LOCATION TILE
-  // ═══════════════════════════════════════════════════════════════════════
-
-  Widget _buildLocationTile(BuildContext context, QuranTheme qt) {
-    return ListTile(
-      leading: Icon(Icons.location_on, color: qt.emeraldDeep),
-      title: const Text("Prayer Location"),
-      subtitle: Text(
-          "${PrayerService.instance.currentCity ?? 'Unknown'}, ${PrayerService.instance.currentCountry ?? ''}"),
-      trailing: const Icon(Icons.edit, size: 20, color: Colors.grey),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      tileColor: Theme.of(context)
-          .colorScheme
-          .surfaceContainerHighest
-          .withValues(alpha: 0.3),
-      onTap: () => _showLocationBottomSheet(context, qt),
-    );
+  String _hijriLabel() {
+    final adj = PrayerService.instance.hijriAdjustment;
+    if (adj == 0) return 'Standard (No local calculation offset)';
+    return 'Shifted ${adj >= 0 ? '+' : ''}$adj day${adj.abs() == 1 ? '' : 's'} based on sightings';
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  //  CALCULATION METHOD TILE
-  // ═══════════════════════════════════════════════════════════════════════
-
-  Widget _buildCalculationMethodTile(BuildContext context, QuranTheme qt) {
+  String _getCalculationMethodLabel({bool shortOnly = false}) {
     const methods = PrayerService.calculationMethods;
     final currentId = PrayerService.instance.calculationMethod;
     final current = methods.firstWhere(
       (m) => m['id'] == currentId,
       orElse: () => methods.first,
     );
-
-    return ListTile(
-      leading: Icon(Icons.calculate_outlined, color: qt.emeraldDeep),
-      title: const Text("Calculation Method"),
-      subtitle: Text("${current['name']} (${current['short']})"),
-      trailing: const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      tileColor: Theme.of(context)
-          .colorScheme
-          .surfaceContainerHighest
-          .withValues(alpha: 0.3),
-      onTap: () => _showCalculationMethodSheet(context, qt),
-    );
-  }
-
-  void _showCalculationMethodSheet(BuildContext context, QuranTheme qt) {
-    const methods = PrayerService.calculationMethods;
-    final currentId = PrayerService.instance.calculationMethod;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: qt.bg,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.65,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (context, scrollController) => Padding(
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: qt.borderGlass,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                "Calculation Method",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: qt.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                "Different regions and Islamic organizations use different astronomical conventions (angles of the sun) to calculate Fajr and Isha prayer times. Select the method recommended for your region to ensure accurate daily timings.",
-                style:
-                    TextStyle(fontSize: 13, color: qt.textMuted, height: 1.4),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView.builder(
-                  controller: scrollController,
-                  itemCount: methods.length,
-                  itemBuilder: (context, index) {
-                    final method = methods[index];
-                    final isSelected = method['id'] == currentId;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: Material(
-                        color: isSelected
-                            ? qt.emeraldDeep.withValues(alpha: 0.08)
-                            : qt.cardBg,
-                        borderRadius: BorderRadius.circular(16),
-                        child: InkWell(
-                          onTap: () async {
-                            Navigator.pop(ctx);
-                            await PrayerService.instance
-                                .setCalculationMethod(method['id'] as int);
-                            setState(() {});
-                          },
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 14),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isSelected
-                                    ? qt.emeraldDeep
-                                    : qt.borderGlass,
-                                width: isSelected ? 1.5 : 1.0,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    method['name'] as String,
-                                    style: TextStyle(
-                                      fontWeight: isSelected
-                                          ? FontWeight.bold
-                                          : FontWeight.w600,
-                                      color: qt.textPrimary,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                if (isSelected)
-                                  Icon(Icons.check_circle_rounded,
-                                      color: qt.emeraldDeep)
-                                else
-                                  Icon(Icons.radio_button_off_rounded,
-                                      color: qt.borderGlass),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    if (shortOnly) {
+      return current['short'] as String;
+    }
+    return "${current['name']} (${current['short']})";
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  //  ASR METHOD TILE
+  //  ASR METHOD SHEET
   // ═══════════════════════════════════════════════════════════════════════
-
-  Widget _buildAsrMethodTile(BuildContext context, QuranTheme qt) {
-    final method = PrayerService.instance.asrMethod;
-    return ListTile(
-      leading: Icon(Icons.access_time_outlined, color: qt.emeraldDeep),
-      title: const Text("Asr Calculation Method"),
-      subtitle:
-          Text(method == 0 ? "Standard (Shafi, Maliki, Hanbali)" : "Hanafi"),
-      trailing: const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      tileColor: Theme.of(context)
-          .colorScheme
-          .surfaceContainerHighest
-          .withValues(alpha: 0.3),
-      onTap: () => _showAsrMethodSheet(context, qt),
-    );
-  }
 
   void _showAsrMethodSheet(BuildContext context, QuranTheme qt) {
     showModalBottomSheet(
@@ -306,22 +251,22 @@ class _MenuScreenState extends State<MenuScreen> {
       builder: (ctx) {
         final currentMethod = PrayerService.instance.asrMethod;
         return Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Center(
                 child: Container(
-                  width: 40,
+                  width: 36,
                   height: 4,
                   decoration: BoxDecoration(
                     color: qt.borderGlass,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               Text(
                 "Asr Calculation Method",
                 style: TextStyle(
@@ -332,7 +277,7 @@ class _MenuScreenState extends State<MenuScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                "The major Islamic schools of jurisprudence calculate the start of Asr prayer differently. The Standard method (Shafi, Maliki, Hanbali) begins earlier, when the shadow of an object equals its height. The Hanafi method begins later, when the shadow is twice the object's height.",
+                "Different juristic schools define the afternoon prayer timestamp differently based on shadow length calculations.",
                 style:
                     TextStyle(fontSize: 13, color: qt.textMuted, height: 1.4),
               ),
@@ -341,7 +286,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 context,
                 qt,
                 title: "Standard Method",
-                subtitle: "Shafi, Maliki, Hanbali schools (Earlier time)",
+                subtitle: "Shafi'i, Maliki, Hanbali — Earlier shadow point",
                 value: 0,
                 isSelected: currentMethod == 0,
                 onTap: () async {
@@ -355,8 +300,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 context,
                 qt,
                 title: "Hanafi Method",
-                subtitle:
-                    "Hanafi school (Later time, when shadow is double object length)",
+                subtitle: "Double shadow length rule — Later calculation point",
                 value: 1,
                 isSelected: currentMethod == 1,
                 onTap: () async {
@@ -381,104 +325,63 @@ class _MenuScreenState extends State<MenuScreen> {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    return Material(
-      color: isSelected ? qt.emeraldDeep.withValues(alpha: 0.08) : qt.cardBg,
+    return InkWell(
+      onTap: onTap,
       borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected ? qt.emeraldDeep : qt.borderGlass,
-              width: isSelected ? 1.5 : 1.0,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? qt.emeraldDeep.withOpacity(0.05) : qt.cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color:
+                isSelected ? qt.emeraldDeep : qt.borderGlass.withOpacity(0.5),
+            width: isSelected ? 1.5 : 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: qt.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: qt.textMuted,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? qt.emeraldDeep.withValues(alpha: 0.15)
-                      : qt.bg,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.schedule_rounded,
-                  color: isSelected ? qt.emeraldDeep : qt.textMuted,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.w600,
-                        fontSize: 15,
-                        color: qt.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: qt.textMuted,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              if (isSelected)
-                Icon(Icons.check_circle_rounded, color: qt.emeraldDeep)
-              else
-                Icon(Icons.radio_button_off_rounded, color: qt.borderGlass),
-            ],
-          ),
+            const SizedBox(width: 12),
+            Icon(
+              isSelected
+                  ? Icons.radio_button_checked_rounded
+                  : Icons.radio_button_off_rounded,
+              color: isSelected ? qt.emeraldDeep : qt.textMuted,
+              size: 22,
+            ),
+          ],
         ),
       ),
     );
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  //  HIJRI ADJUSTMENT TILE
+  //  HIJRI ADJUSTMENT SHEET
   // ═══════════════════════════════════════════════════════════════════════
-
-  Widget _buildHijriAdjustmentTile(BuildContext context, QuranTheme qt) {
-    final adjustment = PrayerService.instance.hijriAdjustment;
-    String label;
-    if (adjustment == 0) {
-      label = "No adjustment";
-    } else if (adjustment > 0) {
-      label = "+$adjustment day${adjustment == 1 ? '' : 's'}";
-    } else {
-      label = "$adjustment day${adjustment == -1 ? '' : 's'}";
-    }
-
-    return ListTile(
-      leading: Icon(Icons.calendar_month_outlined, color: qt.emeraldDeep),
-      title: const Text("Hijri Calendar Adjustment"),
-      subtitle: Text(label),
-      trailing: const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      tileColor: Theme.of(context)
-          .colorScheme
-          .surfaceContainerHighest
-          .withValues(alpha: 0.3),
-      onTap: () => _showHijriAdjustmentSheet(context, qt),
-    );
-  }
 
   void _showHijriAdjustmentSheet(BuildContext context, QuranTheme qt) {
     showModalBottomSheet(
@@ -493,34 +396,26 @@ class _MenuScreenState extends State<MenuScreen> {
           final hijri = HijriCalendar.fromDate(adjustedDate);
           final formattedHijriDate =
               "${hijri.hDay} ${hijri.longMonthName} ${hijri.hYear} AH";
-          String label;
-          if (adj == 0) {
-            label = "No adjustment";
-          } else if (adj > 0) {
-            label = "+$adj day${adj == 1 ? '' : 's'}";
-          } else {
-            label = "$adj day${adj == -1 ? '' : 's'}";
-          }
 
           return Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
                   child: Container(
-                    width: 40,
+                    width: 36,
                     height: 4,
                     decoration: BoxDecoration(
                       color: qt.borderGlass,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 Text(
-                  "Hijri Calendar Adjustment",
+                  "Hijri Calendar Correction",
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -529,121 +424,53 @@ class _MenuScreenState extends State<MenuScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  "Because the traditional Islamic calendar is based on actual sightings of the crescent moon, pre-calculated calendar dates may differ by 1 or 2 days from your local community's actual practice. Adjusting this shifts the calculated Hijri dates across the app.",
+                  "Fine-tune the lunar cycle display match by adding or subtracting calendar days manually based on actual regional moon sightings.",
                   style:
                       TextStyle(fontSize: 13, color: qt.textMuted, height: 1.4),
                 ),
-                const SizedBox(height: 36),
+                const SizedBox(height: 28),
                 Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 16),
-                    decoration: BoxDecoration(
-                      color: qt.cardBg,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: qt.borderGlass),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.01),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Minus Button
-                        Material(
-                          color: adj > -2
-                              ? qt.emeraldDeep.withValues(alpha: 0.1)
-                              : qt.borderGlass.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
-                            onTap: adj > -2
-                                ? () async {
-                                    await PrayerService.instance
-                                        .setHijriAdjustment(adj - 1);
-                                    setModalState(() {});
-                                    setState(() {});
-                                  }
-                                : null,
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Icon(
-                                Icons.remove_rounded,
-                                color: adj > -2 ? qt.emeraldDeep : qt.textMuted,
-                                size: 24,
-                              ),
-                            ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _adjBtn(qt, Icons.remove_rounded, adj > -2, () async {
+                        await PrayerService.instance
+                            .setHijriAdjustment(adj - 1);
+                        setModalState(() {});
+                        setState(() {});
+                      }),
+                      Container(
+                        constraints: const BoxConstraints(minWidth: 90),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '${adj >= 0 ? '+' : ''}$adj',
+                          style: TextStyle(
+                            fontSize: 38,
+                            fontWeight: FontWeight.bold,
+                            color: qt.textPrimary,
+                            fontFamily: 'monospace',
                           ),
                         ),
-                        const SizedBox(width: 32),
-                        // Display Value
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              adj >= 0 ? "+$adj" : "$adj",
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: qt.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              label,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: qt.emeraldDeep,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 32),
-                        // Plus Button
-                        Material(
-                          color: adj < 2
-                              ? qt.emeraldDeep.withValues(alpha: 0.1)
-                              : qt.borderGlass.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
-                            onTap: adj < 2
-                                ? () async {
-                                    await PrayerService.instance
-                                        .setHijriAdjustment(adj + 1);
-                                    setModalState(() {});
-                                    setState(() {});
-                                  }
-                                : null,
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Icon(
-                                Icons.add_rounded,
-                                color: adj < 2 ? qt.emeraldDeep : qt.textMuted,
-                                size: 24,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                      _adjBtn(qt, Icons.add_rounded, adj < 2, () async {
+                        await PrayerService.instance
+                            .setHijriAdjustment(adj + 1);
+                        setModalState(() {});
+                        setState(() {});
+                      }),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 24),
                 Center(
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
+                        horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
-                      color: qt.emeraldDeep.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(16),
+                      color: qt.emeraldDeep.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: qt.emeraldDeep.withValues(alpha: 0.2),
+                        color: qt.emeraldDeep.withOpacity(0.15),
                         width: 1,
                       ),
                     ),
@@ -651,29 +478,24 @@ class _MenuScreenState extends State<MenuScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.event_available_rounded,
-                            color: qt.emeraldDeep, size: 20),
+                            color: qt.emeraldDeep, size: 16),
                         const SizedBox(width: 8),
                         Text(
                           "Calculated Date: ",
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: qt.textMuted,
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style:
+                              TextStyle(fontSize: 12, color: qt.textSecondary),
                         ),
                         Text(
                           formattedHijriDate,
                           style: TextStyle(
-                            fontSize: 13,
-                            color: qt.emeraldDeep,
-                            fontWeight: FontWeight.bold,
-                          ),
+                              fontSize: 12,
+                              color: qt.emeraldDeep,
+                              fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
               ],
             ),
           );
@@ -682,8 +504,27 @@ class _MenuScreenState extends State<MenuScreen> {
     );
   }
 
+  Widget _adjBtn(
+      QuranTheme qt, IconData icon, bool enabled, VoidCallback onTap) {
+    return Material(
+      color: enabled
+          ? qt.emeraldDeep.withOpacity(0.08)
+          : qt.borderGlass.withOpacity(0.05),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: enabled ? onTap : null,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Icon(icon,
+              color: enabled ? qt.emeraldDeep : qt.textMuted, size: 24),
+        ),
+      ),
+    );
+  }
+
   // ═══════════════════════════════════════════════════════════════════════
-  //  LOCATION BOTTOM SHEET
+  //  LOCATION SHEET
   // ═══════════════════════════════════════════════════════════════════════
 
   void _showLocationBottomSheet(BuildContext context, QuranTheme qt) {
@@ -707,12 +548,21 @@ class _MenuScreenState extends State<MenuScreen> {
               bottom: MediaQuery.of(ctx).viewInsets.bottom,
               left: 24,
               right: 24,
-              top: 24,
+              top: 16,
             ),
             child: SizedBox(
-              height: MediaQuery.of(ctx).size.height * 0.7,
+              height: MediaQuery.of(ctx).size.height * 0.65,
               child: Column(
                 children: [
+                  Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: qt.borderGlass,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(
@@ -721,26 +571,40 @@ class _MenuScreenState extends State<MenuScreen> {
                               setModalState(() => searchQuery = val),
                           style: TextStyle(color: qt.textPrimary),
                           decoration: InputDecoration(
-                            hintText: "Search city...",
-                            hintStyle: TextStyle(color: qt.textMuted),
-                            prefixIcon: Icon(Icons.search, color: qt.textMuted),
+                            hintText: "Search your city...",
+                            hintStyle:
+                                TextStyle(color: qt.textMuted, fontSize: 14),
+                            prefixIcon: Icon(Icons.search_rounded,
+                                color: qt.textMuted, size: 20),
                             filled: true,
                             fillColor: qt.cardBg,
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 12),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide.none,
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(color: qt.borderGlass),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                  color: qt.borderGlass.withOpacity(0.5)),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Container(
+                        height: 48,
+                        width: 48,
                         decoration: BoxDecoration(
-                          color: qt.emeraldDeep.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
+                          color: qt.emeraldDeep.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                              color: qt.emeraldDeep.withOpacity(0.15)),
                         ),
                         child: IconButton(
-                          icon: Icon(Icons.my_location, color: qt.emeraldDeep),
+                          icon: Icon(Icons.my_location_rounded,
+                              color: qt.emeraldDeep, size: 20),
                           onPressed: () async {
                             Navigator.pop(ctx);
                             await PrayerService.instance.fetchDeviceLocation();
@@ -752,20 +616,25 @@ class _MenuScreenState extends State<MenuScreen> {
                   ),
                   const SizedBox(height: 16),
                   Expanded(
-                    child: ListView.builder(
+                    child: ListView.separated(
                       itemCount:
                           filtered.length + (searchQuery.isNotEmpty ? 1 : 0),
+                      separatorBuilder: (_, __) => Divider(
+                          color: qt.borderGlass.withOpacity(0.3), height: 1),
                       itemBuilder: (context, index) {
                         if (searchQuery.isNotEmpty && index == 0) {
                           return ListTile(
-                            leading: Icon(Icons.public, color: qt.emeraldDeep),
-                            title: Text('Search for "$searchQuery"',
-                                style: TextStyle(
-                                    color: qt.emeraldDeep,
-                                    fontWeight: FontWeight.bold)),
-                            subtitle: Text('Worldwide search',
-                                style: TextStyle(
-                                    color: qt.textMuted, fontSize: 12)),
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(Icons.public_rounded,
+                                color: qt.emeraldDeep),
+                            title: Text(
+                              'Custom entry: "$searchQuery"',
+                              style: TextStyle(
+                                color: qt.emeraldDeep,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
                             onTap: () async {
                               Navigator.pop(ctx);
                               await PrayerService.instance
@@ -779,15 +648,21 @@ class _MenuScreenState extends State<MenuScreen> {
                             searchQuery.isNotEmpty ? index - 1 : index;
                         final loc = filtered[locIndex];
                         return ListTile(
+                          contentPadding: EdgeInsets.zero,
                           leading: Icon(Icons.location_on_outlined,
-                              color: qt.textMuted),
-                          title: Text(loc['city']!,
-                              style: TextStyle(
-                                  color: qt.textPrimary,
-                                  fontWeight: FontWeight.bold)),
-                          subtitle: Text(loc['country']!,
-                              style:
-                                  TextStyle(color: qt.textMuted, fontSize: 12)),
+                              color: qt.textMuted, size: 20),
+                          title: Text(
+                            loc['city']!,
+                            style: TextStyle(
+                              color: qt.textPrimary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          subtitle: Text(
+                            loc['country']!,
+                            style: TextStyle(color: qt.textMuted, fontSize: 12),
+                          ),
                           onTap: () async {
                             Navigator.pop(ctx);
                             await PrayerService.instance
@@ -808,40 +683,29 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  //  THEME SELECTOR
+  //  THEME SELECTOR & SWITCHES
   // ═══════════════════════════════════════════════════════════════════════
 
-  Widget _buildThemeSelector(BuildContext context, QuranSettings settings) {
+  Widget _buildThemeSelector(BuildContext context, QuranSettings settings,
+      QuranTheme qt, bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+        color: qt.cardBg,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
       ),
       child: Column(
         children: [
-          _buildThemeTile(
-            context,
-            "Light",
-            Icons.light_mode_outlined,
-            ThemeMode.light,
-            settings,
-          ),
-          const Divider(height: 1, indent: 56),
-          _buildThemeTile(
-            context,
-            "Dark",
-            Icons.dark_mode_outlined,
-            ThemeMode.dark,
-            settings,
-          ),
-          const Divider(height: 1, indent: 56),
-          _buildThemeTile(
-            context,
-            "System Default",
-            Icons.settings_suggest_outlined,
-            ThemeMode.system,
-            settings,
-          ),
+          _buildThemeTile(context, "Light Mode", Icons.light_mode_outlined,
+              ThemeMode.light, settings, qt),
+          Divider(
+              height: 1, color: qt.borderGlass.withOpacity(0.3), indent: 56),
+          _buildThemeTile(context, "Dark Mode", Icons.dark_mode_outlined,
+              ThemeMode.dark, settings, qt),
+          Divider(
+              height: 1, color: qt.borderGlass.withOpacity(0.3), indent: 56),
+          _buildThemeTile(context, "System Default",
+              Icons.settings_suggest_outlined, ThemeMode.system, settings, qt),
         ],
       ),
     );
@@ -853,26 +717,83 @@ class _MenuScreenState extends State<MenuScreen> {
     IconData icon,
     ThemeMode mode,
     QuranSettings settings,
+    QuranTheme qt,
   ) {
     final isSelected = settings.themeMode == mode;
-    final qt = QuranTheme.of(context);
     return ListTile(
-      leading: Icon(icon, color: isSelected ? qt.emeraldDeep : null),
-      title: Text(title,
-          style: TextStyle(
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-      trailing:
-          isSelected ? Icon(Icons.check_circle, color: qt.emeraldDeep) : null,
+      leading: Icon(icon,
+          color: isSelected ? qt.emeraldDeep : qt.textMuted, size: 20),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          color: qt.textPrimary,
+        ),
+      ),
+      trailing: isSelected
+          ? Icon(Icons.check_circle_rounded, color: qt.emeraldDeep, size: 20)
+          : Icon(Icons.radio_button_off_rounded,
+              color: qt.borderGlass, size: 20),
       onTap: () => settings.setThemeMode(mode),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     );
   }
 
+  Widget _buildSwitchTile({
+    required QuranTheme qt,
+    required bool isDark,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: qt.cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
+      ),
+      child: SwitchListTile(
+        secondary: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: value
+                ? qt.emeraldDeep.withOpacity(0.08)
+                : qt.textMuted.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon,
+              color: value ? qt.emeraldDeep : qt.textMuted, size: 20),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+              fontWeight: FontWeight.w600, fontSize: 14, color: qt.textPrimary),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(fontSize: 12, color: qt.textMuted),
+        ),
+        value: value,
+        activeTrackColor: qt.emeraldDeep,
+        activeColor: Colors.white,
+        inactiveTrackColor: isDark
+            ? Colors.white.withOpacity(0.1)
+            : Colors.black.withOpacity(0.1),
+        onChanged: onChanged,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
+  }
+
   // ═══════════════════════════════════════════════════════════════════════
-  //  TRANSLATIONS
+  //  TRANSLATIONS MANAGEMENT (Merged into Storage & Downloads)
   // ═══════════════════════════════════════════════════════════════════════
 
-  Widget _buildTranslationManagement(BuildContext context) {
+  Widget _buildTranslationManagement(
+      BuildContext context, QuranTheme qt, bool isDark) {
     final downloadService = TranslationDownloadService.instance;
     return FutureBuilder<void>(
       future: downloadService.refreshDownloadedStatus(),
@@ -886,75 +807,127 @@ class _MenuScreenState extends State<MenuScreen> {
                 .toList();
 
             if (downloaded.isEmpty) {
-              return ListTile(
-                leading: const Icon(Icons.translate, color: Color(0xFF26A69A)),
-                title: const Text("Manage Translations"),
-                subtitle: const Text(
-                    "No downloaded translations. Tap download icon in Quran reader."),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-                tileColor: Theme.of(context)
-                    .colorScheme
-                    .surfaceVariant
-                    .withOpacity(0.3),
+              return Container(
+                decoration: BoxDecoration(
+                  color: qt.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
+                ),
+                child: ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: qt.textMuted.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(Icons.translate_rounded,
+                        color: qt.textMuted, size: 20),
+                  ),
+                  title: Text(
+                    "Translation Downloads",
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: qt.textPrimary),
+                  ),
+                  subtitle: Text(
+                    "No custom translations downloaded. You can grab translations via the Quran reader view.",
+                    style: TextStyle(fontSize: 12, color: qt.textMuted),
+                  ),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
+                ),
               );
             }
 
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, top: 12, bottom: 8),
+                  child: Text(
+                    "DOWNLOADED TRANSLATIONS",
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: qt.textSecondary.withOpacity(0.8),
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
                 for (final t in downloaded)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF26A69A).withOpacity(0.1),
-                          shape: BoxShape.circle,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: qt.cardBg,
+                        borderRadius: BorderRadius.circular(16),
+                        border:
+                            Border.all(color: qt.borderGlass.withOpacity(0.4)),
+                      ),
+                      child: ListTile(
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: qt.emeraldDeep.withOpacity(0.08),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.check_circle_rounded,
+                              color: qt.emeraldDeep, size: 20),
                         ),
-                        child: const Icon(Icons.check_circle_rounded,
-                            color: Color(0xFF26A69A), size: 20),
+                        title: Text(
+                          t.displayName,
+                          style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              color: qt.textPrimary),
+                        ),
+                        subtitle: Text(
+                          "Downloaded Translation",
+                          style: TextStyle(color: qt.textMuted, fontSize: 12),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete_outline_rounded,
+                              color: Colors.redAccent, size: 22),
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                backgroundColor: qt.bg,
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20)),
+                                title: Text("Delete Translation",
+                                    style: TextStyle(
+                                        color: qt.textPrimary,
+                                        fontWeight: FontWeight.bold)),
+                                content: Text(
+                                    "Delete downloaded translation: ${t.displayName}?",
+                                    style: TextStyle(color: qt.textSecondary)),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: Text("Cancel",
+                                        style: TextStyle(color: qt.textMuted)),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text("Delete",
+                                        style: TextStyle(
+                                            color: Colors.redAccent,
+                                            fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true) {
+                              await downloadService.deleteTranslation(t.id);
+                              setState(() {});
+                            }
+                          },
+                        ),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
                       ),
-                      title: Text(t.displayName,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 14)),
-                      subtitle: const Text("Downloaded",
-                          style: TextStyle(color: Colors.grey, fontSize: 12)),
-                      trailing: IconButton(
-                        icon:
-                            const Icon(Icons.delete_outline, color: Colors.red),
-                        onPressed: () async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text("Delete Translation"),
-                              content: Text(
-                                  "Delete downloaded translation: ${t.displayName}?"),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx, false),
-                                  child: const Text("Cancel"),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx, true),
-                                  child: const Text("Delete",
-                                      style: TextStyle(color: Colors.red)),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (confirm == true) {
-                            await downloadService.deleteTranslation(t.id);
-                            setState(() {});
-                          }
-                        },
-                      ),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                      tileColor: Theme.of(context)
-                          .colorScheme
-                          .surfaceVariant
-                          .withOpacity(0.3),
                     ),
                   ),
               ],
@@ -962,6 +935,49 @@ class _MenuScreenState extends State<MenuScreen> {
           },
         );
       },
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  //  ABOUT & CREDITS
+  // ═══════════════════════════════════════════════════════════════════════
+
+  Widget _buildAboutSection(QuranTheme qt) {
+    return Container(
+      decoration: BoxDecoration(
+        color: qt.cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
+      ),
+      child: Column(
+        children: [
+          ListTile(
+            leading: Icon(Icons.info_outline, color: qt.textMuted, size: 20),
+            title: Text("App Version",
+                style: TextStyle(
+                    fontSize: 14,
+                    color: qt.textPrimary,
+                    fontWeight: FontWeight.w500)),
+            trailing: const Text("1.1.0",
+                style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600)),
+          ),
+          Divider(
+              height: 1, color: qt.borderGlass.withOpacity(0.3), indent: 56),
+          ListTile(
+            leading: Icon(Icons.favorite_border, color: qt.textMuted, size: 20),
+            title: Text("Credits",
+                style: TextStyle(
+                    fontSize: 14,
+                    color: qt.textPrimary,
+                    fontWeight: FontWeight.w500)),
+            subtitle: Text("Built with passion by Sehal Hussain",
+                style: TextStyle(color: qt.textMuted, fontSize: 12)),
+          ),
+        ],
+      ),
     );
   }
 }

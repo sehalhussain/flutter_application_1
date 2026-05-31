@@ -75,7 +75,7 @@ class DuaSegmentScreen extends StatelessWidget {
       backgroundColor: qt.bg,
       body: Column(
         children: [
-          // ── Immersive Header ──
+          // ── Immersive Premium Header ──
           Container(
             width: double.infinity,
             padding: EdgeInsets.fromLTRB(12, topPadding + 8, 16, 24),
@@ -85,6 +85,13 @@ class DuaSegmentScreen extends StatelessWidget {
                 end: Alignment.bottomCenter,
                 colors: [qt.emeraldDeep, qt.emeraldMid],
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: qt.emeraldDeep.withValues(alpha: 0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               children: [
@@ -122,12 +129,12 @@ class DuaSegmentScreen extends StatelessWidget {
                   '$totalCategories chapters  •  $totalDuas duas',
                   style: TextStyle(
                     fontSize: 13,
-                    color: Colors.white.withOpacity(0.75),
+                    color: Colors.white.withValues(alpha: 0.75),
                     letterSpacing: 0.3,
                   ),
                 ),
                 const SizedBox(height: 14),
-                // ── Search Bar (inside header) ──
+                // ── Premium Search Bar ──
                 GestureDetector(
                   onTap: () {
                     showSearch(
@@ -136,22 +143,41 @@ class DuaSegmentScreen extends StatelessWidget {
                     );
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 18, vertical: 12),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 18, vertical: 0),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
+                      color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.2)),
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.search_rounded,
-                            color: Colors.white70, size: 20),
-                        const SizedBox(width: 10),
-                        Text('Search in ${segment.segmentName}...',
-                            style: const TextStyle(
-                                color: Colors.white60, fontSize: 14)),
-                      ],
+                    child: SizedBox(
+                      height: 44,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.search_rounded,
+                              color: Colors.white70, size: 18),
+                          const SizedBox(width: 10),
+                          Text('Search in ${segment.segmentName}...',
+                              style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                  fontSize: 13)),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text('$totalDuas Duas',
+                                style: const TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -163,8 +189,28 @@ class DuaSegmentScreen extends StatelessWidget {
           Expanded(
             child: categories.isEmpty
                 ? Center(
-                    child: Text('No chapters found',
-                        style: TextStyle(color: qt.textMuted)))
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: qt.textMuted.withValues(alpha: 0.05),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.folder_off_rounded,
+                              size: 48,
+                              color: qt.textMuted.withValues(alpha: 0.4)),
+                        ),
+                        const SizedBox(height: 16),
+                        Text('No chapters found in this segment',
+                            style: TextStyle(
+                                color: qt.textMuted,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  )
                 : ListView.builder(
                     padding: EdgeInsets.fromLTRB(
                         20, 16, 20, 32 + MediaQuery.of(context).padding.bottom),
@@ -231,8 +277,8 @@ class _ChapterCard extends StatelessWidget {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: qt.cardBg,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: qt.borderGlass),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: qt.borderGlass.withValues(alpha: 0.4)),
         ),
         child: Row(
           children: [
@@ -241,7 +287,7 @@ class _ChapterCard extends StatelessWidget {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: segmentColor.withOpacity(0.12),
+                color: segmentColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: segmentColor, size: 20),
@@ -283,7 +329,7 @@ class _ChapterCard extends StatelessWidget {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: isPinned
-                        ? segmentColor.withOpacity(0.12)
+                        ? segmentColor.withValues(alpha: 0.12)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -393,7 +439,7 @@ class _SegmentSearchDelegate extends SearchDelegate<String?> {
         decoration: BoxDecoration(
           color: qt.cardBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: qt.borderGlass),
+          border: Border.all(color: qt.borderGlass.withValues(alpha: 0.4)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,6 +475,31 @@ class _SegmentSearchDelegate extends SearchDelegate<String?> {
     ));
   }
 
+  Widget _buildEmptyState(QuranTheme qt, String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: qt.textMuted.withValues(alpha: 0.05),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.search_off_rounded,
+                size: 48, color: qt.textMuted.withValues(alpha: 0.4)),
+          ),
+          const SizedBox(height: 16),
+          Text(message,
+              style: TextStyle(
+                  color: qt.textMuted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget buildResults(BuildContext context) {
     final qt = QuranTheme.of(context);
@@ -436,21 +507,7 @@ class _SegmentSearchDelegate extends SearchDelegate<String?> {
     final q = query.toLowerCase();
     final results = index.where((h) => h.searchLower.contains(q)).toList();
     if (results.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off_rounded,
-                size: 64, color: qt.textMuted.withOpacity(0.4)),
-            const SizedBox(height: 16),
-            Text('No results found',
-                style: TextStyle(
-                    color: qt.textMuted,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600)),
-          ],
-        ),
-      );
+      return _buildEmptyState(qt, 'No results found');
     }
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(0, 12, 0, 32),
@@ -470,11 +527,21 @@ class _SegmentSearchDelegate extends SearchDelegate<String?> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_rounded,
-                size: 64, color: qt.textMuted.withOpacity(0.3)),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: qt.textMuted.withValues(alpha: 0.05),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.search_rounded,
+                  size: 48, color: qt.textMuted.withValues(alpha: 0.4)),
+            ),
             const SizedBox(height: 16),
             Text('Search chapters, titles, and duas in ${segment.segmentName}',
-                style: TextStyle(color: qt.textMuted, fontSize: 14)),
+                style: TextStyle(color: qt.textMuted, fontSize: 13)),
+            const SizedBox(height: 6),
+            Text('Try: "morning", "sleep", "protection"',
+                style: TextStyle(color: qt.textMuted, fontSize: 11)),
           ],
         ),
       );
@@ -483,21 +550,7 @@ class _SegmentSearchDelegate extends SearchDelegate<String?> {
     final q = query.toLowerCase();
     final suggestions = index.where((h) => h.searchLower.contains(q)).toList();
     if (suggestions.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off_rounded,
-                size: 64, color: qt.textMuted.withOpacity(0.4)),
-            const SizedBox(height: 16),
-            Text('No results for "$query"',
-                style: TextStyle(
-                    color: qt.textMuted,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600)),
-          ],
-        ),
-      );
+      return _buildEmptyState(qt, 'No results for "$query"');
     }
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(0, 8, 0, 32),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../constants/quran_theme.dart';
 import '../../models/hadith_models.dart';
@@ -219,20 +220,25 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
       backgroundColor: qt.bg,
       body: Column(
         children: [
-          // ── Immersive Header ──
           Container(
             width: double.infinity,
-            padding: EdgeInsets.fromLTRB(16, topPadding + 8, 16, 20),
+            padding: EdgeInsets.fromLTRB(16, topPadding + 12, 16, 24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [qt.emeraldDeep, qt.emeraldMid],
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: qt.emeraldDeep.withOpacity(0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               children: [
-                // Top row: Back | Title (center) | Spacer
                 Row(
                   children: [
                     SizedBox(
@@ -253,9 +259,10 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 22,
+                          fontSize: 20,
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ),
@@ -263,133 +270,189 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                // ── Search Bar (inside header) ──
+                // ── Search Bar (Unified glassmorphic layout) ──
                 Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    color: Colors.white.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white.withOpacity(0.18)),
                   ),
                   child: Row(
                     children: [
                       const Icon(Icons.search_rounded,
-                          color: Colors.white70, size: 20),
+                          color: Colors.white70, size: 18),
                       const SizedBox(width: 10),
                       Expanded(
                         child: TextField(
                           controller: _searchController,
                           focusNode: _searchFocusNode,
+                          cursorColor: Colors.white,
                           decoration: InputDecoration(
                             hintText: 'Search chapters or hadiths...',
-                            hintStyle:
-                                TextStyle(color: Colors.white60, fontSize: 14),
+                            hintStyle: TextStyle(
+                                color: Colors.white.withOpacity(0.6),
+                                fontSize: 13),
                             border: InputBorder.none,
                             isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                            suffixIcon: _isSearching
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear,
-                                        color: Colors.white60, size: 18),
-                                    onPressed: _clearSearch,
-                                  )
-                                : null,
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 12),
                           ),
                           style: const TextStyle(
                               color: Colors.white, fontSize: 14),
                         ),
                       ),
+                      if (_isSearching)
+                        GestureDetector(
+                          onTap: _clearSearch,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.close_rounded,
+                                color: Colors.white, size: 14),
+                          ),
+                        ),
                     ],
                   ),
                 ),
               ],
             ),
           ),
-
-          // ── Body Content ──
           Expanded(
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-                child: FutureBuilder<HadithBook>(
-                  future: _bookFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(
-                          child: CircularProgressIndicator(
-                              valueColor:
-                                  AlwaysStoppedAnimation(qt.emeraldLight)));
-                    }
-                    if (snapshot.hasError || !snapshot.hasData) {
-                      return Center(
-                        child: Text('Unable to load book',
-                            style: TextStyle(color: qt.textMuted)),
-                      );
-                    }
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: FutureBuilder<HadithBook>(
+                future: _bookFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
+                        child: CircularProgressIndicator(
+                            valueColor:
+                                AlwaysStoppedAnimation(qt.emeraldLight)));
+                  }
+                  if (snapshot.hasError || !snapshot.hasData) {
+                    return Center(
+                      child: Text('Unable to load book data',
+                          style: TextStyle(
+                              color: qt.textMuted,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500)),
+                    );
+                  }
 
-                    final book = snapshot.data!;
-                    if (book.allBooks.isEmpty) {
-                      return Center(
-                        child: Text('No chapters found',
-                            style: TextStyle(color: qt.textMuted)),
-                      );
-                    }
+                  final book = snapshot.data!;
+                  if (book.allBooks.isEmpty) {
+                    return Center(
+                      child: Text('No chapters found',
+                          style: TextStyle(
+                              color: qt.textMuted,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500)),
+                    );
+                  }
 
-                    // Build search indices once
-                    if (_chapterIndices.isEmpty) {
-                      _allChapters = book.allBooks;
-                      _chapterIndices = _allChapters
-                          .map((c) => _ChapterSearchIndex(c))
-                          .toList(growable: false);
-                    }
+                  // Build search indices once
+                  if (_chapterIndices.isEmpty) {
+                    _allChapters = book.allBooks;
+                    _chapterIndices = _allChapters
+                        .map((c) => _ChapterSearchIndex(c))
+                        .toList(growable: false);
+                  }
 
-                    final List<_SearchResult> displayList =
-                        _isSearching ? _filteredResultsDisplay : [];
-                    final bool showAllChapters = !_isSearching;
+                  final List<_SearchResult> displayList =
+                      _isSearching ? _filteredResultsDisplay : [];
+                  final bool showAllChapters = !_isSearching;
 
-                    return Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.fromLTRB(4, 10, 4, 20),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('${book.numBooks} Chapters',
-                                  style: TextStyle(
-                                      color: qt.emeraldDeep,
-                                      fontWeight: FontWeight.bold)),
-                              Text('${book.numHadiths} Hadiths',
-                                  style: TextStyle(
-                                      color: qt.emeraldDeep,
-                                      fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
-                        if (_isSearching)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                '$_totalResultCount result${_totalResultCount == 1 ? '' : 's'}${_isCapped ? ' (showing $_initialSearchLimit)' : ''}',
-                                style: TextStyle(
-                                    color: qt.emeraldLight,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500),
+                  return Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: qt.emeraldDeep.withOpacity(0.06),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                      color: qt.emeraldDeep.withOpacity(0.1)),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '${book.numBooks}',
+                                      style: TextStyle(
+                                          color: qt.emeraldDeep,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text('Chapters',
+                                        style: TextStyle(
+                                            color: qt.textMuted, fontSize: 11)),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        Expanded(
-                          child: showAllChapters
-                              ? _buildChapterList(qt, _allChapters)
-                              : _buildSearchResults(qt, settings, displayList),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: qt.emeraldDeep.withOpacity(0.06),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                      color: qt.emeraldDeep.withOpacity(0.1)),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '${book.numHadiths}',
+                                      style: TextStyle(
+                                          color: qt.emeraldDeep,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text('Hadiths',
+                                        style: TextStyle(
+                                            color: qt.textMuted, fontSize: 11)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    );
-                  },
-                ),
+                      ),
+                      if (_isSearching)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12, left: 4),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '$_totalResultCount result${_totalResultCount == 1 ? '' : 's'}${_isCapped ? ' (showing $_initialSearchLimit)' : ''}',
+                              style: TextStyle(
+                                  color: qt.emeraldLight,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      Expanded(
+                        child: showAllChapters
+                            ? _buildChapterList(qt, _allChapters)
+                            : _buildSearchResults(qt, settings, displayList),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -401,16 +464,22 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
   Widget _buildChapterList(QuranTheme qt, List<HadithChapter> chapters) {
     if (chapters.isEmpty) {
       return Center(
-        child: Text('No chapters found', style: TextStyle(color: qt.textMuted)),
+        child: Text('No chapters found',
+            style: TextStyle(
+                color: qt.textMuted,
+                fontSize: 13,
+                fontWeight: FontWeight.w500)),
       );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.only(top: 2, bottom: 16),
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 20),
       itemCount: chapters.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final chapter = chapters[index];
-        return _buildChapterCard(qt, chapter);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _buildChapterCard(qt, chapter),
+        );
       },
     );
   }
@@ -419,41 +488,45 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
       List<_SearchResult> results) {
     if (results.isEmpty) {
       return Center(
-        child: Text('No results found', style: TextStyle(color: qt.textMuted)),
+        child: Text('No results found',
+            style: TextStyle(
+                color: qt.textMuted,
+                fontSize: 13,
+                fontWeight: FontWeight.w500)),
       );
     }
 
     final int itemCount = results.length + (_isCapped ? 1 : 0);
 
     return ListView.builder(
-      padding: const EdgeInsets.only(top: 2, bottom: 16),
+      padding: const EdgeInsets.only(bottom: 20),
       itemCount: itemCount,
       itemBuilder: (context, index) {
         // "Show more" button at the end
         if (_isCapped && index == itemCount - 1) {
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.only(bottom: 12),
             child: GestureDetector(
               onTap: _showAllResults,
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: qt.borderGlass),
-                  color: qt.cardBg.withAlpha(120),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: qt.emeraldDeep.withOpacity(0.15)),
+                  color: qt.emeraldDeep.withOpacity(0.06),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.expand_more_rounded,
-                        color: qt.emeraldLight, size: 20),
+                        color: qt.emeraldDeep, size: 20),
                     const SizedBox(width: 8),
                     Text(
                       'Show all $_totalResultCount results',
                       style: TextStyle(
-                          color: qt.emeraldLight,
+                          color: qt.emeraldDeep,
                           fontSize: 13,
-                          fontWeight: FontWeight.w600),
+                          fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -494,51 +567,72 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: qt.borderGlass),
+          color: qt.cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              constraints: const BoxConstraints(minWidth: 44),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
               decoration: BoxDecoration(
-                color: qt.emeraldDeep.withAlpha(31),
+                color: qt.emeraldDeep.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Text(chapter.num,
-                  style: TextStyle(
-                      color: qt.emeraldDeep,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16)),
+              child: Text(
+                chapter.num,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: qt.emeraldDeep,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14),
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(chapter.englishTitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          color: qt.textPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 6),
-                  Text(chapter.arabicTitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          color: qt.textMuted,
-                          fontSize: 12,
-                          fontFamily: 'QPC Hafs')),
-                  const SizedBox(height: 6),
                   Text(
+                    chapter.englishTitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        color: qt.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    chapter.arabicTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        color: qt.textMuted,
+                        fontSize: 12,
+                        fontFamily: 'QPC Hafs'),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: qt.emeraldDeep.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
                       '${chapter.hadithList.length} hadith${chapter.hadithList.length != 1 ? 's' : ''}',
-                      style: TextStyle(color: qt.emeraldLight, fontSize: 11)),
+                      style: TextStyle(
+                          color: qt.emeraldDeep,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: qt.textMuted),
+            Icon(Icons.chevron_right_rounded, color: qt.textMuted, size: 20),
           ],
         ),
       ),
@@ -564,9 +658,9 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: qt.borderGlass),
-          color: qt.cardBg.withAlpha(180),
+          color: qt.cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -576,9 +670,9 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
                 Flexible(
                   child: Container(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: qt.emeraldDeep.withAlpha(26),
+                      color: qt.emeraldDeep.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -595,35 +689,43 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
                               style: TextStyle(
                                   color: qt.emeraldDeep,
                                   fontSize: 11,
-                                  fontWeight: FontWeight.w600)),
+                                  fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text('Hadith #${hadith.localNum}',
-                    style: TextStyle(color: qt.emeraldLight, fontSize: 11)),
+                const SizedBox(width: 12),
+                Text(
+                  'Hadith #${hadith.localNum}',
+                  style: TextStyle(
+                      color: qt.emeraldDeep,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold),
+                ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             if (hadith.title.isNotEmpty) ...[
-              Text(hadith.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      color: qt.textPrimary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14)),
-              const SizedBox(height: 6),
+              Text(
+                hadith.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    color: qt.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14),
+              ),
+              const SizedBox(height: 10),
             ],
             if (hadith.arabicText.isNotEmpty)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: qt.bg,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: qt.borderGlass.withOpacity(0.3)),
                 ),
                 child: Text(
                   isLongArabic
@@ -638,7 +740,7 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
                       height: 1.8),
                 ),
               ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 10),
             Text(
               isLongEnglish
                   ? '${hadith.englishText.substring(0, 200)}…'
@@ -650,36 +752,56 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
                   fontSize: settings.translationFontSize,
                   height: 1.6),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Row(
               children: [
                 if (hadith.narrator.isNotEmpty)
                   Expanded(
-                    child: Text('Narrator: ${hadith.narrator}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: qt.textMuted, fontSize: 10)),
+                    child: Text(
+                      'Narrator: ${hadith.narrator}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: qt.textMuted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500),
+                    ),
                   ),
                 if (hadith.grade.isNotEmpty)
-                  Text(hadith.grade,
-                      style: TextStyle(color: qt.emeraldLight, fontSize: 10)),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: qt.emeraldDeep.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      hadith.grade,
+                      style: TextStyle(
+                          color: qt.emeraldDeep,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
               ],
             ),
             if (isLongArabic || isLongEnglish) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerRight,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Read full hadith',
-                        style: TextStyle(
-                            color: qt.emeraldLight,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500)),
+                    Text(
+                      'Read full hadith',
+                      style: TextStyle(
+                          color: qt.emeraldDeep,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(width: 4),
                     Icon(Icons.arrow_forward_rounded,
-                        size: 14, color: qt.emeraldLight),
+                        size: 14, color: qt.emeraldDeep),
                   ],
                 ),
               ),

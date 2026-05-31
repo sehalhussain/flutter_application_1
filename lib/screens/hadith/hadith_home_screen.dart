@@ -82,20 +82,26 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
       backgroundColor: qt.bg,
       body: Column(
         children: [
-          // ── Immersive Header ──
+          // ── Immersive Premium Header ──
           Container(
             width: double.infinity,
-            padding: EdgeInsets.fromLTRB(16, topPadding + 8, 16, 20),
+            padding: EdgeInsets.fromLTRB(16, topPadding + 12, 16, 24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [qt.emeraldDeep, qt.emeraldMid],
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: qt.emeraldDeep.withOpacity(0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               children: [
-                // Top row: Back | Title (center) | Spacer
                 Row(
                   children: [
                     SizedBox(
@@ -117,37 +123,47 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
                           fontSize: 22,
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ),
                     const SizedBox(width: 44),
                   ],
                 ),
-                // Subtitle
+                const SizedBox(height: 8),
                 Text(
-                  '"The best among you are those who learn \n the Quran and teach it."',
+                  '"The best among you are those who learn\nthe Quran and teach it."',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
                     fontStyle: FontStyle.italic,
-                    color: Colors.white.withOpacity(0.7),
+                    color: Colors.white.withOpacity(0.85),
                     height: 1.4,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Sahih al-Bukhari 5027',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.white.withOpacity(0.5),
-                    letterSpacing: 0.8,
+                const SizedBox(height: 10),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    'Sahih al-Bukhari 5027',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white.withOpacity(0.9),
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
 
-          // ── Tab Bar (on gradient) ──
+          // ── Tab Bar (Sleek integration) ──
           Container(
             color: qt.emeraldMid,
             child: TabBar(
@@ -155,11 +171,12 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
               indicatorColor: Colors.white,
               indicatorWeight: 3,
               labelColor: Colors.white,
-              unselectedLabelColor: Colors.white60,
+              unselectedLabelColor: Colors.white.withOpacity(0.6),
+              indicatorSize: TabBarIndicatorSize.label,
               labelStyle:
-                  const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               unselectedLabelStyle:
-                  const TextStyle(fontWeight: FontWeight.w400, fontSize: 14),
+                  const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
               tabs: const [
                 Tab(text: 'Books'),
                 Tab(text: 'Liked'),
@@ -167,27 +184,20 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
             ),
           ),
 
-          // ── Tab Content ──
+          // ── Tab Content (Now fully scrollable inline headers) ──
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-              child: Column(
-                children: [
-                  if (progress.lastRead != null) ...[
-                    _buildLastReadBanner(progress.lastRead!, qt),
-                    const SizedBox(height: 16),
-                  ],
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _buildBooksTab(qt),
-                        _buildFavoritesTab(qt),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _buildBooksTab(qt),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _buildFavoritesTab(qt),
+                ),
+              ],
             ),
           ),
         ],
@@ -196,6 +206,9 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
   }
 
   Widget _buildBooksTab(QuranTheme qt) {
+    final progress = HadithProgressProvider.of(context, listen: true);
+    final showLastRead = progress.lastRead != null;
+
     return FutureBuilder<List<HadithBookInfo>>(
       future: _booksFuture,
       builder: (context, snapshot) {
@@ -208,7 +221,10 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
         if (snapshot.hasError || !snapshot.hasData) {
           return Center(
             child: Text('Unable to load hadith books',
-                style: TextStyle(color: qt.textMuted)),
+                style: TextStyle(
+                    color: qt.textMuted,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500)),
           );
         }
 
@@ -216,48 +232,68 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
         if (books.isEmpty) {
           return Center(
             child: Text('No hadith books found',
-                style: TextStyle(color: qt.textMuted)),
+                style: TextStyle(
+                    color: qt.textMuted,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500)),
           );
         }
 
-        return ListView.separated(
-          itemCount: books.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 16),
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          itemCount: books.length + (showLastRead ? 1 : 0),
           itemBuilder: (context, index) {
-            final book = books[index];
-            return GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => HadithBookScreen(book: book)));
-              },
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: qt.cardBg,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: qt.borderGlass),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: qt.emeraldDeep.withAlpha(31),
-                        borderRadius: BorderRadius.circular(16),
+            // Check if we need to prepend the Last Read Banner
+            if (showLastRead && index == 0) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildLastReadBanner(progress.lastRead!, qt),
+              );
+            }
+
+            // Adjust offset to target proper array index
+            final bookIndex = showLastRead ? index - 1 : index;
+            final book = books[bookIndex];
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => HadithBookScreen(book: book)));
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: qt.cardBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: qt.emeraldDeep.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(Icons.menu_book_rounded,
+                            color: qt.emeraldDeep, size: 22),
                       ),
-                      child: Icon(Icons.menu_book_rounded,
-                          color: qt.emeraldDeep, size: 26),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(book.title,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          book.title,
                           style: TextStyle(
                               color: qt.textPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold)),
-                    ),
-                    Icon(Icons.chevron_right_rounded, color: qt.textMuted),
-                  ],
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded,
+                          color: qt.textMuted, size: 20),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -268,6 +304,9 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
   }
 
   Widget _buildFavoritesTab(QuranTheme qt) {
+    final progress = HadithProgressProvider.of(context, listen: true);
+    final showLastRead = progress.lastRead != null;
+
     return FutureBuilder<List<FavoriteHadithItem>>(
       future: _favoritesFuture,
       builder: (context, snapshot) {
@@ -280,92 +319,183 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
         if (snapshot.hasError) {
           return Center(
             child: Text('Unable to load favorites',
-                style: TextStyle(color: qt.textMuted)),
+                style: TextStyle(
+                    color: qt.textMuted,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500)),
           );
         }
 
         final favorites = snapshot.data ?? [];
         if (favorites.isEmpty) {
+          // If the list is empty, but there is a Last Read, we should still let them scroll it
+          if (showLastRead) {
+            return ListView(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              children: [
+                _buildLastReadBanner(progress.lastRead!, qt),
+                const SizedBox(height: 60),
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: qt.textMuted.withOpacity(0.05),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.favorite_border_rounded,
+                            size: 48, color: qt.textMuted.withOpacity(0.4)),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No liked hadiths yet',
+                        style: TextStyle(
+                            color: qt.textMuted,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }
+
           return Center(
-            child: Text('No liked hadiths yet',
-                style: TextStyle(color: qt.textMuted)),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: qt.textMuted.withOpacity(0.05),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.favorite_border_rounded,
+                      size: 48, color: qt.textMuted.withOpacity(0.4)),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No liked hadiths yet',
+                  style: TextStyle(
+                      color: qt.textMuted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
           );
         }
 
-        return ListView.separated(
-          padding: const EdgeInsets.only(bottom: 24),
-          separatorBuilder: (_, __) => const SizedBox(height: 16),
-          itemCount: favorites.length,
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          itemCount: favorites.length + (showLastRead ? 1 : 0),
           itemBuilder: (context, index) {
-            final item = favorites[index];
-            final progress = HadithProgressProvider.of(context, listen: false);
-            return GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => HadithReaderScreen(
-                    hadith: item.hadith,
-                    bookTitle: item.bookTitle,
-                    chapterTitle: item.chapterTitle,
+            // Check if we need to prepend the Last Read Banner
+            if (showLastRead && index == 0) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildLastReadBanner(progress.lastRead!, qt),
+              );
+            }
+
+            // Adjust offset to target proper array index
+            final itemIndex = showLastRead ? index - 1 : index;
+            final item = favorites[itemIndex];
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => HadithReaderScreen(
+                      hadith: item.hadith,
+                      bookTitle: item.bookTitle,
+                      chapterTitle: item.chapterTitle,
+                    ),
+                  ));
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: qt.cardBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
                   ),
-                ));
-              },
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: qt.cardBg,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: qt.borderGlass),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(item.hadith.title,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              item.hadith.title,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                   color: qt.textPrimary,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 15)),
-                        ),
-                        const SizedBox(width: 12),
-                        GestureDetector(
-                          onTap: () async {
-                            await progress.toggleFavorite(
-                                item.hadith.bookAsset, item.hadith.uuid);
-                            setState(() {
-                              _favoritesFuture = _loadFavoriteHadiths();
-                            });
-                          },
-                          child: const Icon(Icons.favorite,
-                              color: Colors.redAccent, size: 20),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(item.chapterTitle,
+                                  fontSize: 14),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          GestureDetector(
+                            onTap: () async {
+                              await progress.toggleFavorite(
+                                  item.hadith.bookAsset, item.hadith.uuid);
+                              setState(() {
+                                _favoritesFuture = _loadFavoriteHadiths();
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.redAccent.withOpacity(0.08),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.favorite_rounded,
+                                  color: Colors.redAccent, size: 16),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        item.chapterTitle,
                         style: TextStyle(color: qt.textMuted, fontSize: 12),
                         maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 4),
-                    Text(item.bookTitle,
-                        style: TextStyle(
-                            color: qt.emeraldDeep,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 12),
-                    Text(item.hadith.englishText,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: qt.emeraldDeep.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          item.bookTitle,
+                          style: TextStyle(
+                              color: qt.emeraldDeep,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        item.hadith.englishText,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                            color: qt.textSecondary,
-                            fontSize: 13,
-                            height: 1.5)),
-                  ],
+                            color: qt.textSecondary, fontSize: 13, height: 1.5),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -400,34 +530,47 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
       },
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: qt.emeraldDeep.withAlpha((0.1 * 255).round()),
-          borderRadius: BorderRadius.circular(20),
-          border:
-              Border.all(color: qt.emeraldDeep.withAlpha((0.2 * 255).round())),
+          color: qt.emeraldDeep.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: qt.emeraldDeep.withOpacity(0.15)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Resume last read',
-                style: TextStyle(
+            Row(
+              children: [
+                Icon(Icons.bookmark_added_rounded,
+                    color: qt.emeraldDeep, size: 18),
+                const SizedBox(width: 6),
+                Text(
+                  'Resume last read',
+                  style: TextStyle(
                     color: qt.emeraldDeep,
                     fontWeight: FontWeight.bold,
-                    fontSize: 14)),
-            const SizedBox(height: 6),
-            Text(lastRead.hadithTitle,
-                style: TextStyle(
-                    color: qt.textPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              lastRead.hadithTitle,
+              style: TextStyle(
+                  color: qt.textPrimary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
             const SizedBox(height: 4),
-            Text('${lastRead.chapterTitle} • ${lastRead.bookTitle}',
-                style: TextStyle(color: qt.textMuted, fontSize: 12),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis),
+            Text(
+              '${lastRead.chapterTitle} • ${lastRead.bookTitle}',
+              style: TextStyle(color: qt.textMuted, fontSize: 11),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
       ),

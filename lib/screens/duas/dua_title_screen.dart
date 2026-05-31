@@ -96,7 +96,7 @@ class _DuaTitleScreenState extends State<DuaTitleScreen> {
       backgroundColor: qt.bg,
       body: Column(
         children: [
-          // ── Immersive Header ──
+          // ── Immersive Premium Header ──
           Container(
             width: double.infinity,
             padding: EdgeInsets.fromLTRB(12, topPadding + 8, 16, 24),
@@ -106,6 +106,13 @@ class _DuaTitleScreenState extends State<DuaTitleScreen> {
                 end: Alignment.bottomCenter,
                 colors: [qt.emeraldDeep, qt.emeraldMid],
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: qt.emeraldDeep.withValues(alpha: 0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               children: [
@@ -157,8 +164,28 @@ class _DuaTitleScreenState extends State<DuaTitleScreen> {
           Expanded(
             child: titleEntries.isEmpty
                 ? Center(
-                    child: Text('No titles found',
-                        style: TextStyle(color: qt.textMuted)))
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: qt.textMuted.withValues(alpha: 0.05),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.folder_off_rounded,
+                              size: 48,
+                              color: qt.textMuted.withValues(alpha: 0.4)),
+                        ),
+                        const SizedBox(height: 16),
+                        Text('No titles found',
+                            style: TextStyle(
+                                color: qt.textMuted,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  )
                 : ListView.builder(
                     padding: EdgeInsets.fromLTRB(
                         20, 16, 20, 32 + MediaQuery.of(context).padding.bottom),
@@ -215,8 +242,8 @@ class _DuaTitleScreenState extends State<DuaTitleScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: expanded
-                                        ? qt.emeraldDeep.withOpacity(0.25)
-                                        : qt.borderGlass,
+                                        ? qt.emeraldDeep.withValues(alpha: 0.25)
+                                        : qt.borderGlass.withValues(alpha: 0.4),
                                   ),
                                 ),
                                 child: Row(
@@ -236,7 +263,8 @@ class _DuaTitleScreenState extends State<DuaTitleScreen> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: qt.emeraldDeep.withOpacity(0.07),
+                                        color: qt.emeraldDeep
+                                            .withValues(alpha: 0.07),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text('${title.duas.length}',
@@ -338,7 +366,7 @@ class _FontSizeSheetState extends State<_FontSizeSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: qt.textMuted.withOpacity(0.3),
+                color: qt.textMuted.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -360,6 +388,13 @@ class _FontSizeSheetState extends State<_FontSizeSheet> {
               color: qt.cardBg,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: qt.borderGlass),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -384,7 +419,7 @@ class _FontSizeSheetState extends State<_FontSizeSheet> {
                       fontStyle: FontStyle.italic,
                       color: qt.brightness == Brightness.dark
                           ? qt.emeraldGlow
-                          : qt.emeraldDeep.withOpacity(0.85),
+                          : qt.emeraldDeep.withValues(alpha: 0.85),
                       height: 1.5,
                     ),
                   ),
@@ -491,7 +526,7 @@ class _FontSizeSheetState extends State<_FontSizeSheet> {
                   setState(() => _showTransliteration = v);
                   widget.settings.setShowTransliteration(v);
                 },
-                activeColor: qt.emeraldDeep,
+                activeThumbColor: qt.emeraldDeep,
               ),
             ],
           ),
@@ -520,7 +555,7 @@ class _FontSizeSheetState extends State<_FontSizeSheet> {
                   setState(() => _showTranslation = v);
                   widget.settings.setShowTranslation(v);
                 },
-                activeColor: qt.emeraldDeep,
+                activeThumbColor: qt.emeraldDeep,
               ),
             ],
           ),
@@ -587,7 +622,7 @@ class _DuaCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: qt.cardBg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: qt.borderGlass),
+          border: Border.all(color: qt.borderGlass.withValues(alpha: 0.4)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -605,7 +640,7 @@ class _DuaCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: qt.emeraldDeep.withOpacity(0.08),
+                          color: qt.emeraldDeep.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text('#${dua.id}',
@@ -620,7 +655,7 @@ class _DuaCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: qt.emeraldDeep.withOpacity(0.08),
+                            color: qt.emeraldDeep.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Row(
@@ -696,7 +731,7 @@ class _DuaCard extends StatelessWidget {
                           fontStyle: FontStyle.italic,
                           color: qt.brightness == Brightness.dark
                               ? qt.emeraldGlow
-                              : qt.emeraldDeep.withOpacity(0.85),
+                              : qt.emeraldDeep.withValues(alpha: 0.85),
                           height: 1.5,
                         ),
                       ),
@@ -748,13 +783,15 @@ class _DuaCard extends StatelessWidget {
                       Row(
                         children: [
                           Icon(Icons.menu_book_rounded,
-                              size: 11, color: qt.textMuted.withOpacity(0.5)),
+                              size: 11,
+                              color: qt.textMuted.withValues(alpha: 0.5)),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(dua.source!,
                                 style: TextStyle(
                                     fontSize: 11,
-                                    color: qt.textMuted.withOpacity(0.5))),
+                                    color:
+                                        qt.textMuted.withValues(alpha: 0.5))),
                           ),
                         ],
                       ),

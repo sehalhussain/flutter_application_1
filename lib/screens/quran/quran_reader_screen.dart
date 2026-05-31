@@ -18,6 +18,7 @@ import '/constants/sajdah_data.dart';
 import '/constants/juz_metadata_data.dart';
 import 'tafsir_screen.dart';
 import 'surah_info_screen.dart';
+import '../../widgets/quran_reader_tips.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Quran Reader Screen
@@ -39,6 +40,8 @@ class QuranReaderScreen extends StatefulWidget {
 }
 
 class _QuranReaderScreenState extends State<QuranReaderScreen> {
+  // ── First-time tips ─────────────────────────────────────────────────────
+  final GlobalKey<QuranReaderTipsState> _tipsKey = GlobalKey();
   // ── Core data ───────────────────────────────────────────────────────────
   List<AyahData> _ayahs = [];
   late List<Object> _displayItems;
@@ -196,6 +199,15 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       _rebuildDisplayItems();
       _loading = false;
     });
+
+    // Show first-time tips if not seen yet
+    if (!settings.hasSeenQuranReaderTips) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _tipsKey.currentState?.startTips();
+        }
+      });
+    }
 
     _fetchSurahAudioAndCheckDownload();
 
@@ -504,94 +516,97 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
     return Scaffold(
       backgroundColor: qt.bg,
-      body: Stack(children: [
-        Positioned.fill(child: Container(color: qt.bg)),
-        SafeArea(
-          bottom: false,
-          child: Column(children: [
-            _buildHeader(qt),
-            if (_isNavOpen)
-              _GoToAyahPanel(
-                surahList: widget.surahList,
-                currentSurah: widget.surahNumber,
-                onNavigate: (surah, ayah) {
-                  setState(() => _isNavOpen = false);
-                  if (surah == widget.surahNumber) {
-                    Future.delayed(const Duration(milliseconds: 100),
-                        () => _scrollToAyah(ayah));
-                  } else {
-                    Navigator.of(context).pushReplacement(MaterialPageRoute(
-                      builder: (_) => QuranReaderScreen(
-                        surahNumber: surah,
-                        initialAyah: ayah,
-                        surahList: widget.surahList,
-                      ),
-                    ));
-                  }
-                },
-                onClose: () => setState(() => _isNavOpen = false),
+      body: QuranReaderTips(
+        key: _tipsKey,
+        child: Stack(children: [
+          Positioned.fill(child: Container(color: qt.bg)),
+          SafeArea(
+            bottom: false,
+            child: Column(children: [
+              _buildHeader(qt),
+              if (_isNavOpen)
+                _GoToAyahPanel(
+                  surahList: widget.surahList,
+                  currentSurah: widget.surahNumber,
+                  onNavigate: (surah, ayah) {
+                    setState(() => _isNavOpen = false);
+                    if (surah == widget.surahNumber) {
+                      Future.delayed(const Duration(milliseconds: 100),
+                          () => _scrollToAyah(ayah));
+                    } else {
+                      Navigator.of(context).pushReplacement(MaterialPageRoute(
+                        builder: (_) => QuranReaderScreen(
+                          surahNumber: surah,
+                          initialAyah: ayah,
+                          surahList: widget.surahList,
+                        ),
+                      ));
+                    }
+                  },
+                  onClose: () => setState(() => _isNavOpen = false),
+                ),
+              Expanded(
+                child: _loading
+                    ? Center(
+                        child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation(qt.emeraldLight),
+                            strokeWidth: 2),
+                      )
+                    : _buildReaderList(settings, progress, qt),
               ),
-            Expanded(
-              child: _loading
-                  ? Center(
-                      child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation(qt.emeraldLight),
-                          strokeWidth: 2),
-                    )
-                  : _buildReaderList(settings, progress, qt),
-            ),
-          ]),
-        ),
-        Positioned(
-          bottom: MediaQuery.of(context).padding.bottom + 16,
-          left: 0,
-          right: 0,
-          child: AnimatedBuilder(
-            animation: Listenable.merge([
-              _playingAyahNotifier,
-              _selectedAyahNotifier,
-              _isPlayingSurahNotifier,
-              _isAyahAudioPlayingNotifier,
-              _downloadProgressNotifier,
-              _isSurahDownloadedNotifier,
-              _isSurahSourceArmedNotifier, // ← ADD THIS
             ]),
-            builder: (context, child) {
-              final isSurahActive = _isPlayingSurahNotifier.value ||
-                  _isSurahSourceArmedNotifier.value;
-              final isAyahActuallyPlaying = _isAyahAudioPlayingNotifier.value;
-              return _FloatingAudioPill(
-                settings: settings,
-                qt: qt,
-                isAnyPlaying:
-                    isSurahActive || _playingAyahNotifier.value != null,
-                isAyahPlaying: isAyahActuallyPlaying,
-                playingAyah: _playingAyahNotifier.value,
-                selectedAyah: _selectedAyahNotifier.value,
-                isPlayingSurah: _isPlayingSurahNotifier.value,
-                downloadProgress: _downloadProgressNotifier.value,
-                isSurahDownloaded: _isSurahDownloadedNotifier.value,
-                surahNumber: widget.surahNumber,
-                surahList: widget.surahList,
-                onPlayPause: (mode) {
-                  if (mode == PlayMode.ayah) {
-                    _playAyah(_playingAyahNotifier.value ??
-                        _selectedAyahNotifier.value ??
-                        1);
-                  } else {
-                    _toggleSurahPlay();
-                  }
-                },
-                onStop: settings.playMode == PlayMode.ayah
-                    ? _stopAyahPlay
-                    : _stopSurahPlay,
-                onDownloadSurah: _downloadSurah,
-                onModeChanged: (m) => settings.setPlayMode(m),
-              );
-            },
           ),
-        ),
-      ]),
+          Positioned(
+            bottom: MediaQuery.of(context).padding.bottom + 16,
+            left: 0,
+            right: 0,
+            child: AnimatedBuilder(
+              animation: Listenable.merge([
+                _playingAyahNotifier,
+                _selectedAyahNotifier,
+                _isPlayingSurahNotifier,
+                _isAyahAudioPlayingNotifier,
+                _downloadProgressNotifier,
+                _isSurahDownloadedNotifier,
+                _isSurahSourceArmedNotifier, // ← ADD THIS
+              ]),
+              builder: (context, child) {
+                final isSurahActive = _isPlayingSurahNotifier.value ||
+                    _isSurahSourceArmedNotifier.value;
+                final isAyahActuallyPlaying = _isAyahAudioPlayingNotifier.value;
+                return _FloatingAudioPill(
+                  settings: settings,
+                  qt: qt,
+                  isAnyPlaying:
+                      isSurahActive || _playingAyahNotifier.value != null,
+                  isAyahPlaying: isAyahActuallyPlaying,
+                  playingAyah: _playingAyahNotifier.value,
+                  selectedAyah: _selectedAyahNotifier.value,
+                  isPlayingSurah: _isPlayingSurahNotifier.value,
+                  downloadProgress: _downloadProgressNotifier.value,
+                  isSurahDownloaded: _isSurahDownloadedNotifier.value,
+                  surahNumber: widget.surahNumber,
+                  surahList: widget.surahList,
+                  onPlayPause: (mode) {
+                    if (mode == PlayMode.ayah) {
+                      _playAyah(_playingAyahNotifier.value ??
+                          _selectedAyahNotifier.value ??
+                          1);
+                    } else {
+                      _toggleSurahPlay();
+                    }
+                  },
+                  onStop: settings.playMode == PlayMode.ayah
+                      ? _stopAyahPlay
+                      : _stopSurahPlay,
+                  onDownloadSurah: _downloadSurah,
+                  onModeChanged: (m) => settings.setPlayMode(m),
+                );
+              },
+            ),
+          ),
+        ]),
+      ),
     );
   }
 
@@ -1867,15 +1882,25 @@ class _AyahCardState extends State<_AyahCard> {
       const SizedBox(height: 12),
       GestureDetector(
         onTap: widget.onToggleTafsir,
-        child: Text(
-          isTafsirOpen ? 'Hide Tafsir' : 'Read Tafsir',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: isTafsirOpen ? qt.emeraldLight : qt.emeraldDeep,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.menu_book_rounded,
+              size: 16,
+              color: isTafsirOpen ? qt.emeraldLight : qt.emeraldDeep,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              isTafsirOpen ? 'Hide Tafsir' : 'Read Tafsir',
+              style: TextStyle(
+                color: isTafsirOpen ? qt.emeraldLight : qt.emeraldDeep,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
         ),
       ),
     ]);

@@ -37,23 +37,6 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
     );
   }
 
-  Widget _glassBtn(Widget child, QuranTheme qt) => ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: qt.glassWhite,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: qt.borderGlass),
-            ),
-            child: Center(child: child),
-          ),
-        ),
-      );
-
   @override
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
@@ -63,20 +46,26 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
       backgroundColor: qt.bg,
       body: Column(
         children: [
-          // ── Immersive Header ──
+          // ── Immersive Premium Header ──
           Container(
             width: double.infinity,
-            padding: EdgeInsets.fromLTRB(16, topPadding + 8, 16, 20),
+            padding: EdgeInsets.fromLTRB(16, topPadding + 12, 16, 24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [qt.emeraldDeep, qt.emeraldMid],
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: qt.emeraldDeep.withOpacity(0.15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               children: [
-                // Top row: Back | Title (center) | Settings
                 Row(
                   children: [
                     SizedBox(
@@ -100,6 +89,7 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
                           fontSize: 20,
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ),
@@ -115,13 +105,21 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  '${widget.chapter.hadithList.length} hadiths',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white.withOpacity(0.7),
-                    fontWeight: FontWeight.w500,
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${widget.chapter.hadithList.length} hadith${widget.chapter.hadithList.length != 1 ? 's' : ''}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white.withOpacity(0.9),
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
               ],
@@ -175,7 +173,7 @@ class _HadithListViewState extends State<HadithListView> {
   final FocusNode _searchFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
 
-  // Pre-computed lower-case fields for fast searching
+  // Pre-computed fields for fast searching
   List<_SearchableHadith> _searchableHadiths = [];
   List<_SearchableHadith> _filteredSearchable = [];
   List<Hadith> _displayedHadiths = [];
@@ -195,7 +193,6 @@ class _HadithListViewState extends State<HadithListView> {
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_onSearchChangedDelayed);
 
-    // Initialize the first chunk of hadiths immediately so it's ready for the first build.
     _loadInitialChunk();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -253,7 +250,6 @@ class _HadithListViewState extends State<HadithListView> {
       newFiltered = _searchableHadiths.where((s) => s.matches(query)).toList();
     }
 
-    // Avoid rebuild if no changes
     if (_listsEqual(newFiltered, _filteredSearchable)) return;
 
     setState(() {
@@ -340,7 +336,6 @@ class _HadithListViewState extends State<HadithListView> {
         '${hadith.arabicText}\n\n'
         '${hadith.englishText}\n\n'
         '— ${widget.bookName}, ${widget.chapterTitle}';
-    // ignore: deprecated_member_use
     Share.share(text);
   }
 
@@ -352,58 +347,92 @@ class _HadithListViewState extends State<HadithListView> {
 
     return Column(
       children: [
+        // Premium unified search field structure
         Padding(
           padding: const EdgeInsets.only(bottom: 16),
-          child: TextField(
-            controller: _searchController,
-            focusNode: _searchFocusNode,
-            decoration: InputDecoration(
-              hintText: 'Search hadiths...',
-              prefixIcon: Icon(Icons.search, color: qt.textMuted),
-              suffixIcon: _isSearching
-                  ? IconButton(
-                      icon: Icon(Icons.clear, color: qt.textMuted),
-                      onPressed: _clearSearch,
-                    )
-                  : null,
-              filled: true,
-              fillColor: qt.cardBg,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(24),
-                borderSide: BorderSide(color: qt.borderGlass),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(24),
-                borderSide: BorderSide(color: qt.borderGlass),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(24),
-                borderSide: BorderSide(color: qt.emeraldDeep),
-              ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+            decoration: BoxDecoration(
+              color: qt.cardBg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
             ),
-            style: TextStyle(color: qt.textPrimary),
+            child: Row(
+              children: [
+                Icon(Icons.search_rounded, color: qt.textMuted, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    cursorColor: qt.emeraldDeep,
+                    decoration: InputDecoration(
+                      hintText: 'Search hadiths...',
+                      hintStyle: TextStyle(color: qt.textMuted, fontSize: 13),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    style: TextStyle(color: qt.textPrimary, fontSize: 14),
+                  ),
+                ),
+                if (_isSearching)
+                  GestureDetector(
+                    onTap: _clearSearch,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: qt.textMuted.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.close_rounded,
+                          color: qt.textPrimary, size: 14),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
         if (_isSearching)
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: 12, left: 4),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 '${_filteredSearchable.length} result${_filteredSearchable.length == 1 ? '' : 's'}',
                 style: TextStyle(
                     color: qt.emeraldLight,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold),
               ),
             ),
           ),
         Expanded(
           child: _displayedHadiths.isEmpty
               ? Center(
-                  child: Text(
-                    _isSearching ? 'No hadiths found' : 'No hadiths',
-                    style: TextStyle(color: qt.textMuted),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: qt.textMuted.withOpacity(0.05),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.search_off_rounded,
+                            size: 48, color: qt.textMuted.withOpacity(0.4)),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _isSearching
+                            ? 'No hadiths found'
+                            : 'No hadiths available',
+                        style: TextStyle(
+                            color: qt.textMuted,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500),
+                      ),
+                    ],
                   ),
                 )
               : ListView.separated(
@@ -436,8 +465,9 @@ class _HadithListViewState extends State<HadithListView> {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: qt.cardBg,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: qt.borderGlass),
+                        borderRadius: BorderRadius.circular(16),
+                        border:
+                            Border.all(color: qt.borderGlass.withOpacity(0.4)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -449,65 +479,61 @@ class _HadithListViewState extends State<HadithListView> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(hadith.title,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                            color: qt.textPrimary,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14)),
+                                    Text(
+                                      hadith.title,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                          color: qt.textPrimary,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14),
+                                    ),
                                     const SizedBox(height: 4),
-                                    Text('Hadith #${hadith.localNum}',
-                                        style: TextStyle(
-                                            color: qt.emeraldLight,
-                                            fontSize: 11)),
+                                    Text(
+                                      'Hadith #${hadith.localNum}',
+                                      style: TextStyle(
+                                          color: qt.emeraldLight,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold),
+                                    ),
                                   ],
                                 ),
                               ),
                               const SizedBox(width: 12),
+                              // Rounded action badges matching premium toolbar logic
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  IconButton(
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(
-                                        minWidth: 36, minHeight: 36),
-                                    icon: Icon(Icons.share_outlined,
-                                        color: qt.textMuted, size: 20),
+                                  _buildBadgedAction(
+                                    qt,
+                                    icon: Icons.share_outlined,
+                                    color: qt.textMuted,
                                     onPressed: () => _shareHadith(hadith),
                                     tooltip: 'Share',
                                   ),
-                                  IconButton(
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(
-                                        minWidth: 36, minHeight: 36),
-                                    icon: Icon(
-                                      progress.isFavorite(
-                                              widget.bookAsset, hadith.uuid)
-                                          ? Icons.favorite
-                                          : Icons.favorite_border,
-                                      color: progress.isFavorite(
-                                              widget.bookAsset, hadith.uuid)
-                                          ? Colors.redAccent
-                                          : qt.textMuted,
-                                      size: 20,
-                                    ),
+                                  const SizedBox(width: 4),
+                                  _buildBadgedAction(
+                                    qt,
+                                    icon: progress.isFavorite(
+                                            widget.bookAsset, hadith.uuid)
+                                        ? Icons.favorite_rounded
+                                        : Icons.favorite_border_rounded,
+                                    color: progress.isFavorite(
+                                            widget.bookAsset, hadith.uuid)
+                                        ? Colors.redAccent
+                                        : qt.textMuted,
                                     onPressed: () => _toggleFavorite(hadith),
                                     tooltip: 'Like',
                                   ),
-                                  IconButton(
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(
-                                        minWidth: 36, minHeight: 36),
-                                    icon: Icon(
-                                      isLastRead
-                                          ? Icons.check_circle
-                                          : Icons.check_circle_outline,
-                                      color: isLastRead
-                                          ? qt.emeraldDeep
-                                          : qt.textMuted,
-                                      size: 22,
-                                    ),
+                                  const SizedBox(width: 4),
+                                  _buildBadgedAction(
+                                    qt,
+                                    icon: isLastRead
+                                        ? Icons.bookmark_added_rounded
+                                        : Icons.bookmark_add_outlined,
+                                    color: isLastRead
+                                        ? qt.emeraldDeep
+                                        : qt.textMuted,
                                     onPressed: () => _markAsLastRead(hadith),
                                     tooltip: 'Mark as last read',
                                   ),
@@ -516,50 +542,74 @@ class _HadithListViewState extends State<HadithListView> {
                             ],
                           ),
                           if (hadith.narrator.isNotEmpty) ...[
-                            const SizedBox(height: 10),
-                            Text('Narrator: ${hadith.narrator}',
-                                style: TextStyle(
-                                    color: qt.textMuted, fontSize: 11),
-                                softWrap: true),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Narrator: ${hadith.narrator}',
+                              style: TextStyle(
+                                  color: qt.textMuted,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500),
+                            ),
                           ],
                           if (hadith.grade.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Text('Grade: ${hadith.grade}',
-                                style: TextStyle(
-                                    color: qt.emeraldLight, fontSize: 10),
-                                softWrap: true),
+                            const SizedBox(height: 6),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: qt.emeraldDeep.withOpacity(0.06),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  hadith.grade,
+                                  style: TextStyle(
+                                      color: qt.emeraldDeep,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
                           ],
                           if (hadith.arabicText.isNotEmpty) ...[
                             const SizedBox(height: 12),
                             Container(
+                              width: double.infinity,
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: qt.bg,
                                 borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                    color: qt.borderGlass.withOpacity(0.3)),
                               ),
-                              child: Text(hadith.arabicText,
-                                  textAlign: TextAlign.right,
-                                  textDirection: TextDirection.rtl,
-                                  style: TextStyle(
-                                      fontFamily: 'indopak',
-                                      fontSize: settings.arabicFontSize,
-                                      color: qt.textPrimary,
-                                      height: 1.8),
-                                  softWrap: true),
+                              child: Text(
+                                hadith.arabicText,
+                                textAlign: TextAlign.right,
+                                textDirection: TextDirection.rtl,
+                                style: TextStyle(
+                                    fontFamily: 'indopak',
+                                    fontSize: settings.arabicFontSize,
+                                    color: qt.textPrimary,
+                                    height: 1.8),
+                              ),
                             ),
                           ],
                           const SizedBox(height: 12),
+                          // ── Correctly Formatted & Aligned English Translation ──
                           Text(
-                              hadith.englishText
-                                  .split('\n\n')
-                                  .map((p) => p.replaceAll('\n', ' '))
-                                  .join('\n\n'),
-                              style: TextStyle(
-                                  color: qt.textSecondary,
-                                  fontSize: settings.translationFontSize,
-                                  height: 1.6),
-                              textAlign: TextAlign.justify,
-                              softWrap: true),
+                            hadith.englishText
+                                .trim()
+                                .split('\n\n')
+                                .map((p) =>
+                                    p.replaceAll(RegExp(r'\s+'), ' ').trim())
+                                .join('\n\n'),
+                            style: TextStyle(
+                                color: qt.textSecondary,
+                                fontSize: settings.translationFontSize,
+                                height: 1.6),
+                            textAlign: TextAlign.start,
+                          ),
                         ],
                       ),
                     );
@@ -569,9 +619,32 @@ class _HadithListViewState extends State<HadithListView> {
       ],
     );
   }
+
+  Widget _buildBadgedAction(
+    QuranTheme qt, {
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+    required String tooltip,
+  }) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: qt.bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: qt.borderGlass.withOpacity(0.3)),
+      ),
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        icon: Icon(icon, color: color, size: 18),
+        onPressed: onPressed,
+        tooltip: tooltip,
+      ),
+    );
+  }
 }
 
-/// Pre-computed lower-case fields for fast filtering.
 class _SearchableHadith {
   final Hadith hadith;
   final String lowerTitle;

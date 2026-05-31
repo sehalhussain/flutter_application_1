@@ -125,4 +125,6 @@ class HadithProgressProvider {
   static HadithProgress of(BuildContext context, {bool listen = true}) {
     return Provider.of<HadithProgress>(context, listen: listen);
   }
+
+  void toggleFavorite(String bookAsset, String uuid) {}
 }

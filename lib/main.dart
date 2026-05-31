@@ -15,6 +15,7 @@ import 'screens/menu_screen.dart';
 import 'screens/quran/quran_home_screen.dart';
 import 'screens/prayer_screen.dart';
 import 'constants/quran_theme.dart';
+import 'widgets/prayer_setup_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -92,6 +93,7 @@ class _SplashWrapperState extends State<_SplashWrapper>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   bool _splashRemoved = false;
+  bool _setupChecked = false;
 
   @override
   void initState() {
@@ -119,6 +121,18 @@ class _SplashWrapperState extends State<_SplashWrapper>
     });
   }
 
+  /// Trigger the first-time setup wizard after the app is built.
+  Future<void> _showSetupIfNeeded() async {
+    // Wait a frame for the build to complete
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
+
+    final prayerService = PrayerService.instance;
+    if (!prayerService.hasCompletedSetup) {
+      await showPrayerSetupDialog(context);
+    }
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -132,6 +146,13 @@ class _SplashWrapperState extends State<_SplashWrapper>
       selector: (_, settings) => settings.showBismillahSplash,
       builder: (context, showBismillahSplash, child) {
         if (!showBismillahSplash || _splashRemoved) {
+          // Show the first-time setup wizard when MainNavigation is first visible
+          if (!_setupChecked) {
+            _setupChecked = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _showSetupIfNeeded();
+            });
+          }
           return const MainNavigation();
         }
         return Stack(

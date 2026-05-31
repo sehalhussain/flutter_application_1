@@ -23,6 +23,7 @@ class QuranSettings extends ChangeNotifier {
   String _selectedAyahReciterId = "mishary";
   ThemeMode _themeMode = ThemeMode.system;
   bool _showBismillahSplash = true;
+  bool _hasSeenQuranReaderTips = false;
 
   // ── Getters ───────────────────────────────────────────────────────────────
   ArabicScript get script => _script;
@@ -39,6 +40,7 @@ class QuranSettings extends ChangeNotifier {
   String get selectedAyahReciterId => _selectedAyahReciterId;
   ThemeMode get themeMode => _themeMode;
   bool get showBismillahSplash => _showBismillahSplash;
+  bool get hasSeenQuranReaderTips => _hasSeenQuranReaderTips;
 
   // ── Init ──────────────────────────────────────────────────────────────────
   Future<void> load() async {
@@ -70,6 +72,7 @@ class QuranSettings extends ChangeNotifier {
     _themeMode =
         ThemeMode.values[themeIdx.clamp(0, ThemeMode.values.length - 1)];
     _showBismillahSplash = prefs.getBool('app_show_bismillah_splash') ?? true;
+    _hasSeenQuranReaderTips = prefs.getBool('quran_reader_tips_seen') ?? false;
 
     notifyListeners();
   }
@@ -176,6 +179,14 @@ class QuranSettings extends ChangeNotifier {
     notifyListeners();
     final p = await SharedPreferences.getInstance();
     p.setBool('app_show_bismillah_splash', v);
+  }
+
+  /// Mark the reader tips as seen (called when tips complete).
+  Future<void> markQuranReaderTipsSeen() async {
+    _hasSeenQuranReaderTips = true;
+    notifyListeners();
+    final p = await SharedPreferences.getInstance();
+    p.setBool('quran_reader_tips_seen', true);
   }
 }
 

@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// NEW HIERARCHICAL DUA MODELS (for consolidated_duas.json)
+// NEW HIERARCHICAL DUA MODELS (for duas_reorganized.json)
 // ═══════════════════════════════════════════════════════════════════════════
 
 class DuaSegment {
@@ -172,6 +172,53 @@ List<DuaFlatItem> flattenSegment(DuaSegment segment) {
 
 /// Search through a flattened list and return matched indices.
 List<bool> searchFlatList(List<DuaFlatItem> flatList, String query) {
+  if (query.isEmpty) return List.filled(flatList.length, true);
+  final q = query.toLowerCase();
+
+  return flatList.map((f) {
+    if (f.type == DuaListTileType.categoryHeader) {
+      return f.categoryName?.toLowerCase().contains(q) ?? false;
+    }
+    if (f.type == DuaListTileType.titleHeader) {
+      return f.titleName?.toLowerCase().contains(q) ?? false;
+    }
+    if (f.type == DuaListTileType.duaCard && f.item != null) {
+      final d = f.item!;
+      return (d.arabic?.toLowerCase().contains(q) ?? false) ||
+          (d.latin?.toLowerCase().contains(q) ?? false) ||
+          (d.translation?.toLowerCase().contains(q) ?? false) ||
+          (d.source?.toLowerCase().contains(q) ?? false) ||
+          (d.benefits?.toLowerCase().contains(q) ?? false);
+    }
+    return false;
+  }).toList();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NEW: Multi-segment helpers (for the reorganized 6-segment structure)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Flatten ALL segments into a single list with segment headers.
+List<DuaFlatItem> flattenAllSegments(List<DuaSegment> segments) {
+  final list = <DuaFlatItem>[];
+  for (final seg in segments) {
+    // Add segment header
+    list.add(DuaFlatItem.category(seg.segmentName));
+    for (final cat in seg.categories) {
+      list.add(DuaFlatItem.category('  ${cat.categoryName}'));
+      for (final tl in cat.titles) {
+        list.add(DuaFlatItem.title(tl.titleName, tl.duas.length));
+        for (final item in tl.duas) {
+          list.add(DuaFlatItem.card(item));
+        }
+      }
+    }
+  }
+  return list;
+}
+
+/// Search across all segments.
+List<bool> searchAllSegments(List<DuaFlatItem> flatList, String query) {
   if (query.isEmpty) return List.filled(flatList.length, true);
   final q = query.toLowerCase();
 
