@@ -357,6 +357,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
   void _onAyahComplete() {
     if (_isAutoContinuing) return;
+    if (!mounted) return;
     final current = _playingAyahNotifier.value;
     if (current == null) return;
 
@@ -473,6 +474,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   }
 
   Future<bool> _checkSurahDownloaded() async {
+    if (!mounted) return false;
     final settings = QuranSettingsProvider.of(context, listen: false);
     String reciterId = settings.selectedReciterId;
     if (_surahAudioData != null) {

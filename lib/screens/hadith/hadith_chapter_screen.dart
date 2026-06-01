@@ -49,7 +49,7 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
           // ── Immersive Premium Header ──
           Container(
             width: double.infinity,
-            padding: EdgeInsets.fromLTRB(16, topPadding + 12, 16, 24),
+            padding: EdgeInsets.fromLTRB(16, topPadding + 4, 16, 24),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,

@@ -85,7 +85,7 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
           // ── Immersive Premium Header ──
           Container(
             width: double.infinity,
-            padding: EdgeInsets.fromLTRB(16, topPadding + 12, 16, 24),
+            padding: EdgeInsets.fromLTRB(16, topPadding + 4, 16, 2),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
@@ -132,7 +132,7 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '"The best among you are those who learn\nthe Quran and teach it."',
+                  '"The best among you are those who learn the Quran \n and teach it. (Al-Bukhari 5027)"',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
@@ -141,24 +141,7 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
                     height: 1.4,
                   ),
                 ),
-                const SizedBox(height: 10),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    'Sahih al-Bukhari 5027',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white.withOpacity(0.9),
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
+                const SizedBox(height: 6),
               ],
             ),
           ),

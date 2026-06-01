@@ -449,7 +449,7 @@ class _DuasScreenState extends State<DuasScreen>
           // ── Immersive Premium Header ──
           Container(
             width: double.infinity,
-            padding: EdgeInsets.fromLTRB(16, topPadding + 12, 16, 24),
+            padding: EdgeInsets.fromLTRB(16, topPadding + 6, 16, 2),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
@@ -504,31 +504,13 @@ class _DuasScreenState extends State<DuasScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '"Call upon Me, I will respond to you."',
+                  '"Call upon Me, I will respond to you. [Quran 40:30]"',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
                     fontStyle: FontStyle.italic,
                     color: Colors.white.withOpacity(0.85),
                     height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    'Quran 40:60',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white.withOpacity(0.9),
-                      letterSpacing: 0.5,
-                    ),
                   ),
                 ),
                 const SizedBox(height: 20),

@@ -166,7 +166,7 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
               Icon(Icons.search_rounded, color: qt.textPrimary, size: 20), qt,
               onTap: _showQuickNavPanel),
         ]),
-        const SizedBox(height: 24),
+        const SizedBox(height: 5),
         Text('القرآن الكريم',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -176,12 +176,12 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
                     ? qt.emeraldGlow
                     : qt.emeraldDeep,
                 height: 1.2)),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text('The Holy Quran',
             textAlign: TextAlign.center,
             style: TextStyle(
                 fontSize: 14,
-                color: qt.textPrimary,
+                color: qt.textMuted,
                 letterSpacing: 1.2,
                 fontWeight: FontWeight.w700)),
       ]),
