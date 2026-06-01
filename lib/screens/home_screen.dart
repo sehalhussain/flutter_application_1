@@ -202,28 +202,6 @@ class _DateHeader extends StatelessWidget {
               fontSize: 16,
             ),
           ),
-          const SizedBox(height: 10),
-          // ═══════════════════════════════════════════════════════
-          //  AYAH
-          // ═══════════════════════════════════════════════════════
-          Column(
-            children: [
-              Text(
-                '"Surely in the remembrance of Allah \n do hearts find comfort." (Quran 13:28)',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: qt.brightness == Brightness.dark
-                      ? qt.textPrimary
-                      : qt.emeraldDeep,
-                  fontWeight: FontWeight.w400,
-                  fontFamily: 'Inter',
-                  height: 1.4,
-                  fontStyle: FontStyle.italic,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
           const SizedBox(height: 2),
         ] else
           const Padding(
@@ -700,6 +678,25 @@ class _PrayerCardState extends State<_PrayerCard>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // ═══════════════════════════════════════════════════════
+                  //  AYAH
+                  // ═══════════════════════════════════════════════════════
+                  Column(
+                    children: [
+                      Text(
+                        '"The Prayer is enjoined upon the believers at stated times." (Quran 4:103)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withOpacity(0.75),
+                          fontWeight: FontWeight.w400,
+                          height: 1.4,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
                   // ═══════════════════════════════════════════════════════
                   //  NOW & NEXT with inline countdown
                   // ═══════════════════════════════════════════════════════
