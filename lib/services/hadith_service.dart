@@ -83,19 +83,18 @@ class HadithService {
 
   // ── Sources for "Hadith of the Day" ──
   static const List<String> _dailyHadithSources = [
-    'assets/hadith/Sahih Al Bukhari.json',
-    'assets/hadith/Sahih Al Muslim.json',
+    'assets/hadith/riyad_assalihin.json',
   ];
 
   /// Rough heuristic: a "short" hadith has no more than ~6 Arabic lines.
   /// We count newlines in the Arabic text as a proxy for visual length.
   static bool _isShortHadith(Hadith h) {
     final lines = h.arabicText.split('\n').length;
-    return lines <= 10; // ~5-6 visible Arabic lines
+    return lines <= 12; // ~5-6 visible Arabic lines
   }
 
-  /// Returns one random short [Hadith] from either Sahih al-Bukhari or
-  /// Sahih al-Muslim, or `null` if loading fails.
+  /// Returns one random short [Hadith] from Sahih al-Bukhari, Sahih al-Muslim,
+  /// or Riyad as-Salihin, or `null` if loading fails.
   Future<Hadith?> getRandomHadith() async {
     // Pick a random source book.
     final rng = Random();

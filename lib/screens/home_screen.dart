@@ -160,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onRefresh: _handleRefresh,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             children: [
               // --- DATE HEADER ---
               _DateHeader(
@@ -222,19 +222,39 @@ class _DateHeader extends StatelessWidget {
       children: [
         if (timings != null) ...[
           Text(
+            greeting,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: qt.emeraldDeep.withOpacity(0.7),
+              letterSpacing: 2.0,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
             "${timings!['date']['gregorian']['day']} ${timings!['date']['gregorian']['month']['en']}",
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
               color: qt.textPrimary,
+              letterSpacing: -0.5,
             ),
           ),
-          Text(
-            "${timings!['date']['hijri']['day']} ${timings!['date']['hijri']['month']['en']} ${timings!['date']['hijri']['year']} AH",
-            style: TextStyle(
-              color: qt.emeraldDeep,
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: qt.emeraldDeep.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(100),
+            ),
+            child: Text(
+              "${timings!['date']['hijri']['day']} ${timings!['date']['hijri']['month']['en']} ${timings!['date']['hijri']['year']} AH",
+              style: TextStyle(
+                color: qt.emeraldDeep,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                letterSpacing: 0.2,
+              ),
             ),
           ),
           const SizedBox(height: 2),
@@ -350,9 +370,16 @@ class _PrayerCardState extends State<_PrayerCard>
       );
     }
 
-    final start = parse(current);
+    var start = parse(current);
     var end = parse(next);
 
+    // If start is in the future (the current prayer is yesterday's, e.g.
+    // Isha after midnight), shift start back one day so `passed` is positive.
+    if (start.isAfter(now)) {
+      start = start.subtract(const Duration(days: 1));
+    }
+
+    // If end is before start, the next prayer is tomorrow.
     if (end.isBefore(start)) {
       end = end.add(const Duration(days: 1));
     }
@@ -426,9 +453,6 @@ class _PrayerCardState extends State<_PrayerCard>
   /// Subtle "Mark this prayer prayed" row with 3 states.
   /// Matches the visual language of the "other prayers" container below it:
   /// translucent white background, white text, minimal icon.
-  /// - Prayed: subtle checkmark, "Fajr prayed"
-  /// - Time passed but not prayed: subtle + circle, "Mark Fajr as prayed"
-  /// - Time not passed: lock icon, "Fajr at 5:30 AM" (disabled)
   Widget _buildMarkPrayerButton({
     required String currentPrayer,
     required String currentTimeStr,
@@ -556,11 +580,6 @@ class _PrayerCardState extends State<_PrayerCard>
     );
   }
 
-  /// Very subtle "Fajr prayed ✓" pill that appears inside the expand
-  /// section, below the other prayers row, once the user has marked
-  /// the current prayer. Designed to be understated — just a small
-  /// text with a checkmark, sitting in line with the rest of the
-  /// translucent white aesthetic.
   Widget _buildPrayedPill({
     required String currentPrayer,
     required VoidCallback onTap,
@@ -678,7 +697,8 @@ class _PrayerCardState extends State<_PrayerCard>
       builder: (context, tracker, _) {
         final todayPrayers = tracker.todayPrayers;
         final isCurrentPrayed = todayPrayers[currentPrayer] ?? false;
-        final currentTimePassed = _hasPrayerTimePassed(currentPrayer, pTimings);
+        final currentTimePassed =
+            nextIdx == 0 ? true : _hasPrayerTimePassed(currentPrayer, pTimings);
 
         return RepaintBoundary(
           child: GestureDetector(
@@ -687,7 +707,7 @@ class _PrayerCardState extends State<_PrayerCard>
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
               padding: const EdgeInsets.only(
-                  left: 24, right: 24, top: 20, bottom: 12),
+                  left: 24, right: 24, top: 22, bottom: 14),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -695,18 +715,20 @@ class _PrayerCardState extends State<_PrayerCard>
                   colors: [
                     qt.emeraldMid,
                     qt.emeraldDeep,
+                    qt.emeraldDeep.withBlue(qt.emeraldDeep.blue + 10),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(28),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.1),
+                  // THE CHANGE: Ultra-soft, highly translucent white glass border
+                  color: Colors.white.withOpacity(0.12),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
+                    color: Colors.black.withOpacity(0.20),
+                    blurRadius: 30,
+                    offset: const Offset(0, 12),
                   )
                 ],
               ),
@@ -714,7 +736,7 @@ class _PrayerCardState extends State<_PrayerCard>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // ═══════════════════════════════════════════════════════
-                  //  AYAH
+                  //  AYAH CITATION
                   // ═══════════════════════════════════════════════════════
                   Column(
                     children: [
@@ -731,9 +753,9 @@ class _PrayerCardState extends State<_PrayerCard>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 16),
                   // ═══════════════════════════════════════════════════════
-                  //  NOW & NEXT with inline countdown
+                  //  NOW & NEXT (Flexible Display)
                   // ═══════════════════════════════════════════════════════
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -868,7 +890,7 @@ class _PrayerCardState extends State<_PrayerCard>
                     ],
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
 
                   // Progress bar
                   ClipRRect(
@@ -876,7 +898,7 @@ class _PrayerCardState extends State<_PrayerCard>
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 6,
-                      backgroundColor: Colors.white.withOpacity(0.1),
+                      backgroundColor: Colors.white.withOpacity(0.12),
                       valueColor: const AlwaysStoppedAnimation<Color>(
                         Colors.white70,
                       ),
@@ -884,12 +906,10 @@ class _PrayerCardState extends State<_PrayerCard>
                   ),
 
                   // ═══════════════════════════════════════════════════════
-                  //  ALWAYS VISIBLE: Mark this prayer prayed
-                  //  (only while not yet prayed — once marked, this CTA
-                  //  moves into the expand section below as a subtle pill)
+                  //  ALWAYS VISIBLE: Logging mechanism
                   // ═══════════════════════════════════════════════════════
                   if (!isCurrentPrayed) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
                     _buildMarkPrayerButton(
                       currentPrayer: currentPrayer,
                       currentTimeStr: currentTimeStr,
@@ -900,14 +920,14 @@ class _PrayerCardState extends State<_PrayerCard>
                   ],
 
                   // ═══════════════════════════════════════════════════════
-                  //  EXPANDED: Other prayers + (if prayed) subtle pill
+                  //  EXPANDED: Details & other timings list
                   // ═══════════════════════════════════════════════════════
                   SizeTransition(
                     sizeFactor: _expandAnimation,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 12),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -971,10 +991,8 @@ class _PrayerCardState extends State<_PrayerCard>
                             }).toList(),
                           ),
                         ),
-                        // Subtle "prayed" pill — appears below other prayers
-                        // once the user has marked the current prayer
                         if (isCurrentPrayed) ...[
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 10),
                           _buildPrayedPill(
                             currentPrayer: currentPrayer,
                             onTap: () =>
@@ -986,7 +1004,7 @@ class _PrayerCardState extends State<_PrayerCard>
                   ),
 
                   // ═══════════════════════════════════════════════════════
-                  //  TAP HINT
+                  //  TAP HINT BUTTON
                   // ═══════════════════════════════════════════════════════
                   const SizedBox(height: 12),
                   Center(
@@ -1018,7 +1036,7 @@ class _PrayerCardState extends State<_PrayerCard>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 0),
+                  const SizedBox(height: 2),
                 ],
               ),
             ),
@@ -1030,7 +1048,7 @@ class _PrayerCardState extends State<_PrayerCard>
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ESSENTIALS SECTION — Premium tile style matching menu_screen
+// ESSENTIALS SECTION
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _EssentialsSection extends StatefulWidget {
@@ -1208,21 +1226,25 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
           sizeCurve: Curves.easeInOut,
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
 
-        // ─── Toggle Pill ───
+        // ─── Modern Toggle Pill with subtle border and fill ───
         GestureDetector(
-          onTap: () => setState(() => _isExpanded = !_isExpanded),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            setState(() => _isExpanded = !_isExpanded);
+          },
           behavior: HitTestBehavior.opaque,
           child: Center(
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
               decoration: BoxDecoration(
+                color: qt.emeraldDeep.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(100),
                 border: Border.all(
-                  color: qt.emeraldDeep.withOpacity(0.3),
-                  width: 1.5,
+                  color: qt.emeraldDeep.withOpacity(0.15),
+                  width: 1.0,
                 ),
               ),
               child: Row(
@@ -1235,13 +1257,13 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
                     size: 16,
                     color: qt.emeraldDeep,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
                   Text(
                     _isExpanded ? "Show Less" : "More Tools",
                     style: TextStyle(
                       color: qt.emeraldDeep,
                       fontSize: 13,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.bold,
                       letterSpacing: 0.3,
                     ),
                   ),
@@ -1332,10 +1354,13 @@ class _AsmaSliderState extends State<_AsmaSlider> {
               ],
             ),
             GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AsmaListScreen()),
-              ),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AsmaListScreen()),
+                );
+              },
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1386,13 +1411,20 @@ class _AsmaSliderState extends State<_AsmaSlider> {
                                 decoration: BoxDecoration(
                                   color: qt.cardBg,
                                   borderRadius: BorderRadius.circular(24),
-                                  border: Border.all(color: qt.borderGlass),
+                                  // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
+                                  border: Border.all(
+                                    color: qt.borderGlass.withOpacity(0.12),
+                                    width: 1.0,
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color.fromARGB(255, 0, 0, 0)
-                                          .withOpacity(0.04),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 4),
+                                      color: Colors.black.withOpacity(
+                                        qt.brightness == Brightness.dark
+                                            ? 0.15
+                                            : 0.04,
+                                      ),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 6),
                                     ),
                                   ],
                                 ),
@@ -1539,6 +1571,7 @@ class _AyahCard extends StatelessWidget {
     return RepaintBoundary(
       child: GestureDetector(
         onTap: () async {
+          HapticFeedback.lightImpact();
           final surahs = await QuranService.instance.loadSurahList();
           if (!context.mounted) return;
           Navigator.push(
@@ -1557,7 +1590,18 @@ class _AyahCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: qt.cardBg,
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: qt.borderGlass),
+            // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
+            border: Border.all(
+              color: qt.borderGlass.withOpacity(0.12),
+              width: 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: Column(
             children: [
@@ -1683,7 +1727,7 @@ class _HadithCard extends StatelessWidget {
   String _bookNameFromAsset(String assetPath) {
     final fileName = assetPath.split('/').last.replaceAll('.json', '');
     // Convert "Sahih Al Bukhari" → "Sahih al-Bukhari"
-    if (fileName == 'Sahih Al Bukhari') return 'Sahih al-Bukhari';
+    if (fileName == 'riyad_assalihin') return 'Riyad as Salihin';
     if (fileName == 'Sahih Al Muslim') return 'Sahih al-Muslim';
     return fileName.replaceAll('_', ' ');
   }
@@ -1696,6 +1740,7 @@ class _HadithCard extends StatelessWidget {
     return RepaintBoundary(
       child: GestureDetector(
         onTap: () {
+          HapticFeedback.lightImpact();
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -1712,7 +1757,18 @@ class _HadithCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: qt.cardBg,
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: qt.borderGlass),
+            // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
+            border: Border.all(
+              color: qt.borderGlass.withOpacity(0.12),
+              width: 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1724,24 +1780,10 @@ class _HadithCard extends StatelessWidget {
                   fontSize: 13,
                   color: qt.emeraldDeep,
                   height: 1.4,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 16),
-
-              // ── Arabic text ──
-              Text(
-                hadith.arabicText,
-                textAlign: TextAlign.right,
-                textDirection: TextDirection.rtl,
-                style: TextStyle(
-                  fontFamily: 'IndopakN',
-                  fontSize: 22,
-                  height: 2.0,
-                  color: qt.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 16),
-
               // ── English translation (formatted like reader screens) ──
               Text(
                 hadith.englishText
@@ -1758,12 +1800,12 @@ class _HadithCard extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // ── Badges: Hadith title + Chapter title ──
+              // ── Badges: Book name · Chapter · Hadith # ──
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  // Title badge
+                  // Book name badge
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
@@ -1773,36 +1815,86 @@ class _HadithCard extends StatelessWidget {
                       color: qt.emeraldDeep.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(
-                      hadith.title,
-                      style: TextStyle(
-                        color: qt.emeraldDeep,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.3,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.menu_book_rounded,
+                            size: 11, color: qt.emeraldDeep),
+                        const SizedBox(width: 5),
+                        Text(
+                          bookTitle,
+                          style: TextStyle(
+                            color: qt.emeraldDeep,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   // Chapter badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: qt.emeraldDeep.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      hadith.chapterTitle,
-                      style: TextStyle(
-                        color: qt.emeraldDeep,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.3,
+                  if (hadith.chapterTitle.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: qt.emeraldDeep.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.folder_outlined,
+                              size: 11, color: qt.emeraldDeep),
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: Text(
+                              hadith.chapterTitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: qt.emeraldDeep,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                  // Hadith number badge
+                  if (hadith.localNum.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: qt.emeraldDeep.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.tag_rounded,
+                              size: 11, color: qt.emeraldDeep),
+                          const SizedBox(width: 5),
+                          Text(
+                            'Hadith #${hadith.localNum}',
+                            style: TextStyle(
+                              color: qt.emeraldDeep,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ],
@@ -1841,21 +1933,29 @@ class _EssentialCard extends StatelessWidget {
     return Expanded(
       child: RepaintBoundary(
         child: GestureDetector(
-          onTap: onTap,
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
           child: Container(
             padding: const EdgeInsets.all(16),
             height: 160,
             decoration: BoxDecoration(
-                color: qt.cardBg,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: qt.borderGlass, width: 1.2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  )
-                ]),
+              color: qt.cardBg,
+              borderRadius: BorderRadius.circular(24),
+              // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
+              border: Border.all(
+                color: qt.borderGlass.withOpacity(0.12),
+                width: 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 15,
+                  offset: const Offset(0, 4),
+                )
+              ],
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1926,13 +2026,27 @@ class _PremiumEssentialTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return RepaintBoundary(
       child: GestureDetector(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: qt.cardBg,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: qt.borderGlass),
+            // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
+            border: Border.all(
+              color: qt.borderGlass.withOpacity(0.12),
+              width: 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 15,
+                offset: const Offset(0, 4),
+              )
+            ],
           ),
           child: Row(
             children: [
@@ -2047,6 +2161,7 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
 
   void _toggleActive() {
     if (widget.qiblaDirection == null || !_hasCompass) return;
+    HapticFeedback.lightImpact();
     setState(() {
       _isActive = !_isActive;
       if (_isActive) {
@@ -2093,7 +2208,11 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
         decoration: BoxDecoration(
           color: qt.cardBg,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: qt.borderGlass),
+          // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
+          border: Border.all(
+            color: qt.borderGlass.withOpacity(0.12),
+            width: 1.0,
+          ),
         ),
         child: Row(
           children: [
@@ -2138,7 +2257,18 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
           decoration: BoxDecoration(
             color: qt.cardBg,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: qt.borderGlass),
+            // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
+            border: Border.all(
+              color: qt.borderGlass.withOpacity(0.12),
+              width: 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.015),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
           ),
           child: Row(
             children: [
@@ -2239,8 +2369,9 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
             color: qt.cardBg,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
+              // THE CHANGE: Switching heavy borders to active state color transitions
               color:
-                  isAligned ? qt.emeraldDeep : qt.emeraldDeep.withOpacity(0.6),
+                  isAligned ? qt.emeraldDeep : qt.emeraldDeep.withOpacity(0.3),
               width: isAligned ? 2.0 : 1.0,
             ),
             boxShadow: isAligned

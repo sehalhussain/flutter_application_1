@@ -35,6 +35,23 @@ class Hadith {
       chapterTitle: chapterTitle,
     );
   }
+
+  /// Parse a hadith from the Riyad as-Salihin JSON format.
+  factory Hadith.fromRiyadJson(
+      Map<String, dynamic> json, String bookAsset, String chapterTitle) {
+    final english = json['english'] as Map<String, dynamic>? ?? {};
+    return Hadith(
+      title: '',
+      narrator: english['narrator'] as String? ?? '',
+      englishText: english['text'] as String? ?? '',
+      arabicText: json['arabic'] as String? ?? '',
+      localNum: (json['idInBook'] as int?).toString(),
+      grade: '',
+      uuid: 'riyad_${json['id']}',
+      bookAsset: bookAsset,
+      chapterTitle: chapterTitle,
+    );
+  }
 }
 
 class HadithChapter {
@@ -85,18 +102,90 @@ class HadithBook {
   });
 
   factory HadithBook.fromJson(Map<String, dynamic> json, String assetPath) {
-    final allBooks = (json['all_books'] as List<dynamic>?)
-            ?.map((b) =>
-                HadithChapter.fromJson(b as Map<String, dynamic>, assetPath))
-            .toList() ??
-        [];
+    // Detect format: existing (all_books) vs Riyad as-Salihin (chapters + hadiths)
+    if (json.containsKey('all_books')) {
+      final allBooks = (json['all_books'] as List<dynamic>?)
+              ?.map((b) =>
+                  HadithChapter.fromJson(b as Map<String, dynamic>, assetPath))
+              .toList() ??
+          [];
+      return HadithBook(
+        name: json['name'] as String? ?? '',
+        arabicName: json['arabic_name'] as String? ?? '',
+        shortDesc: json['short_desc'] as String? ?? '',
+        numBooks: json['num_books'] as String? ?? '',
+        numHadiths: json['num_hadiths'] as String? ?? '',
+        allBooks: allBooks,
+        assetPath: assetPath,
+      );
+    } else if (json.containsKey('chapters') && json.containsKey('hadiths')) {
+      final metadata = json['metadata'] as Map<String, dynamic>? ?? {};
+      final arabicMeta = metadata['arabic'] as Map<String, dynamic>? ?? {};
+      final englishMeta = metadata['english'] as Map<String, dynamic>? ?? {};
+
+      // Build a chapter index: chapterId -> chapter info
+      final chaptersRaw = json['chapters'] as List<dynamic>? ?? [];
+      final hadithsRaw = json['hadiths'] as List<dynamic>? ?? [];
+
+      // Map chapterId -> {arabic, english}
+      final chapterMap = <int, Map<String, String>>{};
+      for (final ch in chaptersRaw) {
+        final c = ch as Map<String, dynamic>;
+        chapterMap[c['id'] as int] = {
+          'arabic': c['arabic'] as String? ?? '',
+          'english': c['english'] as String? ?? '',
+        };
+      }
+
+      // Group hadiths by chapterId
+      final chapterHadiths = <int, List<Hadith>>{};
+      for (final h in hadithsRaw) {
+        final hadithJson = h as Map<String, dynamic>;
+        final chapterId = hadithJson['chapterId'] as int? ?? 0;
+        final chapterInfo = chapterMap[chapterId];
+        final englishTitle = chapterInfo?['english'] ?? '';
+        chapterHadiths
+            .putIfAbsent(chapterId, () => [])
+            .add(Hadith.fromRiyadJson(hadithJson, assetPath, englishTitle));
+      }
+
+      // Build chapters
+      final chapters = <HadithChapter>[];
+      for (final entry in chapterMap.entries) {
+        final chapterId = entry.key;
+        final info = entry.value;
+        chapters.add(HadithChapter(
+          num: chapterId.toString(),
+          englishTitle: info['english'] ?? '',
+          arabicTitle: info['arabic'] ?? '',
+          hadithList: chapterHadiths[chapterId] ?? [],
+        ));
+      }
+
+      // Sort by chapter ID for consistent ordering
+      chapters.sort((a, b) => int.parse(a.num).compareTo(int.parse(b.num)));
+
+      final totalHadiths =
+          chapters.fold(0, (sum, ch) => sum + ch.hadithList.length);
+
+      return HadithBook(
+        name: englishMeta['title'] as String? ?? 'Riyad as-Salihin',
+        arabicName: arabicMeta['title'] as String? ?? 'رياض الصالحين',
+        shortDesc: '',
+        numBooks: chapters.length.toString(),
+        numHadiths: totalHadiths.toString(),
+        allBooks: chapters,
+        assetPath: assetPath,
+      );
+    }
+    // Fallback
     return HadithBook(
-      name: json['name'] as String? ?? '',
-      arabicName: json['arabic_name'] as String? ?? '',
-      shortDesc: json['short_desc'] as String? ?? '',
-      numBooks: json['num_books'] as String? ?? '',
-      numHadiths: json['num_hadiths'] as String? ?? '',
-      allBooks: allBooks,
+      name: '',
+      arabicName: '',
+      shortDesc: '',
+      numBooks: '',
+      numHadiths: '',
+      allBooks: [],
       assetPath: assetPath,
     );
   }
