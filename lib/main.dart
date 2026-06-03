@@ -14,6 +14,7 @@ import 'screens/home_screen.dart';
 import 'screens/menu_screen.dart';
 import 'screens/quran/quran_home_screen.dart';
 import 'screens/prayer_screen.dart';
+import 'screens/duas/duas_screen.dart';
 import 'constants/quran_theme.dart';
 import 'widgets/prayer_setup_dialog.dart';
 
@@ -295,84 +296,166 @@ class _SplashScreen extends StatelessWidget {
   }
 }
 
-// ---- Main Navigation (unchanged) ----
+// ---- Main Navigation (modified: global bottom nav on all screens except Quran) ----
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
+
+  /// Push a screen onto the shell navigator, keeping the bottom nav bar visible.
+  static void pushOnShell(BuildContext context, Widget screen) {
+    final state = context.findAncestorStateOfType<MainNavigationState>();
+    state?._pushScreen(screen);
+  }
+
+  /// Pop the current screen from the shell navigator.
+  static void popShell(BuildContext context) {
+    final state = context.findAncestorStateOfType<MainNavigationState>();
+    state?._popScreen();
+  }
+
+  /// Replace the entire shell body with a new screen (clears the stack).
+  static void replaceShellBody(BuildContext context, Widget screen) {
+    final state = context.findAncestorStateOfType<MainNavigationState>();
+    state?._replaceBody(screen);
+  }
+
+  /// Navigate to a tab by index from anywhere in the widget tree.
+  static void goToTabStatic(BuildContext context, int tab) {
+    final state = context.findAncestorStateOfType<MainNavigationState>();
+    state?.goToTab(tab);
+  }
 
   @override
   State<MainNavigation> createState() => MainNavigationState();
 }
 
 class MainNavigationState extends State<MainNavigation> {
-  int _index = 0;
+  int _tabIndex = 0;
+
+  /// Stack of screens pushed on top of the tab content.
+  /// The bottom nav bar remains visible for all screens in this stack.
+  final List<Widget> _screenStack = [];
 
   void goToTab(int tab) {
-    setState(() => _index = tab);
+    setState(() {
+      _tabIndex = tab;
+      _screenStack.clear();
+    });
+  }
+
+  void _pushScreen(Widget screen) {
+    setState(() {
+      _screenStack.add(screen);
+    });
+  }
+
+  void _popScreen() {
+    if (_screenStack.isNotEmpty) {
+      setState(() {
+        _screenStack.removeLast();
+      });
+    }
+  }
+
+  void _replaceBody(Widget screen) {
+    setState(() {
+      _screenStack
+        ..clear()
+        ..add(screen);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
 
+    // Screens list for the nav tabs (Quran at index 2 is pushed via root Navigator)
     final screens = [
-      const HomeScreen(),
-      PrayerScreen(onBackToHome: () => goToTab(0)),
-      const MenuScreen(),
+      const HomeScreen(), // tab 0
+      PrayerScreen(onBackToHome: () => goToTab(0)), // tab 1
+      const DuasScreen(), // tab 3 → screens[2]
+      const MenuScreen(), // tab 4 → screens[3]
     ];
 
-    return Scaffold(
-      backgroundColor: qt.bg,
-      body: IndexedStack(
-        index: _index >= 2 ? _index - 1 : _index,
-        children: screens,
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: qt.borderGlass, width: 0.5)),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _index,
-          onTap: (i) {
-            if (i == 2) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const QuranHomeScreen()),
-              );
-            } else {
-              setState(() => _index = i);
-            }
-          },
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: qt.cardBg,
-          selectedItemColor: qt.emeraldDeep,
-          unselectedItemColor: qt.textMuted,
-          selectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 11,
+    // Map nav bar tab index to screens index (skip Quran at index 2)
+    int stackIndex;
+    if (_tabIndex <= 1) {
+      stackIndex = _tabIndex;
+    } else if (_tabIndex >= 3) {
+      stackIndex = _tabIndex - 1;
+    } else {
+      stackIndex = 0;
+    }
+
+    return WillPopScope(
+      onWillPop: () async {
+        if (_screenStack.isNotEmpty) {
+          _popScreen();
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        backgroundColor: qt.bg,
+        body: _screenStack.isNotEmpty
+            ? _screenStack.last
+            : IndexedStack(
+                index: stackIndex,
+                children: screens,
+              ),
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: qt.borderGlass, width: 0.5)),
           ),
-          unselectedLabelStyle: const TextStyle(fontSize: 11),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_filled),
-              activeIcon: Icon(Icons.home_filled),
-              label: "Home",
+          child: BottomNavigationBar(
+            currentIndex: _tabIndex,
+            onTap: (i) {
+              // Quran button — push via root Navigator (hides bottom nav)
+              if (i == 2) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const QuranHomeScreen()),
+                );
+              } else {
+                goToTab(i);
+              }
+            },
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: qt.cardBg,
+            selectedItemColor: qt.emeraldDeep,
+            unselectedItemColor: qt.textMuted,
+            selectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.access_time),
-              activeIcon: Icon(Icons.access_time),
-              label: "Prayer",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.book),
-              activeIcon: Icon(Icons.menu_book_rounded),
-              label: "Quran",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view_rounded),
-              activeIcon: Icon(Icons.grid_view_rounded),
-              label: "Menu",
-            ),
-          ],
+            unselectedLabelStyle: const TextStyle(fontSize: 11),
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home_filled),
+                activeIcon: Icon(Icons.home_filled),
+                label: "Home",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.access_time),
+                activeIcon: Icon(Icons.access_time),
+                label: "Prayer",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.book),
+                activeIcon: Icon(Icons.menu_book_rounded),
+                label: "Quran",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.auto_awesome_rounded),
+                activeIcon: Icon(Icons.auto_awesome_rounded),
+                label: "Duas",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.grid_view_rounded),
+                activeIcon: Icon(Icons.grid_view_rounded),
+                label: "Menu",
+              ),
+            ],
+          ),
         ),
       ),
     );

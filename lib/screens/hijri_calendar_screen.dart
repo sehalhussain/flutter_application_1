@@ -3,7 +3,7 @@ import '../services/prayer_service.dart';
 import '../constants/quran_theme.dart';
 import '../constants/locations.dart';
 import 'package:intl/intl.dart';
-import 'menu_screen.dart';
+import '../main.dart';
 
 // ─────────────────────────────────────────────────────────
 //  Hijri month names (1-indexed)
@@ -227,12 +227,7 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
                           color: Colors.white, size: 18),
                       qt,
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const MenuScreen(),
-                          ),
-                        );
+                        MainNavigation.goToTabStatic(context, 3);
                       },
                     ),
                   ],

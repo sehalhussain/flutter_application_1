@@ -8,7 +8,7 @@ import '../providers/prayer_tracker_provider.dart';
 import '../constants/quran_theme.dart';
 import '../constants/locations.dart';
 import 'package:intl/intl.dart';
-import 'menu_screen.dart';
+import '../main.dart';
 
 class PrayerScreen extends StatefulWidget {
   final VoidCallback? onBackToHome;
@@ -293,12 +293,7 @@ class _PrayerScreenState extends State<PrayerScreen>
                               color: Colors.white, size: 20),
                           qt,
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const MenuScreen(),
-                              ),
-                            );
+                            MainNavigation.goToTabStatic(context, 3);
                           },
                         ),
                       ],

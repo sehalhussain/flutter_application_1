@@ -13,6 +13,7 @@ import '../services/quran_service.dart';
 import '../services/hadith_service.dart';
 import '../constants/quran_theme.dart';
 import '../services/prayer_service.dart';
+import '../main.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'asma_list_screen.dart';
 import 'hadith/hadith_home_screen.dart';
@@ -1126,10 +1127,7 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
                   ? const Color.fromARGB(255, 155, 255, 213)
                   : const Color(0xFFFFB74D),
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const DuasScreen()),
-                );
+                MainNavigation.pushOnShell(context, const DuasScreen());
               },
               qt: qt,
             ),
@@ -1149,10 +1147,7 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
           title: "Hadith Library",
           subtitle: "Browse authentic narrations",
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const HadithHomeScreen()),
-            );
+            MainNavigation.pushOnShell(context, const HadithHomeScreen());
           },
           qt: qt,
         ),
@@ -1170,10 +1165,7 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
           title: "Hijri Calendar",
           subtitle: "View Islamic events and dates",
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const HijriCalendarScreen()),
-            );
+            MainNavigation.pushOnShell(context, const HijriCalendarScreen());
           },
           qt: qt,
         ),
@@ -1205,11 +1197,8 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
                         ? "$todayCount/5 today · $streak-day streak"
                         : "Check your prayer consistency",
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const PrayerStatsScreen()),
-                      );
+                      MainNavigation.pushOnShell(
+                          context, const PrayerStatsScreen());
                     },
                     qt: qt,
                   );
@@ -1356,10 +1345,7 @@ class _AsmaSliderState extends State<_AsmaSlider> {
             GestureDetector(
               onTap: () {
                 HapticFeedback.lightImpact();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AsmaListScreen()),
-                );
+                MainNavigation.pushOnShell(context, const AsmaListScreen());
               },
               child: Container(
                 padding:
@@ -1741,14 +1727,12 @@ class _HadithCard extends StatelessWidget {
       child: GestureDetector(
         onTap: () {
           HapticFeedback.lightImpact();
-          Navigator.push(
+          MainNavigation.pushOnShell(
             context,
-            MaterialPageRoute(
-              builder: (_) => HadithReaderScreen(
-                hadith: hadith,
-                bookTitle: bookTitle,
-                chapterTitle: hadith.chapterTitle,
-              ),
+            HadithReaderScreen(
+              hadith: hadith,
+              bookTitle: bookTitle,
+              chapterTitle: hadith.chapterTitle,
             ),
           );
         },

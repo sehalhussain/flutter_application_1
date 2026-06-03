@@ -8,6 +8,7 @@ import '../models/downloadable_translation.dart';
 import '../constants/locations.dart';
 import '../constants/quran_theme.dart';
 import 'storage_management_screen.dart';
+import '../main.dart';
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -106,10 +107,9 @@ class _MenuScreenState extends State<MenuScreen> {
             subtitle: "View and delete cached Surah audio recitations",
             isConfigured: false,
             onTap: () {
-              Navigator.push(
+              MainNavigation.pushOnShell(
                 context,
-                MaterialPageRoute(
-                    builder: (context) => const StorageManagementScreen()),
+                const StorageManagementScreen(),
               );
             },
           ),
