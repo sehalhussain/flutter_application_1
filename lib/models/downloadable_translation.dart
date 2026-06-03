@@ -3,12 +3,15 @@
 // Defines downloadable translation metadata — NOT bundled in the app.
 // Users download these on demand to keep the app small.
 
+enum TranslationFormat { json, sqlite }
+
 class DownloadableTranslation {
   final String id;
   final String displayName;
   final String language;
   final String url;
-  final bool isBuiltin; // false for all downloadable translations
+  final bool isBuiltin;
+  final TranslationFormat format;
 
   const DownloadableTranslation({
     required this.id,
@@ -16,7 +19,12 @@ class DownloadableTranslation {
     required this.language,
     required this.url,
     this.isBuiltin = false,
+    this.format = TranslationFormat.json,
   });
+
+  /// Detect format from URL extension if not explicitly set.
+  bool get isSqlite =>
+      format == TranslationFormat.sqlite || url.endsWith('.db');
 }
 
 /// List of translations that can be downloaded on demand.

@@ -24,6 +24,7 @@ dependencies:
   # Path for downloads
   path_provider: ^2.1.1
   permission_handler: ^11.0.1
+  sqflite: ^2.3.0
   # HTML rendering for surah info
   flutter_widget_from_html: ^0.15.1
   flutter_markdown: ^0.7.7+1
@@ -71,6 +72,10 @@ flutter:
     - assets/data/duas/
     - assets/data/names/asmaulhusna.json
     - assets/data/quran/
+    - assets/data/quran/Scripts/
+    - assets/data/quran/Translations/
+    - assets/data/quran/Transliteration/
+    - assets/data/quran/Surah info/
     - assets/icons/
     - assets/fonts/
     - assets/hadith/

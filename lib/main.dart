@@ -81,7 +81,7 @@ class AsSalahApp extends StatelessWidget {
   }
 }
 
-// ---- Splash Wrapper - optimized rebuilds using Selector ----
+// ---- Splash Wrapper ----
 class _SplashWrapper extends StatefulWidget {
   const _SplashWrapper();
 
@@ -94,6 +94,7 @@ class _SplashWrapperState extends State<_SplashWrapper>
   late final AnimationController _controller;
   bool _splashRemoved = false;
   bool _setupChecked = false;
+  bool _isDismissing = false;
 
   @override
   void initState() {
@@ -113,8 +114,8 @@ class _SplashWrapperState extends State<_SplashWrapper>
       } else {
         _controller.forward();
         Future.delayed(const Duration(milliseconds: 3500), () {
-          if (mounted && !_splashRemoved) {
-            setState(() => _splashRemoved = true);
+          if (mounted && !_splashRemoved && !_isDismissing) {
+            _dismissSplash();
           }
         });
       }
@@ -133,6 +134,11 @@ class _SplashWrapperState extends State<_SplashWrapper>
     }
   }
 
+  void _dismissSplash() {
+    if (_isDismissing || _splashRemoved) return;
+    setState(() => _isDismissing = true);
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -141,35 +147,50 @@ class _SplashWrapperState extends State<_SplashWrapper>
 
   @override
   Widget build(BuildContext context) {
-    // Use Selector to rebuild only when showBismillahSplash changes
-    return Selector<QuranSettings, bool>(
-      selector: (_, settings) => settings.showBismillahSplash,
-      builder: (context, showBismillahSplash, child) {
-        if (!showBismillahSplash || _splashRemoved) {
-          // Show the first-time setup wizard when MainNavigation is first visible
-          if (!_setupChecked) {
-            _setupChecked = true;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _showSetupIfNeeded();
-            });
-          }
-          return const MainNavigation();
-        }
-        return Stack(
-          children: [
-            const MainNavigation(),
-            _SplashScreen(
+    // The home screen (MainNavigation) is ALWAYS in the tree. While the
+    // splash is up, it is laid out and doing its async data fetching in
+    // the background, so by the time the splash is removed the home
+    // screen is already populated and won't visibly refresh.
+    //
+    // The splash itself is shown on top with an opaque background that
+    // matches the app's scaffold background. It does NOT fade out — it
+    // is removed instantly so there is never a "fade to black".
+    if (!_splashRemoved && !_setupChecked) {
+      _setupChecked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showSetupIfNeeded();
+      });
+    }
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const MainNavigation(),
+        if (!_splashRemoved)
+          AnimatedOpacity(
+            opacity: _isDismissing ? 0.0 : 1.0,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOut,
+            onEnd: () {
+              if (mounted && _isDismissing) {
+                setState(() {
+                  _splashRemoved = true;
+                  _isDismissing = false;
+                });
+              }
+            },
+            child: _SplashScreen(
               controller: _controller,
-              onDismiss: () => setState(() => _splashRemoved = true),
+              onDismiss: _dismissSplash,
             ),
-          ],
-        );
-      },
+          ),
+      ],
     );
   }
 }
 
-// ---- Pure splash screen widget - no extra rebuilds ----
+// ---- Splash screen widget: text fades in and scales up, but the splash
+// itself is OPAQUE (no fade-out). When dismissed, it is removed instantly
+// from the tree, so there is no "fade to black".
 class _SplashScreen extends StatelessWidget {
   final AnimationController controller;
   final VoidCallback onDismiss;
@@ -185,108 +206,96 @@ class _SplashScreen extends StatelessWidget {
     final bgColor = brightness == Brightness.light
         ? const Color(0xFFFBFDFA)
         : const Color(0xFF0F1711);
-    final textColor = brightness == Brightness.light
-        ? const Color(0xFF004D40)
-        : const Color(0xFF80CBC4);
     final mutedColor = brightness == Brightness.light
         ? const Color(0xFF78909C)
         : const Color(0xFF90A4AE);
 
-    return FadeTransition(
-      opacity: Tween<double>(begin: 1.0, end: 0.0).animate(
-        CurvedAnimation(
-          parent: controller,
-          curve: const Interval(0.7, 1.0, curve: Curves.easeOut),
-        ),
-      ),
-      child: Scaffold(
-        backgroundColor: bgColor,
-        body: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onDismiss,
-          child: Stack(
-            children: [
-              Center(
-                child: ScaleTransition(
-                  scale: Tween<double>(begin: 0.9, end: 1.0).animate(
-                    CurvedAnimation(
-                      parent: controller,
-                      curve:
-                          const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
-                    ),
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onDismiss,
+        child: Stack(
+          children: [
+            Center(
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.9, end: 1.0).animate(
+                  CurvedAnimation(
+                    parent: controller,
+                    curve: const Interval(0.0, 0.8, curve: Curves.easeOutCubic),
                   ),
-                  child: FadeTransition(
-                    opacity: CurvedAnimation(
-                      parent: controller,
-                      curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          '\u{0628}\u{0650}\u{0633}\u{0652}\u{0645}\u{0650} '
-                          '\u{0627}\u{0644}\u{0644}\u{0651}\u{064e}\u{0647}\u{0650} '
-                          '\u{0627}\u{0644}\u{0631}\u{0651}\u{064e}\u{062d}\u{0652}\u{0645}\u{064e}\u{0646}\u{0650} '
-                          '\u{0627}\u{0644}\u{0631}\u{0651}\u{064e}\u{062d}\u{0650}\u{064a}\u{0645}\u{0650}',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: 'QPC Hafs',
-                          ),
-                          textAlign: TextAlign.center,
+                ),
+                child: FadeTransition(
+                  opacity: CurvedAnimation(
+                    parent: controller,
+                    curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        '\u{0628}\u{0650}\u{0633}\u{0652}\u{0645}\u{0650} '
+                        '\u{0627}\u{0644}\u{0644}\u{0651}\u{064e}\u{0647}\u{0650} '
+                        '\u{0627}\u{0644}\u{0631}\u{0651}\u{064e}\u{062d}\u{0652}\u{0645}\u{064e}\u{0646}\u{0650} '
+                        '\u{0627}\u{0644}\u{0631}\u{0651}\u{064e}\u{062d}\u{0650}\u{064a}\u{0645}\u{0650}',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w400,
+                          fontFamily: 'QPC Hafs',
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'In the name of Allah,\nthe Most Gracious, the Most Merciful',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: mutedColor,
-                            fontWeight: FontWeight.w400,
-                            height: 1.5,
-                          ),
-                          textAlign: TextAlign.center,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'In the name of Allah,\nthe Most Gracious, the Most Merciful',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: mutedColor,
+                          fontWeight: FontWeight.w400,
+                          height: 1.5,
                         ),
-                      ],
-                    ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
               ),
-              // Positioned skip text - moved higher, with settings hint
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 80, // Increased from 40 to move upward
-                child: Column(
-                  children: [
-                    Text(
-                      'Tap anywhere to skip',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: mutedColor.withOpacity(0.7),
-                        letterSpacing: 0.8,
-                        fontWeight: FontWeight.w500,
-                      ),
+            ),
+            // Positioned skip text - moved higher, with settings hint
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 80,
+              child: Column(
+                children: [
+                  Text(
+                    'Tap anywhere to skip',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: mutedColor.withValues(alpha: 0.7),
+                      letterSpacing: 0.8,
+                      fontWeight: FontWeight.w500,
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'You can turn this off in Settings',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: mutedColor.withOpacity(0.5),
-                      ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'You can turn this off in Settings',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: mutedColor.withValues(alpha: 0.5),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ---- Main Navigation (unchanged except minor const optimizations) ----
+// ---- Main Navigation (unchanged) ----
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 

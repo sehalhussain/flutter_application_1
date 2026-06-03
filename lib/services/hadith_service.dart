@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../models/hadith_models.dart';
@@ -78,6 +79,48 @@ class HadithService {
   List<Hadith> getHadithChunk(List<Hadith> allHadiths, int start, int count) {
     final end = (start + count).clamp(0, allHadiths.length);
     return allHadiths.sublist(start, end);
+  }
+
+  // ── Sources for "Hadith of the Day" ──
+  static const List<String> _dailyHadithSources = [
+    'assets/hadith/Sahih Al Bukhari.json',
+    'assets/hadith/Sahih Al Muslim.json',
+  ];
+
+  /// Rough heuristic: a "short" hadith has no more than ~6 Arabic lines.
+  /// We count newlines in the Arabic text as a proxy for visual length.
+  static bool _isShortHadith(Hadith h) {
+    final lines = h.arabicText.split('\n').length;
+    return lines <= 10; // ~5-6 visible Arabic lines
+  }
+
+  /// Returns one random short [Hadith] from either Sahih al-Bukhari or
+  /// Sahih al-Muslim, or `null` if loading fails.
+  Future<Hadith?> getRandomHadith() async {
+    // Pick a random source book.
+    final rng = Random();
+    final bookPath =
+        _dailyHadithSources[rng.nextInt(_dailyHadithSources.length)];
+
+    try {
+      final book = await loadHadithBook(bookPath);
+      if (book.allBooks.isEmpty) return null;
+
+      // Collect short hadiths only.
+      final shortHadiths = <Hadith>[];
+      for (final chapter in book.allBooks) {
+        for (final h in chapter.hadithList) {
+          if (_isShortHadith(h)) {
+            shortHadiths.add(h);
+          }
+        }
+      }
+
+      if (shortHadiths.isEmpty) return null;
+      return shortHadiths[rng.nextInt(shortHadiths.length)];
+    } catch (_) {
+      return null;
+    }
   }
 
   String _titleFromAsset(String assetPath) {

@@ -41,17 +41,30 @@ class TranslationDownloadService extends ChangeNotifier {
     return transDir;
   }
 
-  Future<String> _filePath(String id) async {
+  Future<String> _jsonPath(String id) async {
     final dir = await _translationsDir;
     return '${dir.path}/translation_$id.json';
   }
 
+  Future<String> _dbPath(String id) async {
+    final dir = await _translationsDir;
+    return '${dir.path}/translation_$id.db';
+  }
+
   /// Returns the path to a downloaded translation file, or null if not downloaded.
+  /// Checks both .json and .db extensions.
   Future<String?> getDownloadedPath(String id) async {
-    final file = File(await _filePath(id));
-    if (await file.exists()) return file.path;
+    // Check .db first (newer format)
+    final dbFile = File(await _dbPath(id));
+    if (await dbFile.exists()) return dbFile.path;
+    // Fall back to .json
+    final jsonFile = File(await _jsonPath(id));
+    if (await jsonFile.exists()) return jsonFile.path;
     return null;
   }
+
+  /// Returns true if the downloaded file at [path] is a SQLite database.
+  bool isSqliteFile(String path) => path.endsWith('.db');
 
   // ── Check download status ────────────────────────────────────────────────
   Future<void> refreshDownloadedStatus() async {
@@ -103,8 +116,10 @@ class TranslationDownloadService extends ChangeNotifier {
       final totalBytes = bytes.length;
       int received = 0;
 
-      // We'll save in chunks to show progress
-      final file = File(await _filePath(id));
+      // Save with correct extension based on format
+      final isDb = translation.isSqlite;
+      final filePath = isDb ? await _dbPath(id) : await _jsonPath(id);
+      final file = File(filePath);
       final sink = file.openWrite();
 
       // Write in chunks of ~16KB so we can update progress
@@ -129,19 +144,22 @@ class TranslationDownloadService extends ChangeNotifier {
       _downloadProgress[id] = 1.0;
       Future.microtask(notifyListeners);
 
-      // Validate JSON
-      final savedContent = await file.readAsString();
-      try {
-        json.decode(savedContent) as Map<String, dynamic>;
-      } catch (_) {
-        // Invalid JSON — delete and throw
-        await file.delete();
-        _downloaded[id] = false;
-        _downloadProgress.remove(id);
-        Future.microtask(notifyListeners);
-        throw Exception(
-            'Downloaded file for ${translation.displayName} is corrupted');
+      // Validate file format
+      if (!isDb) {
+        // JSON — validate structure
+        final savedContent = await file.readAsString();
+        try {
+          json.decode(savedContent) as Map<String, dynamic>;
+        } catch (_) {
+          await file.delete();
+          _downloaded[id] = false;
+          _downloadProgress.remove(id);
+          Future.microtask(notifyListeners);
+          throw Exception(
+              'Downloaded file for ${translation.displayName} is corrupted');
+        }
       }
+      // SQLite — file is already written as binary, no JSON validation needed
     } catch (e) {
       _downloadProgress.remove(id);
       _downloaded[id] = false;
@@ -155,10 +173,11 @@ class TranslationDownloadService extends ChangeNotifier {
 
   // ── Delete ────────────────────────────────────────────────────────────────
   Future<void> deleteTranslation(String id) async {
-    final file = File(await _filePath(id));
-    if (await file.exists()) {
-      await file.delete();
-    }
+    // Delete both possible file types
+    final jsonFile = File(await _jsonPath(id));
+    if (await jsonFile.exists()) await jsonFile.delete();
+    final dbFile = File(await _dbPath(id));
+    if (await dbFile.exists()) await dbFile.delete();
     _downloaded[id] = false;
     _downloadProgress.remove(id);
     Future.microtask(notifyListeners);
@@ -170,12 +189,20 @@ class TranslationDownloadService extends ChangeNotifier {
     }
   }
 
-  // ── Load downloaded translation JSON ──────────────────────────────────────
+  // ── Load downloaded translation ────────────────────────────────────────────
+
+  /// Returns the local file path for a downloaded translation, or null.
+  Future<String?> getDownloadedFilePath(String id) async {
+    return getDownloadedPath(id);
+  }
+
   /// Loads the downloaded translation JSON into memory.
-  /// Returns null if not downloaded.
+  /// Returns null if not downloaded or if the file is SQLite (use
+  /// [getDownloadedFilePath] + QuranDb instead).
   Future<Map<String, dynamic>?> loadTranslationJson(String id) async {
     final path = await getDownloadedPath(id);
     if (path == null) return null;
+    if (isSqliteFile(path)) return null; // caller should use QuranDb
     try {
       final file = File(path);
       final content = await file.readAsString();

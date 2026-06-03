@@ -8,12 +8,15 @@ import 'package:intl/intl.dart' hide TextDirection;
 import 'dart:math' as math;
 import '../models/name_model.dart';
 import '../models/quran_models.dart';
+import '../models/hadith_models.dart';
 import '../services/quran_service.dart';
+import '../services/hadith_service.dart';
 import '../constants/quran_theme.dart';
 import '../services/prayer_service.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'asma_list_screen.dart';
 import 'hadith/hadith_home_screen.dart';
+import 'hadith/hadith_reader_screen.dart';
 import 'quran/quran_home_screen.dart';
 import 'quran/quran_reader_screen.dart';
 import 'duas/duas_screen.dart';
@@ -45,13 +48,21 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   Future<AyahData>? _ayahFuture;
+  Future<Hadith?>? _hadithFuture;
   Future<List<AsmaName>>? _namesFuture;
   Map<String, dynamic>? _todayTimings;
+
+  // ── Coalesce rapid PrayerService notifications (e.g. setup wizard changing
+  // city + asr + hijri in quick succession) so the home screen only re-fetches
+  // prayer timings once. This avoids the visible "refresh / flicker" that
+  // happens when multiple setState()s fire in the same frame.
+  Timer? _timingsRefreshDebounce;
 
   @override
   void initState() {
     super.initState();
     _refreshAyah();
+    _refreshHadith();
     _initPrayerTimings();
     _namesFuture = _loadNamesInIsolate();
     PrayerService.instance.addListener(_onPrayerServiceChanged);
@@ -59,12 +70,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _timingsRefreshDebounce?.cancel();
     PrayerService.instance.removeListener(_onPrayerServiceChanged);
     super.dispose();
   }
 
   void _onPrayerServiceChanged() {
-    _initPrayerTimings();
+    // Debounce: collapse bursts of notifyListeners() into a single re-fetch.
+    _timingsRefreshDebounce?.cancel();
+    _timingsRefreshDebounce = Timer(
+      const Duration(milliseconds: 250),
+      _initPrayerTimings,
+    );
   }
 
   Future<List<AsmaName>> _loadNamesInIsolate() async {
@@ -100,17 +117,31 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _refreshHadith() {
+    final future = HadithService.instance.getRandomHadith();
+    if (mounted) {
+      setState(() {
+        _hadithFuture = future;
+      });
+    } else {
+      _hadithFuture = future;
+    }
+  }
+
   Future<void> _handleRefresh() async {
     final namesFuture = _loadNamesInIsolate();
     final ayahFuture = QuranService.instance.getRandomAyah();
+    final hadithFuture = HadithService.instance.getRandomHadith();
 
     setState(() {
       _namesFuture = namesFuture;
       _ayahFuture = ayahFuture;
+      _hadithFuture = hadithFuture;
     });
 
     await Future.wait([
       _ayahFuture ?? Future.value(),
+      _hadithFuture ?? Future.value(),
       _namesFuture ?? Future.value(),
       _initPrayerTimings(),
     ]);
@@ -157,6 +188,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
               // --- AYAH OF THE DAY ---
               _AyahSection(future: _ayahFuture, qt: qt),
+              const SizedBox(height: 40),
+
+              // --- HADITH OF THE DAY ---
+              _HadithSection(future: _hadithFuture, qt: qt),
               const SizedBox(height: 40),
             ],
           ),
@@ -1566,6 +1601,209 @@ class _AyahCard extends StatelessWidget {
                     letterSpacing: 1.0,
                   ),
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HADITH SECTION
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _HadithSection extends StatelessWidget {
+  final Future<Hadith?>? future;
+  final QuranTheme qt;
+
+  const _HadithSection({required this.future, required this.qt});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Section Header
+        Row(
+          children: [
+            Icon(FlutterIslamicIcons.solidMohammad,
+                size: 14, color: qt.emeraldLight),
+            const SizedBox(width: 8),
+            Text(
+              "GUIDANCE FROM SUNNAH",
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: qt.textMuted,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        FutureBuilder<Hadith?>(
+          future: future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: CircularProgressIndicator(color: qt.emeraldDeep),
+                ),
+              );
+            }
+            if (snapshot.hasError || !snapshot.hasData) {
+              return Text(
+                "Unable to load Hadith",
+                style: TextStyle(color: qt.textMuted),
+              );
+            }
+            return SizedBox(
+              width: double.infinity,
+              child: _HadithCard(hadith: snapshot.data!, qt: qt),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HADITH CARD
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _HadithCard extends StatelessWidget {
+  final Hadith hadith;
+  final QuranTheme qt;
+
+  const _HadithCard({required this.hadith, required this.qt});
+
+  String _bookNameFromAsset(String assetPath) {
+    final fileName = assetPath.split('/').last.replaceAll('.json', '');
+    // Convert "Sahih Al Bukhari" → "Sahih al-Bukhari"
+    if (fileName == 'Sahih Al Bukhari') return 'Sahih al-Bukhari';
+    if (fileName == 'Sahih Al Muslim') return 'Sahih al-Muslim';
+    return fileName.replaceAll('_', ' ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Derive a clean book name from the asset path.
+    final bookTitle = _bookNameFromAsset(hadith.bookAsset);
+
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => HadithReaderScreen(
+                hadith: hadith,
+                bookTitle: bookTitle,
+                chapterTitle: hadith.chapterTitle,
+              ),
+            ),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: qt.cardBg,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: qt.borderGlass),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Narrator ──
+              Text(
+                hadith.narrator,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: qt.emeraldDeep,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── Arabic text ──
+              Text(
+                hadith.arabicText,
+                textAlign: TextAlign.right,
+                textDirection: TextDirection.rtl,
+                style: TextStyle(
+                  fontFamily: 'IndopakN',
+                  fontSize: 22,
+                  height: 2.0,
+                  color: qt.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── English translation (formatted like reader screens) ──
+              Text(
+                hadith.englishText
+                    .trim()
+                    .split('\n\n')
+                    .map((p) => p.replaceAll(RegExp(r'\s+'), ' ').trim())
+                    .join('\n\n'),
+                textAlign: TextAlign.start,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: qt.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // ── Badges: Hadith title + Chapter title ──
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  // Title badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: qt.emeraldDeep.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      hadith.title,
+                      style: TextStyle(
+                        color: qt.emeraldDeep,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ),
+                  // Chapter badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: qt.emeraldDeep.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      hadith.chapterTitle,
+                      style: TextStyle(
+                        color: qt.emeraldDeep,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

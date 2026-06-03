@@ -395,22 +395,6 @@
                   "translation": "Thirst is gone, the veins are moistened and the reward is certain if Allaah wills.",
                   "source": "Abu Dawud: 2357",
                   "benefits": null
-                },
-                {
-                  "id": 63,
-                  "arabic": "اللَّهُمَّ لَكَ صُمْتُ وَعَلَى رِزْقِكَ أَفْطَرْتُ",
-                  "latin": "Allahumma laka sumtu wa  ala rizq-ika-aftartu",
-                  "translation": "O Allah! For You I have fasted and upon your provision, I have broken my fast.",
-                  "source": "Abu Dawud: 2358",
-                  "benefits": null
-                },
-                {
-                  "id": 249,
-                  "arabic": "ذَهَبَ الظَّمَأُ وَابْتَلَّتِ الْعُرُوقُ وَثَبَتَ الأَجْرُ إِنْ شَاءَ اللّٰهُ",
-                  "latin": "Dhahaba al-zama’ wa abtalat al-‘urooq wa thabata al-ajr in sha Allaah",
-                  "translation": "Thirst is gone, the veins are moistened and the reward is certain if Allaah wills.",
-                  "source": "Abu Dawud: 2357",
-                  "benefits": null
                 }
               ]
             },
@@ -418,14 +402,6 @@
               "title_id": 38,
               "title_name": "For someone who provides you with Iftar",
               "duas": [
-                {
-                  "id": 64,
-                  "arabic": "أَفْطَرَ عِنْدَكُمُ الصَّائِمُونَ وَأَكَلَ طَعَامَكُمُ الأَبْرَارُ وَصَلَّتْ عَلَيْكُمُ الْمَلاَئِكَةُ",
-                  "latin": "Aftara ‘indakumus-saimun, wa akala ta’amakumul-abrar, wa sallat ‘alaikumul- mala’ikah",
-                  "translation": "May the fasting (men) break their fast with you, and the pious eat your food, and the angels pray for blessing on you.",
-                  "source": "Ibn Majah: 1747",
-                  "benefits": null
-                },
                 {
                   "id": 64,
                   "arabic": "أَفْطَرَ عِنْدَكُمُ الصَّائِمُونَ وَأَكَلَ طَعَامَكُمُ الأَبْرَارُ وَصَلَّتْ عَلَيْكُمُ الْمَلاَئِكَةُ",
@@ -749,22 +725,6 @@
                   "translation": "O Allah, bestow Your favor on Muhammad and on the family of Muhammad as You have bestowed Your favor on Ibrahim and on the family of Ibrahim, You are Praiseworthy, Most Glorious. O Allah, bless Muhammad and the family of Muhammad as You have blessed Ibrahim and the family of Ibrahim, You are Praiseworthy, Most Glorious.",
                   "source": "Sahih Al-Bukhari: 3370",
                   "benefits": null
-                },
-                {
-                  "id": 40,
-                  "arabic": "اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَّعَلَى آلِ مُحَمَّدٍ، كَمَا صَلَّيْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ، اللَّهُمَّ بَارِكْ عَلَى مُحَمَّدٍ وَّعَلَى آلِ مُحَمَّدٍ، كَمَا بَارَكْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ",
-                  "latin": "Allaahumma salli ‘alaa Muhammadin wa ‘alaa ‘aali Muhammadin, kamaa sallayta ‘alaa ‘Ibraaheema wa ‘alaa ‘aali ‘Ibraaheema, ‘innaka Hameedun Majeed. Allaahumma baarik ‘alaa Muhammadin wa ‘alaa ‘aali Muhammadin, kamaa baarakta ‘alaa ‘Ibraaheema wa ‘alaa ‘aali ‘Ibraaheema, ‘innaka Hameedun Majeed",
-                  "translation": "O Allah, bestow Your favor on Muhammad and on the family of Muhammad as You have bestowed Your favor on Ibrahim and on the family of Ibrahim, You are Praiseworthy, Most Glorious. O Allah, bless Muhammad and the family of Muhammad as You have blessed Ibrahim and the family of Ibrahim, You are Praiseworthy, Most Glorious.",
-                  "source": "Sahih Al-Bukhari: 3370",
-                  "benefits": null
-                },
-                {
-                  "id": 40,
-                  "arabic": "اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَّعَلَى آلِ مُحَمَّدٍ، كَمَا صَلَّيْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ، اللَّهُمَّ بَارِكْ عَلَى مُحَمَّدٍ وَّعَلَى آلِ مُحَمَّدٍ، كَمَا بَارَكْتَ عَلَى إِبْرَاهِيمَ وَعَلَى آلِ إِبْرَاهِيمَ إِنَّكَ حَمِيدٌ مَجِيدٌ",
-                  "latin": "Allaahumma salli ‘alaa Muhammadin wa ‘alaa ‘aali Muhammadin, kamaa sallayta ‘alaa ‘Ibraaheema wa ‘alaa ‘aali ‘Ibraaheema, ‘innaka Hameedun Majeed. Allaahumma baarik ‘alaa Muhammadin wa ‘alaa ‘aali Muhammadin, kamaa baarakta ‘alaa ‘Ibraaheema wa ‘alaa ‘aali ‘Ibraaheema, ‘innaka Hameedun Majeed",
-                  "translation": "O Allah, bestow Your favor on Muhammad and on the family of Muhammad as You have bestowed Your favor on Ibrahim and on the family of Ibrahim, You are Praiseworthy, Most Glorious. O Allah, bless Muhammad and the family of Muhammad as You have blessed Ibrahim and the family of Ibrahim, You are Praiseworthy, Most Glorious.",
-                  "source": "Sahih Al-Bukhari: 3370",
-                  "benefits": null
                 }
               ]
             },
@@ -860,14 +820,6 @@
               "title_id": 39,
               "title_name": "After Salah (Prayer) Tasbeeh",
               "duas": [
-                {
-                  "id": 65,
-                  "arabic": "سُبْحَانَ اللّٰہِ  (33 times) الۡحَمۡدُ لِلّٰہ  (33 times) اَللّٰہُ اَکۡبَر  (34 times)",
-                  "latin": "Subhana-Allah (33 times) Alhamdulillah (33 times) Allahu Akbar (34 times)",
-                  "translation": "Glory be to Allah (33 times), Praise be to Allah (33 times), Allah is the greatest (34 times)",
-                  "source": "At-Tirmidhi: 3412",
-                  "benefits": "Recite Subhana-Allah and Alhamdulillah 33 times and Allahu Akbar 34 times"
-                },
                 {
                   "id": 65,
                   "arabic": "سُبْحَانَ اللّٰہِ  (33 times) الۡحَمۡدُ لِلّٰہ  (33 times) اَللّٰہُ اَکۡبَر  (34 times)",
@@ -1449,102 +1401,6 @@
                   "translation": "Praise be to Allah abundantly and sincerely, of such a nature as is productive of blessing, is not insufficient, Abandoned, or ignored, O our lord.",
                   "source": "Sahih Al-Bukhari: 5458",
                   "benefits": null
-                },
-                {
-                  "id": 3,
-                  "arabic": "لَا إِلَهَ إِلَّا اللّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ ، سُبْحَانَ اللّٰهِ وَالْحَمْدُ لِلّٰهِ ، وَلَا إِلَهَ إِلَّا اللّٰهُ وَاللّٰہُ اَکۡبَرُ ، وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللّٰهِ الْعَلِيِّ الْعَظِيمِ  رَبِّ اغْفِرْ لِي",
-                  "latin": "La ilaha illal-lahu wahdahu la shareeka lah, lahul-mulku walahul-hamd, wahuwa AAala kulli shay-in qadeer, subhanal-lah, walhamdu lillah, wala ilaha illal-lah wallahu akbar, wala hawla wala quwwata illa billahil-AAaliyyil AAatheem. Rabbigh-fir lee",
-                  "translation": "None has the right to be worshipped but Allah alone, with no partner or associate. His is the dominion and all praise is to Him, and He is Able to do all things. Glory is to Allah, praise is to Allah, none has the right to be worshiped but Allah, Allah is the Most Great, and there is no power and no strength except with Allah, the Most High, the Most Supreme. O Lord, forgive me.",
-                  "source": "Ibn Majah: 3878",
-                  "benefits": null
-                },
-                {
-                  "id": 26,
-                  "arabic": "سُبْحَانَ رَبِّيَ الْعَظِيمِ",
-                  "latin": "Subhaana Rabbiyal-’Adheem",
-                  "translation": "Glory to my Lord the Exalted.",
-                  "source": "At-Tirmidhi: 262",
-                  "benefits": null
-                },
-                {
-                  "id": 27,
-                  "arabic": "سُبْحَانَكَ اللَّهُمَّ رَبَّنَا وَبِحَمْدِكَ، اللَّهُمَّ اغْفِرْ لِي",
-                  "latin": "Subhaanaka Allaahumma Rabbanaa wa bihamdika Allaahum-maghfir lee",
-                  "translation": "Glory is to You, O Allah, our Lord, and praise is Yours. O Allah, forgive me.",
-                  "source": "Sahih Al-Bukhari: 794",
-                  "benefits": null
-                },
-                {
-                  "id": 28,
-                  "arabic": "سُبُّوحٌ قُدُّوسٌ رَبُّ الْمَلاَئِكَةِ وَالرُّوحِ",
-                  "latin": "Subboohun, Quddoosun, Rabbul-malaa’ikati warrooh",
-                  "translation": "Glory (to You), Most Holy (are You), Lord of the angels and the Spirit.",
-                  "source": "Abu Dawud: 872",
-                  "benefits": null
-                },
-                {
-                  "id": 30,
-                  "arabic": "سُبْحَانَ ذِي الْجَبَرُوتِ وَالْمَلَكُوتِ وَالْكِبْرِيَاءِ وَالْعَظَمَةِ",
-                  "latin": "Subhaana thil-jabarooti, walmalakooti, walkibriyaa’i, wal’adhamati",
-                  "translation": "Glory is to You, Master of power, of dominion, of majesty and greatness.",
-                  "source": "An-Nasai: 1132",
-                  "benefits": null
-                },
-                {
-                  "id": 31,
-                  "arabic": "سُبْحَانَ رَبِّيَ الأَعْلَى",
-                  "latin": "Subhaana Rabbiyal-A ‘laa",
-                  "translation": "Glory is to my Lord, the Most High.",
-                  "source": "Abu Dawud: 871",
-                  "benefits": null
-                },
-                {
-                  "id": 88,
-                  "arabic": "لَا إِلَهَ إِلَّا اللّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ . (مائة مرة)",
-                  "latin": "La ilaha illal-lah, wahdahu la shareeka lah, lahul-mulku walahul-hamd, wahuwa AAala kulli shay-in qadeer.",
-                  "translation": "None has the right to be worshipped except Allah, alone, without partner, to Him belongs all sovereignty and praise, and He is over all things omnipotent. (one hundred times)",
-                  "source": "Sahih Al-Bukhari: 3293",
-                  "benefits": null
-                },
-                {
-                  "id": 153,
-                  "arabic": "لَا إِلَهَ إِلاَّ اللّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَىْءٍ قَدِيرٌ، لَا حَوْلَ وَلَا قُوَّةَ إِلاَّ بِاللّٰهِ، لَا إِلَهَ إِلاَّ اللّٰهُ، وَلَا نَعْبُدُ إِلاَّ إِيَّاهُ، لَهُ النِّعْمَةُ وَلَهُ الْفَضْلُ وَلَهُ الثَّنَاءُ الْحَسَنُ، لَا إِلَهَ إِلاَّ اللّٰهُ مُخْلِصِينَ لَهُ الدِّينَ وَلَوْ كَرِهَ الْكَافِرُونَ",
-                  "latin": "Laa ‘ilaaha ‘illallaahu wahdahu laa shareeka lahu, lahul-mulku, wa lahul-hamdu wa Huwa ‘alaa kulli shay ‘in Qadeer. Laa hawla wa laa quwwata ‘illaa billaahi, laa ‘ilaaha ‘illallaahu, wa laa na’budu ‘illaa ‘iyyaahu, lahun-ni’matu wa lahul-fadhlu wa lahuth-thanaa’ul-hasanu, laa ‘ilaaha ‘illallaahu mukhliseena lahud-deena wa law karihal-kaafiroon",
-                  "translation": "None has the right to be worshipped but Allah alone, He has no partner, His is the dominion and His is the praise and He is Able to do all things. There is no power and no might except by Allah . None has the right to be worshipped but Allah, and we do not worship any other besides Him . His is grace, and His is bounty and to Him belongs the most excellent praise. None has the right to be worshipped but Allah . (We are) sincere in making our religious devotion to Him, even though the disbelievers may dislike it.",
-                  "source": "Sahih Muslim: 594 (a)",
-                  "benefits": null
-                },
-                {
-                  "id": 154,
-                  "arabic": "سُبْحَانَ اللّٰهِ وَبِحَمْدِهِ عَدَدَ خَلْقِهِ وَرِضَا نَفْسِهِ وَزِنَةَ عَرْشِهِ وَمِدَادَ كَلِمَاتِهِ",
-                  "latin": "Subhaanallaahi wa bihamdihi ‘Adada khalqihi, wa ridhaa nafsihi, wa zinata ‘arshihi wa midaada kalimaatihi",
-                  "translation": "Glory is to Allah and praise is to Him, by the multitude of His creation, by His Pleasure, by the weight of His Throne, and by the extent of His Words.",
-                  "source": "Abu Dawud: 1503",
-                  "benefits": null
-                },
-                {
-                  "id": 261,
-                  "arabic": "سُبْحَانَ اللّٰہِ، وَالۡحَمۡدُ لِلّٰہِ، وَاللّٰہُ اَکۡبَرُ",
-                  "latin": "Subhaanallaahi, Walhamdu lillaahi, Wallaahu ‘Akbar",
-                  "translation": "Glory is to Allah, praise is to Allah, Allah is the Most Great!",
-                  "source": "An-Nasai: 1353",
-                  "benefits": null
-                },
-                {
-                  "id": 8,
-                  "arabic": "اَلۡحَمۡدُ لِلّٰہِ الَّذِي أَطْعَمَنَا وَسَقَانَا وَكَفَانَا وَآوَانَا فَكَمْ مِمَّنْ لاَ كَافِيَ لَهُ وَلاَ مُئْوِيَ",
-                  "latin": "Alhamdu lillahil-lathee atAAamana wasaqana, wakafana, wa-awana, fakam mimman la kafiya lahu wala mu/wee.",
-                  "translation": "All praise is for Allah, Who fed us and gave us drink, and Who is sufficient for us and has sheltered us, for how many have none to suffice them or shelter them.",
-                  "source": "Sahih Muslim: 2715",
-                  "benefits": null
-                },
-                {
-                  "id": 156,
-                  "arabic": "اَلۡحَمۡدُ لِلّٰہِ كَثِيرًا طَيِّبًا مُبَارَكًا فِيهِ،  غَيْرَ مَكْفِيٍّ،  وَلاَ مُوَدَّعٍ وَلاَ مُسْتَغْنًى عَنْهُ،  رَبَّنَا",
-                  "latin": "Al-hamdu li l-lah kathiran taiyiban mubarakan fihi ghaira makfiy wala muWada` wala mustaghna’anhu Rabbana.",
-                  "translation": "Praise be to Allah abundantly and sincerely, of such a nature as is productive of blessing, is not insufficient, Abandoned, or ignored, O our lord.",
-                  "source": "Sahih Al-Bukhari: 5458",
-                  "benefits": null
                 }
               ]
             },
@@ -1574,14 +1430,6 @@
               "title_id": 74,
               "title_name": "On hearing good news",
               "duas": [
-                {
-                  "id": 255,
-                  "arabic": "اَلۡحَمۡدُ لِلّٰہِ الَّذِي بِنِعْمَتِهِ تَتِمُّ الصَّالِحَاتُ",
-                  "latin": "Al-hamdu lillahil-ladhi bi ni’matihi tatimmus-salihaat",
-                  "translation": "Praise is to Allah by Whose grace good deeds are completed.",
-                  "source": "Ibn Majah: 3803",
-                  "benefits": null
-                },
                 {
                   "id": 255,
                   "arabic": "اَلۡحَمۡدُ لِلّٰہِ الَّذِي بِنِعْمَتِهِ تَتِمُّ الصَّالِحَاتُ",
@@ -1655,86 +1503,6 @@
                   "translation": "Our Lord! Bestow on us Mercy from Thyself, and dispose of our affair for us in the right way!",
                   "source": "Surah Al-Kahf - 18:10",
                   "benefits": "The cave companions asked this dua to Allah."
-                },
-                {
-                  "id": 107,
-                  "arabic": "اَنۡتَ وَلِیُّنَا فَاغۡفِرۡ لَنَا وَ ارۡحَمۡنَا وَ اَنۡتَ خَیۡرُ الۡغٰفِرِیۡنَ وَ اکۡتُبۡ لَنَا فِیۡ ہٰذِہِ الدُّنۡیَا حَسَنَۃً وَّ فِی الۡاٰخِرَۃِ  اِنَّا ہُدۡنَاۤ  اِلَیۡکَ",
-                  "latin": "Anta waliyyuna faghfirlana warhamna waanta khayru alghafireen. Waktub lana fee hathihi ddunya hasanatan wafee al-akhiratiinna hudna ilayk",
-                  "translation": "(O my Lord) You are our Protector, so forgive us and have mercy upon us; and You are the best of forgivers. And ordain for us good in this world, and in the Hereafter. Certainly we have turned unto You.",
-                  "source": "Surah Al-A'raf - 7:155-156",
-                  "benefits": "This dua was asked by prophet Musa (AS)."
-                },
-                {
-                  "id": 135,
-                  "arabic": "رَبَّنَاۤ اٰمَنَّا فَاغۡفِرۡ لَنَا وَ ارۡحَمۡنَا وَ اَنۡتَ خَیۡرُ الرّٰحِمِیۡنَ",
-                  "latin": "Rabbanaa Aamannaa Faghfir Lanaa Warh’amnaa Wa Anta Khayrur Raah’imeen",
-                  "translation": "Our Lord! We believe, so forgive us, and have mercy on us, for You are the Best of all who show mercy!",
-                  "source": "Surah Al-Muminoon - 23:109",
-                  "benefits": "Allah SWT said the believers will ask this dua."
-                },
-                {
-                  "id": 136,
-                  "arabic": "رَّبِّ اغۡفِرۡ وَ ارۡحَمۡ وَ اَنۡتَ خَیۡرُ الرّٰحِمِیۡنَ",
-                  "latin": "Rabbighfir Warh’am Wa Anta Khayrur Raah’imeen",
-                  "translation": "My Lord! Forgive and have mercy, for You are the Best of those who show mercy!",
-                  "source": "Surah Al-Muminoon - 23:118",
-                  "benefits": "Read this dua now! Allah SWT taught this dua to the Prophet SAW."
-                },
-                {
-                  "id": 137,
-                  "arabic": "رَبَّنَا ظَلَمۡنَاۤ اَنۡفُسَنَا ٜ وَ اِنۡ لَّمۡ تَغۡفِرۡ لَنَا وَ تَرۡحَمۡنَا لَنَکُوۡنَنَّ مِنَ الۡخٰسِرِیۡنَ",
-                  "latin": "Rabbana zalamna anfusina wa il lam taghfir lana wa tarhamna lana kunan minal-khasireen",
-                  "translation": "Our Lord! We have wronged our own souls: If thou forgive us not and bestow not upon us Thy Mercy, we shall certainly be lost.",
-                  "source": "Surah Al-A'raf - 7:23",
-                  "benefits": "Read this dua to atone your sins! Prophet Adam (AS) and Hawwa (AS) asked forgiveness from Allah by reciting this dua."
-                },
-                {
-                  "id": 138,
-                  "arabic": "رَبَّنَاۤ اٰتِنَا مِنۡ لَّدُنۡکَ رَحۡمَۃً وَّ ہَیِّیٔۡ لَنَا مِنۡ اَمۡرِنَا رَشَدًا",
-                  "latin": "Rabbanaaa Aatina Mil Ladunka Rah’mataw Wa Hayyi Lanaa Min Amrinaa Rashadaa",
-                  "translation": "Our Lord! Bestow on us Mercy from Thyself, and dispose of our affair for us in the right way!",
-                  "source": "Surah Al-Kahf - 18:10",
-                  "benefits": "The cave companions asked this dua to Allah."
-                },
-                {
-                  "id": 107,
-                  "arabic": "اَنۡتَ وَلِیُّنَا فَاغۡفِرۡ لَنَا وَ ارۡحَمۡنَا وَ اَنۡتَ خَیۡرُ الۡغٰفِرِیۡنَ وَ اکۡتُبۡ لَنَا فِیۡ ہٰذِہِ الدُّنۡیَا حَسَنَۃً وَّ فِی الۡاٰخِرَۃِ  اِنَّا ہُدۡنَاۤ  اِلَیۡکَ",
-                  "latin": "Anta waliyyuna faghfirlana warhamna waanta khayru alghafireen. Waktub lana fee hathihi ddunya hasanatan wafee al-akhiratiinna hudna ilayk",
-                  "translation": "(O my Lord) You are our Protector, so forgive us and have mercy upon us; and You are the best of forgivers. And ordain for us good in this world, and in the Hereafter. Certainly we have turned unto You.",
-                  "source": "Surah Al-A'raf - 7:155-156",
-                  "benefits": null
-                },
-                {
-                  "id": 135,
-                  "arabic": "رَبَّنَاۤ اٰمَنَّا فَاغۡفِرۡ لَنَا وَ ارۡحَمۡنَا وَ اَنۡتَ خَیۡرُ الرّٰحِمِیۡنَ",
-                  "latin": "Rabbanaa Aamannaa Faghfir Lanaa Warh’amnaa Wa Anta Khayrur Raah’imeen",
-                  "translation": "Our Lord! We believe, so forgive us, and have mercy on us, for You are the Best of all who show mercy!",
-                  "source": "Surah Al-Muminoon - 23:109",
-                  "benefits": null
-                },
-                {
-                  "id": 136,
-                  "arabic": "رَّبِّ اغۡفِرۡ وَ ارۡحَمۡ وَ اَنۡتَ خَیۡرُ الرّٰحِمِیۡنَ",
-                  "latin": "Rabbighfir Warh’am Wa Anta Khayrur Raah’imeen",
-                  "translation": "My Lord! Forgive and have mercy, for You are the Best of those who show mercy!",
-                  "source": "Surah Al-Muminoon - 23:118",
-                  "benefits": null
-                },
-                {
-                  "id": 137,
-                  "arabic": "رَبَّنَا ظَلَمۡنَاۤ اَنۡفُسَنَا ٜ وَ اِنۡ لَّمۡ تَغۡفِرۡ لَنَا وَ تَرۡحَمۡنَا لَنَکُوۡنَنَّ مِنَ الۡخٰسِرِیۡنَ",
-                  "latin": "Rabbana zalamna anfusina wa il lam taghfir lana wa tarhamna lana kunan minal-khasireen",
-                  "translation": "Our Lord! We have wronged our own souls: If thou forgive us not and bestow not upon us Thy Mercy, we shall certainly be lost.",
-                  "source": "Surah Al-A'raf - 7:23",
-                  "benefits": null
-                },
-                {
-                  "id": 138,
-                  "arabic": "رَبَّنَاۤ اٰتِنَا مِنۡ لَّدُنۡکَ رَحۡمَۃً وَّ ہَیِّیٔۡ لَنَا مِنۡ اَمۡرِنَا رَشَدًا",
-                  "latin": "Rabbanaaa Aatina Mil Ladunka Rah’mataw Wa Hayyi Lanaa Min Amrinaa Rashadaa",
-                  "translation": "Our Lord! Bestow on us Mercy from Thyself, and dispose of our affair for us in the right way!",
-                  "source": "Surah Al-Kahf - 18:10",
-                  "benefits": null
                 }
               ]
             },
@@ -1835,14 +1603,6 @@
                   "translation": "O my Lord! Forgive me and my brother, and make us enter into Your Mercy, for you are the Most Merciful of those who show mercy.",
                   "source": "Surah Al-A'raf - 7:151",
                   "benefits": "This dua was asked by prophet Musa (AS)."
-                },
-                {
-                  "id": 139,
-                  "arabic": "رَبِّ اغۡفِرۡ لِیۡ وَ لِاَخِیۡ وَ اَدۡخِلۡنَا فِیۡ رَحۡمَتِکَ وَ اَنۡتَ اَرۡحَمُ الرّٰحِمِیۡنَ",
-                  "latin": "Rabbi ighfir lee wali akhee wa adkhilna fee rahmatika wa anta arhamur rahimeen",
-                  "translation": "O my Lord! Forgive me and my brother, and make us enter into Your Mercy, for you are the Most Merciful of those who show mercy.",
-                  "source": "Surah Al-A'raf - 7:151",
-                  "benefits": "This dua was asked by prophet Musa (AS)."
                 }
               ]
             },
@@ -1901,22 +1661,6 @@
                   "translation": "Our Lord! Make of us Muslims, bowing to Thy (Will), and of our progeny a people Muslim, bowing to Thy (will); and show us our place for the celebration of (due) rites; and turn unto us (in Mercy); for Thou art the Oft-Returning, Most Merciful.",
                   "source": "Surah Al-Baqarah - 2:128",
                   "benefits": null
-                },
-                {
-                  "id": 143,
-                  "arabic": "رَبَّنَا تَقَبَّلۡ مِنَّا ؕ اِنَّکَ اَنۡتَ السَّمِیۡعُ الۡعَلِیۡمُ",
-                  "latin": "Rabbana taqabbal minna innaka antas Sameeaul Aleem",
-                  "translation": "Our Lord! Accept (this service) from us: For Thou art the All-Hearing, the All-knowing.",
-                  "source": "Surah Al-Baqarah - 2:127",
-                  "benefits": null
-                },
-                {
-                  "id": 144,
-                  "arabic": "رَبَّنَا وَ اجۡعَلۡنَا مُسۡلِمَیۡنِ لَکَ وَ مِنۡ ذُرِّیَّتِنَاۤ اُمَّۃً مُّسۡلِمَۃً لَّکَ ۪ وَ اَرِنَا مَنَاسِکَنَا وَ تُبۡ عَلَیۡنَا ۚ اِنَّکَ اَنۡتَ التَّوَّابُ الرَّحِیۡمُ",
-                  "latin": "Rabbana wa-j’alna Muslimayni laka wa min Dhurriyatina ‘Ummatan Muslimatan laka wa ‘Arina Manasikana wa tub ‘alayna ‘innaka ‘antat-Tawwabu-Raheem",
-                  "translation": "Our Lord! Make of us Muslims, bowing to Thy (Will), and of our progeny a people Muslim, bowing to Thy (will); and show us our place for the celebration of (due) rites; and turn unto us (in Mercy); for Thou art the Oft-Returning, Most Merciful.",
-                  "source": "Surah Al-Baqarah - 2:128",
-                  "benefits": null
                 }
               ]
             }
@@ -1930,150 +1674,6 @@
               "title_id": 43,
               "title_name": "For protection and help from Allah",
               "duas": [
-                {
-                  "id": 72,
-                  "arabic": "قُلۡ ہُوَ اللّٰہُ اَحَدٌ،  اَللّٰہُ الصَّمَدُ،  لَمۡ یَلِدۡ وَ لَمۡ یُوۡلَدۡوَ لَمۡ یَکُنۡ لَّہٗ  کُفُوًا اَحَدٌ",
-                  "latin": "Qul Huwallaahu ‘Ahad. Allaahus-Samad. Lam yalid wa lam yoolad. Wa lam yaku-llahu kufuwan ‘ahad",
-                  "translation": "He is Allah (the) One. The Self-Sufficient Master, Whom all creatures need, He begets not nor was He begotten, and there is none equal to Him.",
-                  "source": "Surah Al-Ikhlas (112)",
-                  "benefits": null
-                },
-                {
-                  "id": 11,
-                  "arabic": "اَللّٰہُ لَاۤ اِلٰہَ اِلَّا ہُوَ اَلۡحَیُّ الۡقَیُّوۡمُ لَا تَاۡخُذُہٗ سِنَۃٌ وَّ لَا نَوۡمٌ  لَہٗ مَا فِی السَّمٰوٰتِ وَ مَا فِی الۡاَرۡضِ مَنۡ ذَا الَّذِیۡ یَشۡفَعُ عِنۡدَہٗۤ اِلَّا بِاِذۡنِہٖ  یَعۡلَمُ مَا بَیۡنَ اَیۡدِیۡہِمۡ وَ مَا خَلۡفَہُمۡ  وَ لَا یُحِیۡطُوۡنَ بِشَیۡءٍ مِّنۡ عِلۡمِہٖۤ اِلَّا بِمَا شَآءَ وَسِعَ کُرۡسِیُّہُ السَّمٰوٰتِ وَ الۡاَرۡضَ  وَ لَا یَـُٔوۡدُہٗ حِفۡظُہُمَا  وَ ہُوَ الۡعَلِیُّ الۡعَظِیۡمُ",
-                  "latin": "Allaahu laa ‘ilaaha ‘illaa Huwal-Hayyul-Qayyoom, laa ta’khuthuhu sinatun wa laa nawm, lahu maa fis-samaawaati wa maafil-’ardh, man thal-lathee yashfa’u ‘indahu ‘illaa bi’ithnih, ya’lamu maa bayna ‘aydeehim wa maa khalfahum, wa laa yuheetoona bishay’im-min ‘ilmihi ‘illaa bimaa shaa’a, wasi’a kursiyyuhus-samaawaati wal’ardh, wa laa ya’ooduhu hifdhuhumaa, wa Huwal-’Aliyyul- ‘Adheem",
-                  "translation": "Allah! There is none worthy of worship but He, the Ever Living, the One Who sustains and protects all that exists. Neither slumber nor sleep overtakes Him. To Him belongs whatever is in the heavens and whatever is on the earth. Who is he that can intercede with Him except with His Permission? He knows what happens to them in this world, and what will happen to them in the Hereafter. And they will never compass anything of His Knowledge except that which He wills. His Throne extends over the heavens and the earth, and He feels no fatigue in guarding and preserving them. And He is the Most High, the Most Great.",
-                  "source": "Surah Al-Baqarah - 2:255, At-Tirmidhi: 2879",
-                  "benefits": null
-                },
-                {
-                  "id": 101,
-                  "arabic": "قُلۡ اَعُوۡذُ بِرَبِّ الۡفَلَقِ،  مِنۡ شَرِّ مَا خَلَقَ،  وَ مِنۡ شَرِّ غَاسِقٍ اِذَا وَقَب،  وَ مِنۡ شَرِّ النَّفّٰثٰتِ فِی الۡعُقَدِ،  وَ مِنۡ شَرِّ حَاسِدٍ اِذَا حَسَدَ",
-                  "latin": "Qul ‘a’oothu birabbil-falaq. Min sharri maa khalaq. Wa min sharri ghaasiqin ‘ithaa waqab. Wa min sharrin-naffaathaati fil-’uqad. Wa min sharri haasidin ‘ithaa hasad",
-                  "translation": "I seek refuge with (Allah) the Lord of the daybreak, from the evil of what He has created, and from the evil of the darkening (night) as it comes with its darkness, and from the evil of those who practice witchcraft when they blow in the knots, and from the evil of the envier when he envies.",
-                  "source": "Surah Al-Falaq (113), At-Tirmidhi: 2058",
-                  "benefits": "Prophet (S.A.W.) used to seek protection against the evil of jinn and the evil eyes of humans by reciting this Surah."
-                },
-                {
-                  "id": 102,
-                  "arabic": "قُلۡ اَعُوۡذُ بِرَبِّ النَّاسِ، مَلِکِ النَّاسِ، اِلٰہِ النَّاسِ، مِنۡ شَرِّ الۡوَسۡوَاسِ الۡخَنَّاسِ، الَّذِیۡ یُوَسۡوِسُ فِیۡ صُدُوۡرِ النَّاسِ، مِنَ الۡجِنَّۃِ وَ النَّاسِ",
-                  "latin": "Qul ‘a’oothu birabbin-naas . Malikin-naas . ‘Ilaahin-naas . Min sharril-waswaasil-khannaas. Allathee yuwaswisu fee sudoorin-naas. Minal-jinnati wannaas",
-                  "translation": "I seek refuge with (Allah) the Lord of mankind, the King of mankind, the God of mankind, from the evil of the whisperer who withdraws, who whispers in the breasts of mankind, of jinns and men.",
-                  "source": "Surah An-Naas (114), At-Tirmidhi: 2058",
-                  "benefits": null
-                },
-                {
-                  "id": 41,
-                  "arabic": "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنْ عَذَابِ الْقَبْرِ،  وَأَعُوذُ بِكَ مِنْ فِتْنَةِ الْمَسِيحِ الدَّجَّالِ،  وَأَعُوذُ بِكَ مِنْ فِتْنَةِ الْمَحْيَا وَالْمَمَاتِ  اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنْ الْمَأْثَمِ وَالْمَغْرَمِ",
-                  "latin": "Allaahumma ‘innee ‘a’oothu bika min ‘athaabil-qabri, wa ‘a’oothu bika min fitnatil-maseehid-dajjaali, wa ‘a’oothu bika min fitnatil-mahyaa walmamaati. Allaahumma ‘innee ‘a’oothu bika minal-ma’thami walmaghrami",
-                  "translation": "O Allah, I seek refuge in You from the punishment of the grave, and I seek refuge in You from the trial of the False Messiah, and I seek refuge in You from the trials of life and death. O Allah, I seek refuge in You from sin and from debt.",
-                  "source": "Sahih Muslim: 589",
-                  "benefits": null
-                },
-                {
-                  "id": 6,
-                  "arabic": "اللَّهُمَّ قِنِي عَذَابَكَ يَوْمَ تَبْعَثُ عِبَادَكَ",
-                  "latin": "Allahumma qinee AAathabaka yawma tabAAathu AAibadak.",
-                  "translation": "O Allah, protect me from Your punishment on the day Your servants are resurrected.",
-                  "source": "Abu Dawud: 5045",
-                  "benefits": null
-                },
-                {
-                  "id": 82,
-                  "arabic": "اللَّهُمَّ فَاطِرَ السَّمَوَاتِ وَالأَرْضِ عَالِمَ الْغَيْبِ وَالشَّهَادَةِ لاَ إِلَهَ إِلاَّ أَنْتَ رَبَّ كُلِّ شَيْءٍ وَمَلِيكَهُ أَعُوذُ بِكَ مِنْ شَرِّ نَفْسِي وَمِنْ شَرِّ الشَّيْطَانِ وَشَرَكِهِ وَأَنْ أَقْتَرِفَ عَلَى نَفْسِي سُوءًا أَوْ أَجُرَّهُ إِلَى مُسْلِمٍ",
-                  "latin": "Allaahumma faatiras-samaawaati wal’ardhi, Aalimal-ghaybi wash-shahaadati, laa ‘ilaaha ‘illaa ‘Anta, rabba kulli shai’in wa malīkahu, ‘a’oothu bika min sharri nafsee, wa min sharrish-shaytaani wa sharakihi, wa ‘an ‘aqtarifa ‘alaa nafsee soo’an, ‘aw ‘ajurrahu ‘ilaa Muslimin",
-                  "translation": "O Allah, Creator of the heavens and the earth, Knower of the unseen and the seen, there is none worthy of worship except You, Lord of everything and its Owner, I seek refuge in You from the evil of my soul and from the evil of Shaitan and his Shirk, or that I should do some evil to myself or bring it upon a Muslim.",
-                  "source": "At-Tirmidhi: 3529",
-                  "benefits": null
-                },
-                {
-                  "id": 81,
-                  "arabic": "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالآخِرَةِ اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي دِينِي وَدُنْيَاىَ وَأَهْلِي وَمَالِي اللَّهُمَّ اسْتُرْ عَوْرَاتِي وَآمِنْ رَوْعَاتِي وَاحْفَظْنِي مِنْ بَيْنِ يَدَىَّ وَمِنْ خَلْفِي وَعَنْ يَمِينِي وَعَنْ شِمَالِي وَمِنْ فَوْقِي وَأَعُوذُ بِكَ أَنْ أُغْتَالَ مِنْ تَحْتِي",
-                  "latin": "Allahumma inni as’alukal-’afwa wal-’afiyah fid-dunya wal-akhirah. Allahumma inni as’alukal-’afwa wal-’afiyah fi dini wa dunyaya wa ahli wa mali. Allahum-mastur ‘awrati, wa amin raw’ati wahfazni min bayni yadayya, wa min khalfi, wa ‘an yamini wa ‘an shimali, wa min fawqi, wa ‘audhu bika an ughtala min tahti",
-                  "translation": "O Allah, I ask You for forgiveness and well-being in this world and in the Hereafter. O Allah, I ask You for forgiveness and well-being in my religious and my worldly affairs. O Allah, conceal my faults, calm my fears, and protect me from before me and behind me, from my right and my left, and from above me, and I seek refuge in You from being taken unaware from beneath me.",
-                  "source": "Ibn Majah: 3871",
-                  "benefits": null
-                },
-                {
-                  "id": 166,
-                  "arabic": "اَنَّ اللّٰہَ مَوۡلٰىکُمۡ ؕ نِعۡمَ الۡمَوۡلٰی وَ نِعۡمَ النَّصِیۡرُ",
-                  "latin": "Anna Allaha mawlakum ni’mal mawla wa ni’man naseer",
-                  "translation": "Know that Allah is your protector. Excellent is the protector, and Excellent is the helper.",
-                  "source": "Surah Al-Anfal - 8:40",
-                  "benefits": null
-                },
-                {
-                  "id": 72,
-                  "arabic": "قُلۡ ہُوَ اللّٰہُ اَحَدٌ،  اَللّٰہُ الصَّمَدُ،  لَمۡ یَلِدۡ وَ لَمۡ یُوۡلَدۡوَ لَمۡ یَکُنۡ لَّہٗ  کُفُوًا اَحَدٌ",
-                  "latin": "Qul Huwallaahu ‘Ahad. Allaahus-Samad. Lam yalid wa lam yoolad. Wa lam yaku-llahu kufuwan ‘ahad",
-                  "translation": "He is Allah (the) One. The Self-Sufficient Master, Whom all creatures need, He begets not nor was He begotten, and there is none equal to Him.",
-                  "source": "Surah Al-Ikhlas (112)",
-                  "benefits": null
-                },
-                {
-                  "id": 11,
-                  "arabic": "اَللّٰہُ لَاۤ اِلٰہَ اِلَّا ہُوَ اَلۡحَیُّ الۡقَیُّوۡمُ لَا تَاۡخُذُہٗ سِنَۃٌ وَّ لَا نَوۡمٌ  لَہٗ مَا فِی السَّمٰوٰتِ وَ مَا فِی الۡاَرۡضِ مَنۡ ذَا الَّذِیۡ یَشۡفَعُ عِنۡدَہٗۤ اِلَّا بِاِذۡنِہٖ  یَعۡلَمُ مَا بَیۡنَ اَیۡدِیۡہِمۡ وَ مَا خَلۡفَہُمۡ  وَ لَا یُحِیۡطُوۡنَ بِشَیۡءٍ مِّنۡ عِلۡمِہٖۤ اِلَّا بِمَا شَآءَ وَسِعَ کُرۡسِیُّہُ السَّمٰوٰتِ وَ الۡاَرۡضَ  وَ لَا یَـُٔوۡدُہٗ حِفۡظُہُمَا  وَ ہُوَ الۡعَلِیُّ الۡعَظِیۡمُ",
-                  "latin": "Allaahu laa ‘ilaaha ‘illaa Huwal-Hayyul-Qayyoom, laa ta’khuthuhu sinatun wa laa nawm, lahu maa fis-samaawaati wa maafil-’ardh, man thal-lathee yashfa’u ‘indahu ‘illaa bi’ithnih, ya’lamu maa bayna ‘aydeehim wa maa khalfahum, wa laa yuheetoona bishay’im-min ‘ilmihi ‘illaa bimaa shaa’a, wasi’a kursiyyuhus-samaawaati wal’ardh, wa laa ya’ooduhu hifdhuhumaa, wa Huwal-’Aliyyul- ‘Adheem",
-                  "translation": "Allah! There is none worthy of worship but He, the Ever Living, the One Who sustains and protects all that exists. Neither slumber nor sleep overtakes Him. To Him belongs whatever is in the heavens and whatever is on the earth. Who is he that can intercede with Him except with His Permission? He knows what happens to them in this world, and what will happen to them in the Hereafter. And they will never compass anything of His Knowledge except that which He wills. His Throne extends over the heavens and the earth, and He feels no fatigue in guarding and preserving them. And He is the Most High, the Most Great.",
-                  "source": "Surah Al-Baqarah - 2:255, At-Tirmidhi: 2879",
-                  "benefits": null
-                },
-                {
-                  "id": 101,
-                  "arabic": "قُلۡ اَعُوۡذُ بِرَبِّ الۡفَلَقِ،  مِنۡ شَرِّ مَا خَلَقَ،  وَ مِنۡ شَرِّ غَاسِقٍ اِذَا وَقَب،  وَ مِنۡ شَرِّ النَّفّٰثٰتِ فِی الۡعُقَدِ،  وَ مِنۡ شَرِّ حَاسِدٍ اِذَا حَسَدَ",
-                  "latin": "Qul ‘a’oothu birabbil-falaq. Min sharri maa khalaq. Wa min sharri ghaasiqin ‘ithaa waqab. Wa min sharrin-naffaathaati fil-’uqad. Wa min sharri haasidin ‘ithaa hasad",
-                  "translation": "I seek refuge with (Allah) the Lord of the daybreak, from the evil of what He has created, and from the evil of the darkening (night) as it comes with its darkness, and from the evil of those who practice witchcraft when they blow in the knots, and from the evil of the envier when he envies.",
-                  "source": "Surah Al-Falaq (113), At-Tirmidhi: 2058",
-                  "benefits": "Prophet (S.A.W.) used to seek protection against the evil of jinn and the evil eyes of humans by reciting this Surah."
-                },
-                {
-                  "id": 102,
-                  "arabic": "قُلۡ اَعُوۡذُ بِرَبِّ النَّاسِ، مَلِکِ النَّاسِ، اِلٰہِ النَّاسِ، مِنۡ شَرِّ الۡوَسۡوَاسِ الۡخَنَّاسِ، الَّذِیۡ یُوَسۡوِسُ فِیۡ صُدُوۡرِ النَّاسِ، مِنَ الۡجِنَّۃِ وَ النَّاسِ",
-                  "latin": "Qul ‘a’oothu birabbin-naas . Malikin-naas . ‘Ilaahin-naas . Min sharril-waswaasil-khannaas. Allathee yuwaswisu fee sudoorin-naas. Minal-jinnati wannaas",
-                  "translation": "I seek refuge with (Allah) the Lord of mankind, the King of mankind, the God of mankind, from the evil of the whisperer who withdraws, who whispers in the breasts of mankind, of jinns and men.",
-                  "source": "Surah An-Naas (114), At-Tirmidhi: 2058",
-                  "benefits": null
-                },
-                {
-                  "id": 41,
-                  "arabic": "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنْ عَذَابِ الْقَبْرِ،  وَأَعُوذُ بِكَ مِنْ فِتْنَةِ الْمَسِيحِ الدَّجَّالِ،  وَأَعُوذُ بِكَ مِنْ فِتْنَةِ الْمَحْيَا وَالْمَمَاتِ  اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنْ الْمَأْثَمِ وَالْمَغْرَمِ",
-                  "latin": "Allaahumma ‘innee ‘a’oothu bika min ‘athaabil-qabri, wa ‘a’oothu bika min fitnatil-maseehid-dajjaali, wa ‘a’oothu bika min fitnatil-mahyaa walmamaati. Allaahumma ‘innee ‘a’oothu bika minal-ma’thami walmaghrami",
-                  "translation": "O Allah, I seek refuge in You from the punishment of the grave, and I seek refuge in You from the trial of the False Messiah, and I seek refuge in You from the trials of life and death. O Allah, I seek refuge in You from sin and from debt.",
-                  "source": "Sahih Muslim: 589",
-                  "benefits": null
-                },
-                {
-                  "id": 6,
-                  "arabic": "اللَّهُمَّ قِنِي عَذَابَكَ يَوْمَ تَبْعَثُ عِبَادَكَ",
-                  "latin": "Allahumma qinee AAathabaka yawma tabAAathu AAibadak.",
-                  "translation": "O Allah, protect me from Your punishment on the day Your servants are resurrected.",
-                  "source": "Abu Dawud: 5045",
-                  "benefits": null
-                },
-                {
-                  "id": 82,
-                  "arabic": "اللَّهُمَّ فَاطِرَ السَّمَوَاتِ وَالأَرْضِ عَالِمَ الْغَيْبِ وَالشَّهَادَةِ لاَ إِلَهَ إِلاَّ أَنْتَ رَبَّ كُلِّ شَيْءٍ وَمَلِيكَهُ أَعُوذُ بِكَ مِنْ شَرِّ نَفْسِي وَمِنْ شَرِّ الشَّيْطَانِ وَشَرَكِهِ وَأَنْ أَقْتَرِفَ عَلَى نَفْسِي سُوءًا أَوْ أَجُرَّهُ إِلَى مُسْلِمٍ",
-                  "latin": "Allaahumma faatiras-samaawaati wal’ardhi, Aalimal-ghaybi wash-shahaadati, laa ‘ilaaha ‘illaa ‘Anta, rabba kulli shai’in wa malīkahu, ‘a’oothu bika min sharri nafsee, wa min sharrish-shaytaani wa sharakihi, wa ‘an ‘aqtarifa ‘alaa nafsee soo’an, ‘aw ‘ajurrahu ‘ilaa Muslimin",
-                  "translation": "O Allah, Creator of the heavens and the earth, Knower of the unseen and the seen, there is none worthy of worship except You, Lord of everything and its Owner, I seek refuge in You from the evil of my soul and from the evil of Shaitan and his Shirk, or that I should do some evil to myself or bring it upon a Muslim.",
-                  "source": "At-Tirmidhi: 3529",
-                  "benefits": null
-                },
-                {
-                  "id": 81,
-                  "arabic": "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالآخِرَةِ اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي دِينِي وَدُنْيَاىَ وَأَهْلِي وَمَالِي اللَّهُمَّ اسْتُرْ عَوْرَاتِي وَآمِنْ رَوْعَاتِي وَاحْفَظْنِي مِنْ بَيْنِ يَدَىَّ وَمِنْ خَلْفِي وَعَنْ يَمِينِي وَعَنْ شِمَالِي وَمِنْ فَوْقِي وَأَعُوذُ بِكَ أَنْ أُغْتَالَ مِنْ تَحْتِي",
-                  "latin": "Allahumma inni as’alukal-’afwa wal-’afiyah fid-dunya wal-akhirah. Allahumma inni as’alukal-’afwa wal-’afiyah fi dini wa dunyaya wa ahli wa mali. Allahum-mastur ‘awrati, wa amin raw’ati wahfazni min bayni yadayya, wa min khalfi, wa ‘an yamini wa ‘an shimali, wa min fawqi, wa ‘audhu bika an ughtala min tahti",
-                  "translation": "O Allah, I ask You for forgiveness and well-being in this world and in the Hereafter. O Allah, I ask You for forgiveness and well-being in my religious and my worldly affairs. O Allah, conceal my faults, calm my fears, and protect me from before me and behind me, from my right and my left, and from above me, and I seek refuge in You from being taken unaware from beneath me.",
-                  "source": "Ibn Majah: 3871",
-                  "benefits": null
-                },
-                {
-                  "id": 166,
-                  "arabic": "اَنَّ اللّٰہَ مَوۡلٰىکُمۡ ؕ نِعۡمَ الۡمَوۡلٰی وَ نِعۡمَ النَّصِیۡرُ",
-                  "latin": "Anna Allaha mawlakum ni’mal mawla wa ni’man naseer",
-                  "translation": "Know that Allah is your protector. Excellent is the protector, and Excellent is the helper.",
-                  "source": "Surah Al-Anfal - 8:40",
-                  "benefits": null
-                },
                 {
                   "id": 72,
                   "arabic": "قُلۡ ہُوَ اللّٰہُ اَحَدٌ،  اَللّٰہُ الصَّمَدُ،  لَمۡ یَلِدۡ وَ لَمۡ یُوۡلَدۡوَ لَمۡ یَکُنۡ لَّہٗ  کُفُوًا اَحَدٌ",
@@ -2209,14 +1809,6 @@
                   "translation": "I seek protection for you in the Perfect Words of Allah from every devil and every beast, and from every envious blameworthy eye.",
                   "source": "Abu Dawud: 4737",
                   "benefits": "Seek protection by reciting this dua! Ibn'Abbas related that the Prophet Muhammad (SAW) used to seek Allah's protection for Al-Hassan and Al-Hussain by reciting this dua."
-                },
-                {
-                  "id": 171,
-                  "arabic": "أُعِيذُكُمَا بِكَلِمَاتِ اللّٰهِ التَّامَّةِ مِنْ كُلِّ شَيْطَانٍ وَهَامَّةٍ وَمِنْ كُلِّ عَيْنٍ لاَمَّةٍ",
-                  "latin": "U’eethukumaa bikalimaatil-laahit-taammati min kulli shaytaanin wa haammatin, wa min kulli ‘aynin laammatin",
-                  "translation": "I seek protection for you in the Perfect Words of Allah from every devil and every beast, and from every envious blameworthy eye.",
-                  "source": "Abu Dawud: 4737",
-                  "benefits": "Seek protection by reciting this dua! Ibn'Abbas related that the Prophet Muhammad (SAW) used to seek Allah's protection for Al-Hassan and Al-Hussain by reciting this dua."
                 }
               ]
             },
@@ -2289,14 +1881,6 @@
                   "translation": "Upon Allah do we rely. Our Lord, make us not [objects of] trial for the wrongdoing people. And save us by Your mercy from the disbelieving people.",
                   "source": "Surah Yunus - 10:85-86",
                   "benefits": null
-                },
-                {
-                  "id": 176,
-                  "arabic": "عَلَی اللّٰہِ تَوَکَّلۡنَا ۚ رَبَّنَا لَا تَجۡعَلۡنَا فِتۡنَۃً  لِّلۡقَوۡمِ الظّٰلِمِیۡنَ وَ نَجِّنَا بِرَحۡمَتِکَ مِنَ الۡقَوۡمِ الۡکٰفِرِیۡنَ",
-                  "latin": "Alal Allahi thawakkalna rabbana la taj’alna fitnatal lil-qawmidh-Dhalimeen. Wa najjina bi-Rahmatika minal qawmil kafireen.",
-                  "translation": "Upon Allah do we rely. Our Lord, make us not [objects of] trial for the wrongdoing people. And save us by Your mercy from the disbelieving people.",
-                  "source": "Surah Yunus - 10:85-86",
-                  "benefits": null
                 }
               ]
             },
@@ -2333,22 +1917,6 @@
                   "translation": "My Lord, then do not place me among the wrongdoing people.",
                   "source": "Surah Al-Mu'minoon - 23:94",
                   "benefits": "Allah taught this dua to Prophet (SAW)."
-                },
-                {
-                  "id": 246,
-                  "arabic": "رَبَّنَا لَا تَجۡعَلۡنَا مَعَ الۡقَوۡمِ الظّٰلِمِیۡنَ",
-                  "latin": "Rabbanaa Laa Taj-a’lnaa Ma – A’l Qawmiz’ Z’aalimeen",
-                  "translation": "Our Lord! Place us not with the people who are Zaalimoon (polytheists and wrong doers).",
-                  "source": "Surah Al-A'raf - 7:47",
-                  "benefits": null
-                },
-                {
-                  "id": 179,
-                  "arabic": "رَبِّ فَلَا تَجۡعَلۡنِیۡ فِی الۡقَوۡمِ الظّٰلِمِیۡنَ",
-                  "latin": "Rabbi fala tajAAalnee fee alqawmi aththalimeen",
-                  "translation": "My Lord, then do not place me among the wrongdoing people.",
-                  "source": "Surah Al-Mu'minoon - 23:94",
-                  "benefits": null
                 }
               ]
             },
@@ -2513,54 +2081,6 @@
                   "translation": "Our Lord, surely You will gather the people for a Day about which there is no doubt. Indeed, Allah does not fail in His promise.",
                   "source": "Surah Al-Imran - 3:9",
                   "benefits": null
-                },
-                {
-                  "id": 70,
-                  "arabic": "رَبَّنَاۤ اٰتِنَا فِی الدُّنۡیَا حَسَنَۃً وَّ فِی الۡاٰخِرَۃِ حَسَنَۃً وَّ قِنَا عَذَابَ النَّارِ",
-                  "latin": "Rabbanaaa Aatinaa Fiddunyaa H’asanah Wa Fil Aakhirati H’asanah Wa Qinaa A’d’aaban Naar",
-                  "translation": "Our Lord! Give us in this world that which is good and in the Hereafter that which is good, and save us from the torment of the Fire!",
-                  "source": "Surah Al-Baqarah - 2:201, Sahih Muslim: 2690 (b)",
-                  "benefits": "This is the Prophet's (SAW) most read supplication to Allah. It is a comprehensive dua which contains everything we need for this world and the hereafter. We can recite this dua at all times."
-                },
-                {
-                  "id": 71,
-                  "arabic": "رَبَّنَاۤ اِنَّکَ جَامِعُ النَّاسِ لِیَوۡمٍ لَّا رَیۡبَ فِیۡہِ ؕ اِنَّ اللّٰہَ لَا یُخۡلِفُ الۡمِیۡعَادَ",
-                  "latin": "Rabbana innaka jami’unnasi li-Yawmil la rayba fi innAllaha la yukhliful mi’aad",
-                  "translation": "Our Lord, surely You will gather the people for a Day about which there is no doubt. Indeed, Allah does not fail in His promise.",
-                  "source": "Surah Al-Imran - 3:9",
-                  "benefits": null
-                },
-                {
-                  "id": 70,
-                  "arabic": "رَبَّنَاۤ اٰتِنَا فِی الدُّنۡیَا حَسَنَۃً وَّ فِی الۡاٰخِرَۃِ حَسَنَۃً وَّ قِنَا عَذَابَ النَّارِ",
-                  "latin": "Rabbanaaa Aatinaa Fiddunyaa H’asanah Wa Fil Aakhirati H’asanah Wa Qinaa A’d’aaban Naar",
-                  "translation": "Our Lord! Give us in this world that which is good and in the Hereafter that which is good, and save us from the torment of the Fire!",
-                  "source": "Surah Al-Baqarah - 2:201, Sahih Muslim: 2690 (b)",
-                  "benefits": "This is the Prophet's (SAW) most read supplication to Allah. It is a comprehensive dua which contains everything we need for this world and the hereafter. We can recite this dua at all times."
-                },
-                {
-                  "id": 71,
-                  "arabic": "رَبَّنَاۤ اِنَّکَ جَامِعُ النَّاسِ لِیَوۡمٍ لَّا رَیۡبَ فِیۡہِ ؕ اِنَّ اللّٰہَ لَا یُخۡلِفُ الۡمِیۡعَادَ",
-                  "latin": "Rabbana innaka jami’unnasi li-Yawmil la rayba fi innAllaha la yukhliful mi’aad",
-                  "translation": "Our Lord, surely You will gather the people for a Day about which there is no doubt. Indeed, Allah does not fail in His promise.",
-                  "source": "Surah Al-Imran - 3:9",
-                  "benefits": null
-                },
-                {
-                  "id": 71,
-                  "arabic": "رَبَّنَاۤ اِنَّکَ جَامِعُ النَّاسِ لِیَوۡمٍ لَّا رَیۡبَ فِیۡہِ ؕ اِنَّ اللّٰہَ لَا یُخۡلِفُ الۡمِیۡعَادَ",
-                  "latin": "Rabbana innaka jami’unnasi li-Yawmil la rayba fi innAllaha la yukhliful mi’aad",
-                  "translation": "Our Lord, surely You will gather the people for a Day about which there is no doubt. Indeed, Allah does not fail in His promise.",
-                  "source": "Surah Al-Imran - 3:9",
-                  "benefits": null
-                },
-                {
-                  "id": 70,
-                  "arabic": "رَبَّنَاۤ اٰتِنَا فِی الدُّنۡیَا حَسَنَۃً وَّ فِی الۡاٰخِرَۃِ حَسَنَۃً وَّ قِنَا عَذَابَ النَّارِ",
-                  "latin": "Rabbanaaa Aatinaa Fiddunyaa H’asanah Wa Fil Aakhirati H’asanah Wa Qinaa A’d’aaban Naar",
-                  "translation": "Our Lord! Give us in this world that which is good and in the Hereafter that which is good, and save us from the torment of the Fire!",
-                  "source": "Surah Al-Baqarah - 2:201, Sahih Muslim: 2690 (b)",
-                  "benefits": null
                 }
               ]
             },
@@ -2582,70 +2102,6 @@
               "title_id": 48,
               "title_name": "For Rizq (sustenance)",
               "duas": [
-                {
-                  "id": 66,
-                  "arabic": "اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْماً نَافِعاً،  وَرِزْقاً طَيِّباً،  وَعَمَلاً مُتَقَبَّلاً",
-                  "latin": "Allaahumma ‘innee ‘as’aluka ‘ilman naafi’an, wa rizqan tayyiban, wa ‘amalan mutaqabbalan",
-                  "translation": "O Allah, I ask You for knowledge that is of benefit, a good provision, and deeds that will be accepted.",
-                  "source": "Ibn Majah: 925",
-                  "benefits": null
-                },
-                {
-                  "id": 36,
-                  "arabic": "اللَّهُمَّ اغْفِرْ لِي وَارْحَمْنِي وَعَافِنِي وَاهْدِنِي وَارْزُقْنِي",
-                  "latin": "Allaahum-maghfir lee, warhamnee, wa ‘aafinee, wahdinee, warzuqnee",
-                  "translation": "O Allah, forgive me, have mercy on me, guide me, heal me, and provide for me.",
-                  "source": "Abu Dawud: 850",
-                  "benefits": null
-                },
-                {
-                  "id": 104,
-                  "arabic": "اَللّٰہُ لَطِیۡفٌۢ بِعِبَادِہٖ یَرۡزُقُ مَنۡ یَّشَآءُ وَ ہُوَ الۡقَوِیُّ الۡعَزِیۡزُ",
-                  "latin": "Allahu lateefun biAAibadihiyarzuqu man yashao wahuwa alqawiyyu alAAazeez",
-                  "translation": "Allah is very Gracious and Kind to His slaves. He gives provisions to whom He wills. And He is the All-Strong, the All-Mighty.",
-                  "source": "Surah Ash-Shuraa - 42:19",
-                  "benefits": null
-                },
-                {
-                  "id": 105,
-                  "arabic": "رَبَّنَاۤ اَنۡزِلۡ عَلَیۡنَا مَآئِدَۃً مِّنَ السَّمَآءِ تَکُوۡنُ لَنَا عِیۡدًا لِّاَوَّلِنَا وَ اٰخِرِنَا وَ اٰیَۃً مِّنۡکَ ۚ وَ ارۡزُقۡنَا وَ اَنۡتَ خَیۡرُ الرّٰزِقِیۡنَ",
-                  "latin": "Rabbana anzil 'alayna ma'idatam minas-Samai takoonu lana 'idal li-awwa-lina wa aakhirina wa ayatam-minka war-zuqna wa anta Khayrul-Raziqeen",
-                  "translation": "O Allah our Lord! Send us from heaven a table set (with viands), that there may be for us - for the first and the last of us - a solemn festival and a sign from thee; and provide for our sustenance, for thou art the best Sustainer (of our needs).",
-                  "source": "Surah Al-Ma'ida - 5:114",
-                  "benefits": null
-                },
-                {
-                  "id": 66,
-                  "arabic": "اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْماً نَافِعاً،  وَرِزْقاً طَيِّباً،  وَعَمَلاً مُتَقَبَّلاً",
-                  "latin": "Allaahumma ‘innee ‘as’aluka ‘ilman naafi’an, wa rizqan tayyiban, wa ‘amalan mutaqabbalan",
-                  "translation": "O Allah, I ask You for knowledge that is of benefit, a good provision, and deeds that will be accepted.",
-                  "source": "Ibn Majah: 925",
-                  "benefits": null
-                },
-                {
-                  "id": 36,
-                  "arabic": "اللَّهُمَّ اغْفِرْ لِي وَارْحَمْنِي وَعَافِنِي وَاهْدِنِي وَارْزُقْنِي",
-                  "latin": "Allaahum-maghfir lee, warhamnee, wa ‘aafinee, wahdinee, warzuqnee",
-                  "translation": "O Allah, forgive me, have mercy on me, guide me, heal me, and provide for me.",
-                  "source": "Abu Dawud: 850",
-                  "benefits": null
-                },
-                {
-                  "id": 104,
-                  "arabic": "اَللّٰہُ لَطِیۡفٌۢ بِعِبَادِہٖ یَرۡزُقُ مَنۡ یَّشَآءُ وَ ہُوَ الۡقَوِیُّ الۡعَزِیۡزُ",
-                  "latin": "Allahu lateefun biAAibadihiyarzuqu man yashao wahuwa alqawiyyu alAAazeez",
-                  "translation": "Allah is very Gracious and Kind to His slaves. He gives provisions to whom He wills. And He is the All-Strong, the All-Mighty.",
-                  "source": "Surah Ash-Shuraa - 42:19",
-                  "benefits": null
-                },
-                {
-                  "id": 105,
-                  "arabic": "رَبَّنَاۤ اَنۡزِلۡ عَلَیۡنَا مَآئِدَۃً مِّنَ السَّمَآءِ تَکُوۡنُ لَنَا عِیۡدًا لِّاَوَّلِنَا وَ اٰخِرِنَا وَ اٰیَۃً مِّنۡکَ ۚ وَ ارۡزُقۡنَا وَ اَنۡتَ خَیۡرُ الرّٰزِقِیۡنَ",
-                  "latin": "Rabbana anzil 'alayna ma'idatam minas-Samai takoonu lana 'idal li-awwa-lina wa aakhirina wa ayatam-minka war-zuqna wa anta Khayrul-Raziqeen",
-                  "translation": "O Allah our Lord! Send us from heaven a table set (with viands), that there may be for us - for the first and the last of us - a solemn festival and a sign from thee; and provide for our sustenance, for thou art the best Sustainer (of our needs).",
-                  "source": "Surah Al-Ma'ida - 5:114",
-                  "benefits": null
-                },
                 {
                   "id": 66,
                   "arabic": "اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْماً نَافِعاً،  وَرِزْقاً طَيِّباً،  وَعَمَلاً مُتَقَبَّلاً",
@@ -2719,22 +2175,6 @@
                   "translation": "My success is not but through Allah. Upon him I have relied, and to Him I return.",
                   "source": "Surah Hud - 11:88",
                   "benefits": "Prophet Shuaib (AS) recited this dua."
-                },
-                {
-                  "id": 109,
-                  "arabic": "وَ مَا تَوۡفِیۡقِیۡۤ اِلَّا بِاللّٰہِ ؕعَلَیۡہِ تَوَکَّلۡتُ وَ اِلَیۡہِ اُنِیۡبُ",
-                  "latin": "Wama tawfeeqee illa billahiAAalayhi tawakkaltu wa-ilayhi oneeb",
-                  "translation": "My success is not but through Allah. Upon him I have relied, and to Him I return.",
-                  "source": "Surah Hud - 11:88",
-                  "benefits": "Prophet Shuaib (AS) recited this dua."
-                },
-                {
-                  "id": 109,
-                  "arabic": "وَ مَا تَوۡفِیۡقِیۡۤ اِلَّا بِاللّٰہِ ؕعَلَیۡہِ تَوَکَّلۡتُ وَ اِلَیۡہِ اُنِیۡبُ",
-                  "latin": "Wama tawfeeqee illa billahiAAalayhi tawakkaltu wa-ilayhi oneeb",
-                  "translation": "My success is not but through Allah. Upon him I have relied, and to Him I return.",
-                  "source": "Surah Hud - 11:88",
-                  "benefits": "Prophet Shuaib (AS) recited this dua."
                 }
               ]
             }
@@ -2761,14 +2201,6 @@
                   "translation": "O Allah, grant my body health, O Allah, grant my hearing health, O Allah, grant my sight health. None has the right to be worshipped except You. O Allah, I take refuge with You from disbelief and poverty, and I take refuge with You from the punishment of the grave. None has the right to be worshipped except You.",
                   "source": "Abu Dawud: 5090",
                   "benefits": "Recite this dua three times"
-                },
-                {
-                  "id": 78,
-                  "arabic": "اللَّهُمَّ عَافِنِي فِي بَدَنِي اللَّهُمَّ عَافِنِي فِي سَمْعِي اللَّهُمَّ عَافِنِي فِي بَصَرِي لاَ إِلَهَ إِلاَّ أَنْتَ، اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْكُفْرِ وَالْفَقْرِ اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنْ عَذَابِ الْقَبْرِ لاَ إِلَهَ إِلاَّ أَنْتَ",
-                  "latin": "Allahumma AAafinee fee badanee, allahumma AAafinee fee samAAee, allahumma AAafinee fee basaree, la ilaha illa anta. Allahumma innee aAAoothu bika minal-kufri, walfaqri, Allahumma innee aAAoothu bika min AAathabil-qabri, la ilaha illa anta.",
-                  "translation": "O Allah, grant my body health, O Allah, grant my hearing health, O Allah, grant my sight health. None has the right to be worshipped except You. O Allah, I take refuge with You from disbelief and poverty, and I take refuge with You from the punishment of the grave. None has the right to be worshipped except You.",
-                  "source": "Abu Dawud: 5090",
-                  "benefits": null
                 }
               ]
             },
@@ -2805,14 +2237,6 @@
                   "translation": "In the Name of Allah, I seek refuge in the might and power of Allah from the evil of what I feel and what I fear.",
                   "source": "Ibn Majah: 3522",
                   "benefits": "Get relief from pain by placing your hand on the problem area and reciting the dua (seven times)."
-                },
-                {
-                  "id": 188,
-                  "arabic": "بِسْمِ اللّٰهِ، أَعُوذُ بِعِزَّةِ اللّٰهِ وَقُدْرَتِهِ مِنْ شَرِّ مَا أَجِدُ وَأُحَاذِرُ. (سَبْعَ مَرَّاتٍ)",
-                  "latin": "Bismillah, A’udhu bi’izzatil-lahi wa qudratihi min sharri ma ajidu wa uhadhiru.",
-                  "translation": "In the Name of Allah, I seek refuge in the might and power of Allah from the evil of what I feel and what I fear.",
-                  "source": "Ibn Majah: 3522",
-                  "benefits": null
                 }
               ]
             },
@@ -2820,22 +2244,6 @@
               "title_id": 93,
               "title_name": "Upon seeing someone going through a trial or tribulation",
               "duas": [
-                {
-                  "id": 189,
-                  "arabic": "الْحَمْدُ لِلّٰهِ الَّذِي عَافَانِي مِمَّا ابْتَلاَكَ بِهِ وَفَضَّلَنِي عَلَى كَثِيرٍ مِمَّنْ خَلَقَ تَفْضِيلاً",
-                  "latin": "Alhamdu lillaahil-lathee ‘aafaanee mimmab-talaaka bihi wa fadhdhalanee ‘alaa katheerin mimman khalaqa tafdheela",
-                  "translation": "Praise is to Allah Who has spared me what He has afflicted you with, and preferred me greatly above much of what He has created.",
-                  "source": "Ibn Majah: 3892",
-                  "benefits": null
-                },
-                {
-                  "id": 189,
-                  "arabic": "الْحَمْدُ لِلّٰهِ الَّذِي عَافَانِي مِمَّا ابْتَلاَكَ بِهِ وَفَضَّلَنِي عَلَى كَثِيرٍ مِمَّنْ خَلَقَ تَفْضِيلاً",
-                  "latin": "Alhamdu lillaahil-lathee ‘aafaanee mimmab-talaaka bihi wa fadhdhalanee ‘alaa katheerin mimman khalaqa tafdheela",
-                  "translation": "Praise is to Allah Who has spared me what He has afflicted you with, and preferred me greatly above much of what He has created.",
-                  "source": "Ibn Majah: 3892",
-                  "benefits": null
-                },
                 {
                   "id": 189,
                   "arabic": "الْحَمْدُ لِلّٰهِ الَّذِي عَافَانِي مِمَّا ابْتَلاَكَ بِهِ وَفَضَّلَنِي عَلَى كَثِيرٍ مِمَّنْ خَلَقَ تَفْضِيلاً",
@@ -2857,22 +2265,6 @@
                   "translation": "Indeed, adversity has touched me, and you are the Most Merciful of the merciful.",
                   "source": "Surah Al-Anbiya - 21:83",
                   "benefits": "Read this dua in times of sickness! Prophet Ayyob (AS) recited this dua when he was suffering from a terrible disease that spread all over his body."
-                },
-                {
-                  "id": 190,
-                  "arabic": "اَنِّیۡ مَسَّنِیَ الضُّرُّ وَ اَنۡتَ اَرۡحَمُ الرّٰحِمِیۡنَ",
-                  "latin": "Annee massaniya addurru waanta arhamuarrahimeen",
-                  "translation": "Indeed, adversity has touched me, and you are the Most Merciful of the merciful.",
-                  "source": "Surah Al-Anbiya - 21:83",
-                  "benefits": "Read this dua in times of sickness! Prophet Ayyob (AS) recited this dua when he was suffering from a terrible disease that spread all over his body."
-                },
-                {
-                  "id": 190,
-                  "arabic": "اَنِّیۡ مَسَّنِیَ الضُّرُّ وَ اَنۡتَ اَرۡحَمُ الرّٰحِمِیۡنَ",
-                  "latin": "Annee massaniya addurru waanta arhamuarrahimeen",
-                  "translation": "Indeed, adversity has touched me, and you are the Most Merciful of the merciful.",
-                  "source": "Surah Al-Anbiya - 21:83",
-                  "benefits": null
                 }
               ]
             },
@@ -2909,14 +2301,6 @@
                   "translation": "Oh Muslims residing here, salaams on you, by the will of Allah we will also be coming to you. We seek safety for us and you.",
                   "source": "Ibn Majah: 1547",
                   "benefits": null
-                },
-                {
-                  "id": 195,
-                  "arabic": "السَّلاَمُ عَلَيْكُمْ أَهْلَ الدِّيَارِ مِنَ الْمُؤْمِنِينَ وَالْمُسْلِمِينَ وَإِنَّا إِنْ شَاءَ اللّٰهُ بِكُمْ لاَحِقُونَ نَسْأَلُ اللّٰهَ لَنَا وَلَكُمُ الْعَافِيَةَ",
-                  "latin": "Assalaamu ‘alaykum ‘ahlad-diyaari, minal-mu’mineena walmuslimeena, wa ‘innaa ‘in shaa’ Allaahu bikum laahiqoona [wa yarhamullaahul-mustaqdimeena minnaa walmusta’khireena] ‘as’alullaaha lanaa wa lakumul- ‘aafiyata.",
-                  "translation": "Oh Muslims residing here, salaams on you, by the will of Allah we will also be coming to you. We seek safety for us and you.",
-                  "source": "Ibn Majah: 1547",
-                  "benefits": null
                 }
               ]
             },
@@ -2944,22 +2328,6 @@
               "title_id": 63,
               "title_name": "For forgiveness for your parents and all Muslims",
               "duas": [
-                {
-                  "id": 128,
-                  "arabic": "رَبَّنَا اغۡفِرۡ لِیۡ وَ لِوَالِدَیَّ وَ لِلۡمُؤۡمِنِیۡنَ یَوۡمَ یَقُوۡمُ الۡحِسَابُ",
-                  "latin": "Rabbanaghfir Lee Wa Liwaalidayya Wa Lil-Mu’mineena Yawma Yaqoomul H’isaab",
-                  "translation": "Our Lord, forgive me and my parents and the believers the Day the account is established.",
-                  "source": "Surah Ibraheem - 14:41",
-                  "benefits": null
-                },
-                {
-                  "id": 128,
-                  "arabic": "رَبَّنَا اغۡفِرۡ لِیۡ وَ لِوَالِدَیَّ وَ لِلۡمُؤۡمِنِیۡنَ یَوۡمَ یَقُوۡمُ الۡحِسَابُ",
-                  "latin": "Rabbanaghfir Lee Wa Liwaalidayya Wa Lil-Mu’mineena Yawma Yaqoomul H’isaab",
-                  "translation": "Our Lord, forgive me and my parents and the believers the Day the account is established.",
-                  "source": "Surah Ibraheem - 14:41",
-                  "benefits": null
-                },
                 {
                   "id": 128,
                   "arabic": "رَبَّنَا اغۡفِرۡ لِیۡ وَ لِوَالِدَیَّ وَ لِلۡمُؤۡمِنِیۡنَ یَوۡمَ یَقُوۡمُ الۡحِسَابُ",
@@ -3103,22 +2471,6 @@
                   "translation": "Allah is sufficient for us and the best of those on whom to depend.",
                   "source": "Surah Al-Imran 3:173",
                   "benefits": null
-                },
-                {
-                  "id": 198,
-                  "arabic": "اِنَّا لِلّٰہِ وَ اِنَّاۤ اِلَیۡہِ رٰجِعُوۡنَ، اللَّهُمَّ أْجُرْنِي فِي مُصِيبَتِي وَأَخْلِفْ لِي خَيْرًا مِنْهَا",
-                  "latin": "Innaa lillaahi wa ‘innaa ‘ilayhi raaji’oon, Allaahumma’-jurni fee museebatee wa ‘akhliflee khayran minhaa",
-                  "translation": "We are from Allah and unto Him we return. O Allah take me out of my plight and bring to me after it something better.",
-                  "source": "Sahih Muslim: 918 (b)",
-                  "benefits": null
-                },
-                {
-                  "id": 199,
-                  "arabic": "حَسۡبُنَا اللّٰہُ وَ نِعۡمَ الۡوَکِیۡلُ",
-                  "latin": "Hasbunallaahu wa ni’amal-wakeel",
-                  "translation": "Allah is sufficient for us and the best of those on whom to depend.",
-                  "source": "Surah Al-Imran 3:173",
-                  "benefits": null
                 }
               ]
             },
@@ -3141,38 +2493,6 @@
                   "translation": "I only complain of my suffering and my grief to Allah, and I know from Allah that which you do not know.",
                   "source": "Surah Yusuf - 12:86",
                   "benefits": "Prophet Ya'coob (AS) used to recite this dua."
-                },
-                {
-                  "id": 199,
-                  "arabic": "حَسۡبُنَا اللّٰہُ وَ نِعۡمَ الۡوَکِیۡلُ",
-                  "latin": "Hasbunallaahu wa ni’amal-wakeel",
-                  "translation": "Allah is sufficient for us and the best of those on whom to depend.",
-                  "source": "Surah Al-Imran 3:173",
-                  "benefits": null
-                },
-                {
-                  "id": 200,
-                  "arabic": "اِنَّمَاۤ اَشۡکُوۡا بَثِّیۡ وَ حُزۡنِیۡۤ  اِلَی اللّٰہِ وَ اَعۡلَمُ مِنَ اللّٰہِ مَا لَا تَعۡلَمُوۡنَ",
-                  "latin": "Innama ashkoo baththee wahuzneeila Allahi waaAAlamu mina Allahi ma lataAAlamoon",
-                  "translation": "I only complain of my suffering and my grief to Allah, and I know from Allah that which you do not know.",
-                  "source": "Surah Yusuf - 12:86",
-                  "benefits": "Prophet Ya'coob (AS) used to recite this dua."
-                },
-                {
-                  "id": 199,
-                  "arabic": "حَسۡبُنَا اللّٰہُ وَ نِعۡمَ الۡوَکِیۡلُ",
-                  "latin": "Hasbunallaahu wa ni’amal-wakeel",
-                  "translation": "Allah is sufficient for us and the best of those on whom to depend.",
-                  "source": "Surah Al-Imran 3:173",
-                  "benefits": null
-                },
-                {
-                  "id": 200,
-                  "arabic": "اِنَّمَاۤ اَشۡکُوۡا بَثِّیۡ وَ حُزۡنِیۡۤ  اِلَی اللّٰہِ وَ اَعۡلَمُ مِنَ اللّٰہِ مَا لَا تَعۡلَمُوۡنَ",
-                  "latin": "Innama ashkoo baththee wahuzneeila Allahi waaAAlamu mina Allahi ma lataAAlamoon",
-                  "translation": "I only complain of my suffering and my grief to Allah, and I know from Allah that which you do not know.",
-                  "source": "Surah Yusuf - 12:86",
-                  "benefits": null
                 }
               ]
             },
@@ -3201,38 +2521,6 @@
                   "translation": "There is none worthy of worship but You, glory is to You. Surely, I was among the wrongdoers.",
                   "source": "Surah Al-Anbiya - 21:87, At-Tirmidhi: 3505",
                   "benefits": "Prophet Yunus supplicate this Dua to Allah when he was in the belly of the whale."
-                },
-                {
-                  "id": 203,
-                  "arabic": "اللَّهُمَّ رَحْمَتَكَ أَرْجُو فَلاَ تَكِلْنِي إِلَى نَفْسِي طَرْفَةَ عَيْنٍ وَأَصْلِحْ لِي شَأْنِي كُلَّهُ لاَ إِلَهَ إِلاَّ أَنْتَ",
-                  "latin": "Allaahumma rahmataka ‘arjoo falaa takilnee ‘ilaa nafsee tarfata ‘aynin, wa ‘aslih lee sha’nee kullahu, laa’ilaaha ‘illaa ‘Anta",
-                  "translation": "O Allah, I hope for Your mercy. Do not leave me to myself even for the blinking of an eye (i.e. a moment). Correct all of my affairs for me. There is none worthy of worship but You.",
-                  "source": "Abu Dawud: 5090",
-                  "benefits": null
-                },
-                {
-                  "id": 204,
-                  "arabic": "لَا إِلَهَ إِلاَّ اللّٰهُ الْعَظِيمُ الْحَلِيمُ، لَا إِلَهَ إِلاَّ اللّٰهُ رَبُّ الْعَرْشِ الْعَظِيمِ، لَا إِلَهَ إِلاَّ اللّٰهُ رَبُّ السَّمَوَاتِ، وَرَبُّ الأَرْضِ، وَرَبُّ الْعَرْشِ الْكَرِيمِ",
-                  "latin": "Laa ‘ilaaha ‘illallaahul-’Adheemul-Haleem, laa ‘ilaaha ‘illallaahu Rabbul-’Arshil-’Adheem, laa ‘ilaaha ‘illallaahu Rabbus-samaawaati wa Rabbul-’ardhi wa Rabbul-’Arshil-Kareem",
-                  "translation": "There is none worthy of worship but Allah the Mighty, the Forbearing. There is none worthy of worship but Allah, Lord of the Magnificent Throne. There is none worthy of worship but Allah, Lord of the heavens and Lord of the earth, and Lord of the Noble Throne.",
-                  "source": "Sahih Al-Bukhari: 6346",
-                  "benefits": null
-                },
-                {
-                  "id": 259,
-                  "arabic": "يَا حَىُّ يَا قَيُّومُ بِرَحْمَتِكَ أَسْتَغِيثُ، يَا ذَا الْجَلاَلِ وَالإِكْرَامِ",
-                  "latin": "Ya hayyu ya qayyoom, birahmatika astagheeth, Ya Dhal-Jalali wal-Ikram",
-                  "translation": "O Ever Living, O Self-Sustaining Sustainer! In Your Mercy do I seek relief, O Possessor of Majesty and Honor.",
-                  "source": "At-Tirmidhi: 3524",
-                  "benefits": null
-                },
-                {
-                  "id": 69,
-                  "arabic": "لَّاۤ اِلٰہَ  اِلَّاۤ اَنۡتَ سُبۡحٰنَکَ  اِنِّیۡ کُنۡتُ مِنَ الظّٰلِمِیۡنَ",
-                  "latin": "Laa ‘ilaaha ‘illaa ‘Anta subhaanaka ‘innee kuntu minadh-dhaalimeen",
-                  "translation": "There is none worthy of worship but You, glory is to You. Surely, I was among the wrongdoers.",
-                  "source": "Surah Al-Anbiya - 21:87, At-Tirmidhi: 3505",
-                  "benefits": null
                 },
                 {
                   "id": 203,
@@ -3299,22 +2587,6 @@
                   "translation": "Our Lord! pour out on us patience, and cause us to die as Muslims.",
                   "source": "Surah Al-A'raf - 7:126",
                   "benefits": null
-                },
-                {
-                  "id": 207,
-                  "arabic": "رَبَّنَاۤ اَفۡرِغۡ عَلَیۡنَا صَبۡرًا وَّ تَوَفَّنَا مُسۡلِمِیۡنَ",
-                  "latin": "Rabbanaaa Afrigh A’laynaa S’abraw Wa Tawaffanaa Muslimeen",
-                  "translation": "Our Lord! pour out on us patience, and cause us to die as Muslims.",
-                  "source": "Surah Al-A'raf - 7:126",
-                  "benefits": null
-                },
-                {
-                  "id": 207,
-                  "arabic": "رَبَّنَاۤ اَفۡرِغۡ عَلَیۡنَا صَبۡرًا وَّ تَوَفَّنَا مُسۡلِمِیۡنَ",
-                  "latin": "Rabbanaaa Afrigh A’laynaa S’abraw Wa Tawaffanaa Muslimeen",
-                  "translation": "Our Lord! pour out on us patience, and cause us to die as Muslims.",
-                  "source": "Surah Al-A'raf - 7:126",
-                  "benefits": null
                 }
               ]
             },
@@ -3322,14 +2594,6 @@
               "title_id": 107,
               "title_name": "When someone insults you",
               "duas": [
-                {
-                  "id": 208,
-                  "arabic": "رَبِّ احۡکُمۡ بِالۡحَقِّ وَ رَبُّنَا الرَّحۡمٰنُ الۡمُسۡتَعَانُ عَلٰی مَا تَصِفُوۡنَ",
-                  "latin": "Rabbi ohkum bilhaqqi wa rabbuna arrahmanul musta’aanu alaa ma tasifoon",
-                  "translation": "My Lord, judge [between us] in truth. And our Lord is the Most Merciful, the one whose help is sought against that which you describe.",
-                  "source": "Surah Al-Anbiya - 21:112",
-                  "benefits": "Read this dua if you are bullied at school or the workplace or are under the rule of tyrants! Prophet (SAW) recited this dua when the disbelievers mocked him and said terrible things about him."
-                },
                 {
                   "id": 208,
                   "arabic": "رَبِّ احۡکُمۡ بِالۡحَقِّ وَ رَبُّنَا الرَّحۡمٰنُ الۡمُسۡتَعَانُ عَلٰی مَا تَصِفُوۡنَ",
@@ -3359,22 +2623,6 @@
                   "translation": "And you will remember what I [now] say to you, and I entrust my affair to Allah . Indeed, Allah is Seeing of [His] servants.",
                   "source": "Surah Ghafir - 40:44",
                   "benefits": null
-                },
-                {
-                  "id": 79,
-                  "arabic": "حَسۡبِیَ اللّٰہُ  لَاۤ اِلٰہَ اِلَّا ہُوَ   ؕ عَلَیۡہِ تَوَکَّلۡتُ وَ ہُوَ رَبُّ الۡعَرۡشِ الۡعَظِیۡمِ",
-                  "latin": "Hasbiyal-lahu la ilaha illa huwa, AAalayhi tawakkalt, wahuwa rabbul-AAarshil-Aaatheem",
-                  "translation": "Allah is Sufficient for me, none has the right to be worshipped except Him, upon Him I rely and He is Lord of the exalted throne.",
-                  "source": "Surah Taubah 9:129",
-                  "benefits": null
-                },
-                {
-                  "id": 247,
-                  "arabic": "وَ اُفَوِّضُ اَمۡرِیۡۤ اِلَی اللّٰہِ ؕ اِنَّ اللّٰہَ بَصِیۡرٌۢ بِالۡعِبَادِ",
-                  "latin": "wa ufawwidhu amree ila Allahi innallaha baseerun bil ibaad",
-                  "translation": "And you will remember what I [now] say to you, and I entrust my affair to Allah . Indeed, Allah is Seeing of [His] servants.",
-                  "source": "Surah Ghafir - 40:44",
-                  "benefits": null
                 }
               ]
             },
@@ -3382,14 +2630,6 @@
               "title_id": 109,
               "title_name": "When someone praises you",
               "duas": [
-                {
-                  "id": 248,
-                  "arabic": "اللَّهُمَّ لاَ تُؤَاخِذْنِي بِمَا يَقُولُونَ، وَاغْفِرْ لِي مَا لا يَعْلَمُونَ‏",
-                  "latin": "Allaahumma laa tu’aakhithnee bimaa yaqooloona, waghfir lee maa laa ya’lamoon",
-                  "translation": "O Allah, do not call me to account for what they say and forgive me for what they have no knowledge of.",
-                  "source": "Al-Adab Al-Mufrad: 761",
-                  "benefits": null
-                },
                 {
                   "id": 248,
                   "arabic": "اللَّهُمَّ لاَ تُؤَاخِذْنِي بِمَا يَقُولُونَ، وَاغْفِرْ لِي مَا لا يَعْلَمُونَ‏",
@@ -3452,14 +2692,6 @@
               "title_id": 99,
               "title_name": "When a loss occurs",
               "duas": [
-                {
-                  "id": 197,
-                  "arabic": "اِنَّا لِلّٰہِ وَ اِنَّاۤ اِلَیۡہِ رٰجِعُوۡنَ",
-                  "latin": "Inna lillahi wa inna ilayhi raajioon",
-                  "translation": "Indeed we belong to Allah, and indeed to Him we will return.",
-                  "source": "Surah Al-Baqarah 2:156, At-Tirmidhi: 3511",
-                  "benefits": null
-                },
                 {
                   "id": 197,
                   "arabic": "اِنَّا لِلّٰہِ وَ اِنَّاۤ اِلَیۡہِ رٰجِعُوۡنَ",
@@ -3559,126 +2791,6 @@
                   "translation": "I believe in Allah and His Messenger.",
                   "source": "Sahih Al-Bukhari: 3055",
                   "benefits": null
-                },
-                {
-                  "id": 116,
-                  "arabic": "رَبَّنَا لَا تُزِغۡ قُلُوۡبَنَا بَعۡدَ اِذۡ ہَدَیۡتَنَا وَ ہَبۡ لَنَا مِنۡ لَّدُنۡکَ رَحۡمَۃً ۚ اِنَّکَ اَنۡتَ الۡوَہَّابُ",
-                  "latin": "Rabbanaa Laa Tuzigh Quloobanaa Ba’-Da Id’hadaytanaa Wa Hab Lanaa Mil Ladunka Rah’mah Innaka Antal Wahaab",
-                  "translation": "Our Lord! Let not our hearts deviate (from the truth) after You have guided us, and grant us mercy from You. Truly, You are the Bestower.",
-                  "source": "Surah Al-Imran - 3:8",
-                  "benefits": null
-                },
-                {
-                  "id": 117,
-                  "arabic": "رَبَّنَا اغۡفِرۡ لَنَا ذُنُوۡبَنَا وَ اِسۡرَافَنَا فِیۡۤ اَمۡرِنَا وَ ثَبِّتۡ اَقۡدَامَنَا وَ انۡصُرۡنَا عَلَی الۡقَوۡمِ الۡکٰفِرِیۡنَ",
-                  "latin": "Rabbanaghfir lanaa d’unoobanaa wa israafanaa fee amrinaa wa thabbit aqdaamanaa wan s’urnaa a’lal qawmil kaafireen",
-                  "translation": "Our Lord! Forgive us our sins and our transgressions (in keeping our duties to You), establish our feet firmly, and give us victory over the disbelieving folk.",
-                  "source": "Surah Al-Imran - 3:147",
-                  "benefits": null
-                },
-                {
-                  "id": 84,
-                  "arabic": "رَضِيتُ بِاللّٰهِ رَبًّا وَبِالإِسْلاَمِ دِينًا وَبِمُحَمَّدٍ نَبِيًّا",
-                  "latin": "Radeetu billahi rabban wabil-islami deenan wabiMuhammadin nabiyya.",
-                  "translation": "I am pleased with Allah as a Lord, and Islam as a religion and Muhammad peace be upon to him as a Prophet.",
-                  "source": "Ibn Majah: 3870",
-                  "benefits": null
-                },
-                {
-                  "id": 118,
-                  "arabic": "اَعُوۡذُ بِاللّٰہ",
-                  "latin": "`A’udhu billah",
-                  "translation": "I seek refuge in Allah.",
-                  "source": "Abu Dawud: 5",
-                  "benefits": null
-                },
-                {
-                  "id": 119,
-                  "arabic": "آمَنْتُ بِاللّٰهِ وَرُسُلِهِ",
-                  "latin": "Aamantu billaahi wa Rusulihi",
-                  "translation": "I believe in Allah and His Messenger.",
-                  "source": "Sahih Al-Bukhari: 3055",
-                  "benefits": null
-                },
-                {
-                  "id": 116,
-                  "arabic": "رَبَّنَا لَا تُزِغۡ قُلُوۡبَنَا بَعۡدَ اِذۡ ہَدَیۡتَنَا وَ ہَبۡ لَنَا مِنۡ لَّدُنۡکَ رَحۡمَۃً ۚ اِنَّکَ اَنۡتَ الۡوَہَّابُ",
-                  "latin": "Rabbanaa Laa Tuzigh Quloobanaa Ba’-Da Id’hadaytanaa Wa Hab Lanaa Mil Ladunka Rah’mah Innaka Antal Wahaab",
-                  "translation": "Our Lord! Let not our hearts deviate (from the truth) after You have guided us, and grant us mercy from You. Truly, You are the Bestower.",
-                  "source": "Surah Al-Imran - 3:8",
-                  "benefits": null
-                },
-                {
-                  "id": 117,
-                  "arabic": "رَبَّنَا اغۡفِرۡ لَنَا ذُنُوۡبَنَا وَ اِسۡرَافَنَا فِیۡۤ اَمۡرِنَا وَ ثَبِّتۡ اَقۡدَامَنَا وَ انۡصُرۡنَا عَلَی الۡقَوۡمِ الۡکٰفِرِیۡنَ",
-                  "latin": "Rabbanaghfir lanaa d’unoobanaa wa israafanaa fee amrinaa wa thabbit aqdaamanaa wan s’urnaa a’lal qawmil kaafireen",
-                  "translation": "Our Lord! Forgive us our sins and our transgressions (in keeping our duties to You), establish our feet firmly, and give us victory over the disbelieving folk.",
-                  "source": "Surah Al-Imran - 3:147",
-                  "benefits": null
-                },
-                {
-                  "id": 118,
-                  "arabic": "اَعُوۡذُ بِاللّٰہ",
-                  "latin": "`A’udhu billah",
-                  "translation": "I seek refuge in Allah.",
-                  "source": "Abu Dawud: 5",
-                  "benefits": null
-                },
-                {
-                  "id": 119,
-                  "arabic": "آمَنْتُ بِاللّٰهِ وَرُسُلِهِ",
-                  "latin": "Aamantu billaahi wa Rusulihi",
-                  "translation": "I believe in Allah and His Messenger.",
-                  "source": "Sahih Al-Bukhari: 3055",
-                  "benefits": null
-                },
-                {
-                  "id": 84,
-                  "arabic": "رَضِيتُ بِاللّٰهِ رَبًّا وَبِالإِسْلاَمِ دِينًا وَبِمُحَمَّدٍ نَبِيًّا",
-                  "latin": "Radeetu billahi rabban wabil-islami deenan wabiMuhammadin nabiyya.",
-                  "translation": "I am pleased with Allah as a Lord, and Islam as a religion and Muhammad peace be upon to him as a Prophet.",
-                  "source": "Ibn Majah: 3870",
-                  "benefits": null
-                },
-                {
-                  "id": 116,
-                  "arabic": "رَبَّنَا لَا تُزِغۡ قُلُوۡبَنَا بَعۡدَ اِذۡ ہَدَیۡتَنَا وَ ہَبۡ لَنَا مِنۡ لَّدُنۡکَ رَحۡمَۃً ۚ اِنَّکَ اَنۡتَ الۡوَہَّابُ",
-                  "latin": "Rabbanaa Laa Tuzigh Quloobanaa Ba’-Da Id’hadaytanaa Wa Hab Lanaa Mil Ladunka Rah’mah Innaka Antal Wahaab",
-                  "translation": "Our Lord! Let not our hearts deviate (from the truth) after You have guided us, and grant us mercy from You. Truly, You are the Bestower.",
-                  "source": "Surah Al-Imran - 3:8",
-                  "benefits": null
-                },
-                {
-                  "id": 117,
-                  "arabic": "رَبَّنَا اغۡفِرۡ لَنَا ذُنُوۡبَنَا وَ اِسۡرَافَنَا فِیۡۤ اَمۡرِنَا وَ ثَبِّتۡ اَقۡدَامَنَا وَ انۡصُرۡنَا عَلَی الۡقَوۡمِ الۡکٰفِرِیۡنَ",
-                  "latin": "Rabbanaghfir lanaa d’unoobanaa wa israafanaa fee amrinaa wa thabbit aqdaamanaa wan s’urnaa a’lal qawmil kaafireen",
-                  "translation": "Our Lord! Forgive us our sins and our transgressions (in keeping our duties to You), establish our feet firmly, and give us victory over the disbelieving folk.",
-                  "source": "Surah Al-Imran - 3:147",
-                  "benefits": null
-                },
-                {
-                  "id": 84,
-                  "arabic": "رَضِيتُ بِاللّٰهِ رَبًّا وَبِالإِسْلاَمِ دِينًا وَبِمُحَمَّدٍ نَبِيًّا",
-                  "latin": "Radeetu billahi rabban wabil-islami deenan wabiMuhammadin nabiyya.",
-                  "translation": "I am pleased with Allah as a Lord, and Islam as a religion and Muhammad peace be upon to him as a Prophet.",
-                  "source": "Ibn Majah: 3870",
-                  "benefits": null
-                },
-                {
-                  "id": 118,
-                  "arabic": "اَعُوۡذُ بِاللّٰہ",
-                  "latin": "`A’udhu billah",
-                  "translation": "I seek refuge in Allah.",
-                  "source": "Abu Dawud: 5",
-                  "benefits": null
-                },
-                {
-                  "id": 119,
-                  "arabic": "آمَنْتُ بِاللّٰهِ وَرُسُلِهِ",
-                  "latin": "Aamantu billaahi wa Rusulihi",
-                  "translation": "I believe in Allah and His Messenger.",
-                  "source": "Sahih Al-Bukhari: 3055",
-                  "benefits": null
                 }
               ]
             },
@@ -3693,14 +2805,6 @@
                   "translation": "Our Lord! We believe in what Thou hast revealed, and we follow the Messenger. Then write us down among those who bear witness.",
                   "source": "Surah Al-Imran - 3:53",
                   "benefits": "This dua was asked by the companions of Prophet Isa (AS)."
-                },
-                {
-                  "id": 120,
-                  "arabic": "رَبَّنَاۤ اٰمَنَّا بِمَاۤ اَنۡزَلۡتَ وَ اتَّبَعۡنَا الرَّسُوۡلَ فَاکۡتُبۡنَا مَعَ الشّٰہِدِیۡنَ",
-                  "latin": "Rabbana amanna bima anzalta wattaba ‘nar-Rusula fak-tubna ma’ash-Shahideen",
-                  "translation": "Our Lord! We believe in what Thou hast revealed, and we follow the Messenger. Then write us down among those who bear witness.",
-                  "source": "Surah Al-Imran - 3:53",
-                  "benefits": null
                 }
               ]
             },
@@ -3708,14 +2812,6 @@
               "title_id": 59,
               "title_name": "Seek forgiveness and strengthen your Imaan",
               "duas": [
-                {
-                  "id": 121,
-                  "arabic": "رَبَّنَا لَا تُؤَاخِذۡنَاۤ اِنۡ نَّسِیۡنَاۤ اَوۡ اَخۡطَاۡنَا، رَبَّنَا وَ لَا تَحۡمِلۡ عَلَیۡنَاۤ اِصۡرًا کَمَا حَمَلۡتَہٗ عَلَی الَّذِیۡنَ مِنۡ قَبۡلِنَا، رَبَّنَا وَ لَا تُحَمِّلۡنَا مَا لَا طَاقَۃَ لَنَا بِہٖ، وَ اعۡفُ عَنَّا، وَ اغۡفِرۡ لَنَا، وَ ارۡحَمۡنَا، اَنۡتَ مَوۡلٰىنَا فَانۡصُرۡنَا عَلَی الۡقَوۡمِ الۡکٰفِرِیۡنَ",
-                  "latin": "Rabbanaa Laa Too-Akhid’naaa In-Naseenaa Aw Akht’aanaa Rabbanaa wa Laa Tah’mil A’laynaaa Is’ran Kamaa Ha’maltahoo A’lal Lad’eena min Qablinaa Rabbanaa wa Laa Tuh’ammilnaa Maa Laa T’aaqata Lanaa Bih Wa’-Fu A’nnaa Waghfirlanaa Warh’amnaa Anta Mawlaanaa Fans’urnaa A’lal Qawmil Kaafireen",
-                  "translation": "Our Lord! Punish us not if we forget or fall into error, our Lord! Lay not on us a burden like that which You did lay on those before us; our Lord! Put not on us a burden greater than we have strength to bear. Pardon us and grant us Forgiveness. Have mercy on us. You are our Maula (Patron, Supporter and Protector, etc.) and give us victory over the disbelieving people.",
-                  "source": "Surah Al-Baqarah - 2:286",
-                  "benefits": null
-                },
                 {
                   "id": 121,
                   "arabic": "رَبَّنَا لَا تُؤَاخِذۡنَاۤ اِنۡ نَّسِیۡنَاۤ اَوۡ اَخۡطَاۡنَا، رَبَّنَا وَ لَا تَحۡمِلۡ عَلَیۡنَاۤ اِصۡرًا کَمَا حَمَلۡتَہٗ عَلَی الَّذِیۡنَ مِنۡ قَبۡلِنَا، رَبَّنَا وَ لَا تُحَمِّلۡنَا مَا لَا طَاقَۃَ لَنَا بِہٖ، وَ اعۡفُ عَنَّا، وَ اغۡفِرۡ لَنَا، وَ ارۡحَمۡنَا، اَنۡتَ مَوۡلٰىنَا فَانۡصُرۡنَا عَلَی الۡقَوۡمِ الۡکٰفِرِیۡنَ",
@@ -3752,22 +2848,6 @@
               "title_id": 61,
               "title_name": "For righteous company",
               "duas": [
-                {
-                  "id": 124,
-                  "arabic": "فَاطِرَ السَّمٰوٰتِ وَ الۡاَرۡضِ ۟ اَنۡتَ وَلِیّٖ فِی الدُّنۡیَا وَ الۡاٰخِرَۃِ ۚ تَوَفَّنِیۡ مُسۡلِمًا وَّ اَلۡحِقۡنِیۡ بِالصّٰلِحِیۡنَ",
-                  "latin": "fatira assamawatiwal-ardi anta waliyyee fee addunyawal-akhirati tawaffanee musliman waalhiqneebissaliheen",
-                  "translation": "Creator of the heavens and earth, You are my protector in this world and in the Hereafter. Cause me to die a Muslim and join me with the righteous.",
-                  "source": "Surah Yusuf - 12:101",
-                  "benefits": "Read this dua for good and righteous company. Prophet Yusuf (AS) recited this dua."
-                },
-                {
-                  "id": 125,
-                  "arabic": "رَبَّنَاۤ اٰمَنَّا فَاکۡتُبۡنَا مَعَ الشّٰہِدِیۡنَ",
-                  "latin": "Rabbana aamana faktubna ma’ ash-shahideen",
-                  "translation": "Our Lord! We believe; write us down among the witnesses.",
-                  "source": "Surah Al-Ma'ida - 5:83",
-                  "benefits": null
-                },
                 {
                   "id": 124,
                   "arabic": "فَاطِرَ السَّمٰوٰتِ وَ الۡاَرۡضِ ۟ اَنۡتَ وَلِیّٖ فِی الدُّنۡیَا وَ الۡاٰخِرَۃِ ۚ تَوَفَّنِیۡ مُسۡلِمًا وَّ اَلۡحِقۡنِیۡ بِالصّٰلِحِیۡنَ",
@@ -3882,54 +2962,6 @@
               "title_id": 62,
               "title_name": "Seek forgiveness and protection from hell",
               "duas": [
-                {
-                  "id": 126,
-                  "arabic": "رَبَّنَاۤ اِنَّنَاۤ اٰمَنَّا فَاغۡفِرۡ لَنَا ذُنُوۡبَنَا وَ قِنَا عَذَابَ النَّارِ",
-                  "latin": "Rabbana innana amanna faghfir lana dhunuubana wa qinna ‘adhaban-Naar",
-                  "translation": "Our Lord! We have indeed believed, so forgive us our sins and save us from the punishment of the Fire.",
-                  "source": "Surah Al-Imran - 3:16",
-                  "benefits": null
-                },
-                {
-                  "id": 127,
-                  "arabic": "رَبَّنَا وَسِعۡتَ کُلَّ شَیۡءٍ رَّحۡمَۃً وَّ عِلۡمًا فَاغۡفِرۡ لِلَّذِیۡنَ تَابُوۡا وَ اتَّبَعُوۡا سَبِیۡلَکَ وَ قِہِمۡ عَذَابَ الۡجَحِیۡمِ",
-                  "latin": "Rabbana wasi’ta kulla sha’ir Rahmatanw wa ‘ilman faghfir lilladhina tabu wattaba’u sabilaka waqihim ‘adhabal-Jahiim",
-                  "translation": "Our Lord, You have encompassed all things in mercy and knowledge, so forgive those who have repented and followed Your way and protect them from the punishment of Hellfire.",
-                  "source": "Surah Ghafir - 40:7",
-                  "benefits": null
-                },
-                {
-                  "id": 245,
-                  "arabic": "رَبَّنَا مَا خَلَقۡتَ ہٰذَا بَاطِلًا ۚ سُبۡحٰنَکَ فَقِنَا عَذَابَ النَّارِ، رَبَّنَاۤ اِنَّکَ مَنۡ تُدۡخِلِ النَّارَ فَقَدۡ اَخۡزَیۡتَہٗ، وَ مَا لِلظّٰلِمِیۡنَ مِنۡ اَنۡصَارٍ، رَبَّنَاۤ اِنَّنَا سَمِعۡنَا مُنَادِیًا یُّنَادِیۡ لِلۡاِیۡمَانِ اَنۡ اٰمِنُوۡا بِرَبِّکُمۡ فَاٰمَنَّا ٭ۖ رَبَّنَا فَاغۡفِرۡ لَنَا ذُنُوۡبَنَا وَ کَفِّرۡ عَنَّا سَیِّاٰتِنَا وَ تَوَفَّنَا مَعَ الۡاَبۡرَارِ، رَبَّنَا وَ اٰتِنَا مَا وَعَدۡتَّنَا عَلٰی رُسُلِکَ وَ لَا تُخۡزِنَا یَوۡمَ الۡقِیٰمَۃِ، اِنَّکَ لَا تُخۡلِفُ الۡمِیۡعَادَ",
-                  "latin": "Rabbana ma khalaqta hadha batila Subhanaka faqina ‘adhaban-Naar. Rabbana innaka man tudkhilin nara faqad akhzaytah wa ma liDh-dhalimeena min ansar. Rabbanaa Innanaa Sami’-Naa Munaadiyay Yunaadee Lil – Eemaani An Aaminoo Birabbikum Fa- Aamannaa Rabbanaa Faghfir Lanaa D’unoobanaa Wa Kaffir A’nnaaa Sayyi- Aatinaa Wa Tawaffanaa Ma-A’l Abraaar. Rabbanaa Wa Aatinaa Maa Wa-A’ttanaa A’laa Rusulika Wa Laa Tukhzinaa Yawal Qiyaamah Innak Laa Tukhliful Mee’a’ad.",
-                  "translation": "Our Lord! You have not created (all) this without purpose, glory to You! (Exalted be You above all that they associate with You as partners). Give us salvation from the torment of the Fire. *Our Lord! Verily, whom You admit to the Fire, indeed, You have disgraced him, and never will the Zaalimoon (polytheists and wrong-doers) find any helpers. *Our Lord! Verily, we have heard the call of one (Muhammad p.b.u.h.) calling to Faith: ‘Believe in your Lord,’ and we have believed. *Our Lord! Forgive us our sins and remit from us our evil deeds, and make us die in the state of righteousness along with Al-Abraar (those who are obedient to Allah and follow strictly His Orders). *Our Lord! Grant us what You promised unto us through Your Messengers and disgrace us not on the Day of Resurrection, for You never break (Your) Promise.",
-                  "source": "Surah Al-Imran - 3:191-194",
-                  "benefits": null
-                },
-                {
-                  "id": 126,
-                  "arabic": "رَبَّنَاۤ اِنَّنَاۤ اٰمَنَّا فَاغۡفِرۡ لَنَا ذُنُوۡبَنَا وَ قِنَا عَذَابَ النَّارِ",
-                  "latin": "Rabbana innana amanna faghfir lana dhunuubana wa qinna ‘adhaban-Naar",
-                  "translation": "Our Lord! We have indeed believed, so forgive us our sins and save us from the punishment of the Fire.",
-                  "source": "Surah Al-Imran - 3:16",
-                  "benefits": null
-                },
-                {
-                  "id": 127,
-                  "arabic": "رَبَّنَا وَسِعۡتَ کُلَّ شَیۡءٍ رَّحۡمَۃً وَّ عِلۡمًا فَاغۡفِرۡ لِلَّذِیۡنَ تَابُوۡا وَ اتَّبَعُوۡا سَبِیۡلَکَ وَ قِہِمۡ عَذَابَ الۡجَحِیۡمِ",
-                  "latin": "Rabbana wasi’ta kulla sha’ir Rahmatanw wa ‘ilman faghfir lilladhina tabu wattaba’u sabilaka waqihim ‘adhabal-Jahiim",
-                  "translation": "Our Lord, You have encompassed all things in mercy and knowledge, so forgive those who have repented and followed Your way and protect them from the punishment of Hellfire.",
-                  "source": "Surah Ghafir - 40:7",
-                  "benefits": null
-                },
-                {
-                  "id": 245,
-                  "arabic": "رَبَّنَا مَا خَلَقۡتَ ہٰذَا بَاطِلًا ۚ سُبۡحٰنَکَ فَقِنَا عَذَابَ النَّارِ، رَبَّنَاۤ اِنَّکَ مَنۡ تُدۡخِلِ النَّارَ فَقَدۡ اَخۡزَیۡتَہٗ، وَ مَا لِلظّٰلِمِیۡنَ مِنۡ اَنۡصَارٍ، رَبَّنَاۤ اِنَّنَا سَمِعۡنَا مُنَادِیًا یُّنَادِیۡ لِلۡاِیۡمَانِ اَنۡ اٰمِنُوۡا بِرَبِّکُمۡ فَاٰمَنَّا ٭ۖ رَبَّنَا فَاغۡفِرۡ لَنَا ذُنُوۡبَنَا وَ کَفِّرۡ عَنَّا سَیِّاٰتِنَا وَ تَوَفَّنَا مَعَ الۡاَبۡرَارِ، رَبَّنَا وَ اٰتِنَا مَا وَعَدۡتَّنَا عَلٰی رُسُلِکَ وَ لَا تُخۡزِنَا یَوۡمَ الۡقِیٰمَۃِ، اِنَّکَ لَا تُخۡلِفُ الۡمِیۡعَادَ",
-                  "latin": "Rabbana ma khalaqta hadha batila Subhanaka faqina ‘adhaban-Naar. Rabbana innaka man tudkhilin nara faqad akhzaytah wa ma liDh-dhalimeena min ansar. Rabbanaa Innanaa Sami’-Naa Munaadiyay Yunaadee Lil – Eemaani An Aaminoo Birabbikum Fa- Aamannaa Rabbanaa Faghfir Lanaa D’unoobanaa Wa Kaffir A’nnaaa Sayyi- Aatinaa Wa Tawaffanaa Ma-A’l Abraaar. Rabbanaa Wa Aatinaa Maa Wa-A’ttanaa A’laa Rusulika Wa Laa Tukhzinaa Yawal Qiyaamah Innak Laa Tukhliful Mee’a’ad.",
-                  "translation": "Our Lord! You have not created (all) this without purpose, glory to You! (Exalted be You above all that they associate with You as partners). Give us salvation from the torment of the Fire. *Our Lord! Verily, whom You admit to the Fire, indeed, You have disgraced him, and never will the Zaalimoon (polytheists and wrong-doers) find any helpers. *Our Lord! Verily, we have heard the call of one (Muhammad p.b.u.h.) calling to Faith: ‘Believe in your Lord,’ and we have believed. *Our Lord! Forgive us our sins and remit from us our evil deeds, and make us die in the state of righteousness along with Al-Abraar (those who are obedient to Allah and follow strictly His Orders). *Our Lord! Grant us what You promised unto us through Your Messengers and disgrace us not on the Day of Resurrection, for You never break (Your) Promise.",
-                  "source": "Surah Al-Imran - 3:191-194",
-                  "benefits": null
-                },
                 {
                   "id": 126,
                   "arabic": "رَبَّنَاۤ اِنَّنَاۤ اٰمَنَّا فَاغۡفِرۡ لَنَا ذُنُوۡبَنَا وَ قِنَا عَذَابَ النَّارِ",

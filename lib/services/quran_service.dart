@@ -18,6 +18,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../models/quran_models.dart';
 import '../constants/juz_data.dart';
 import 'translation_download_service.dart';
+import 'quran_db.dart';
 
 class QuranService {
   QuranService._();
@@ -26,44 +27,49 @@ class QuranService {
   // ── Asset paths ───────────────────────────────────────────────────────────
   static const _base = 'assets/data/quran';
 
-  static const _pathQpcHafs = '$_base/qpc-hafs.json';
-  static const _pathIndoPak = '$_base/indopak-nastaleeq.json';
-  static const _pathLiteration = '$_base/en.literation.json';
+  // ── SQLite asset paths ────────────────────────────────────────────────────
+  static const _dbQpcHafs = '$_base/Scripts/qpc-hafs.db';
+  static const _dbIndoPak =
+      '$_base/Scripts/digital-khatt-indopak-ayah-by-ayah-script.db';
+  static const _dbLiteration = '$_base/Transliteration/en-literation.db';
+  static const _dbSurahInfo = '$_base/Surah info/surah-info-en.db';
+
+  // ── JSON asset paths (kept as-is per user request) ────────────────────────
   static const _pathAyahAudioDefault =
       '$_base/ayah-recitation-mishari-rashid-al-afasy.json';
-  static const _pathSurahInfo = '$_base/surah-info.json';
   static const _pathSurahMetadata = '$_base/surah-metadata.json';
 
-  static String _translationPath(TranslationId id) => '$_base/${id.fileName}';
+  static String _translationDbPath(TranslationId id) {
+    switch (id) {
+      case TranslationId.enSahih:
+        return '$_base/Translations/en-sahih-international-simple.db';
+      case TranslationId.enMuhsin:
+        return '$_base/Translations/en-muhsinkhan.db';
+      case TranslationId.urMaududi:
+        return '$_base/Translations/ur-roman.db';
+      case TranslationId.urWahiuddin:
+        return '$_base/Translations/ur-wahiduddinkhan.db';
+      case TranslationId.hiUmari:
+        return '$_base/Translations/hi-al-umari.db';
+      case TranslationId.urJalandhari:
+        return '$_base/Translations/ur-jalandhari.db';
+      // No SQLite file yet — falls back to JSON
+    }
+  }
 
   // ── In-memory caches ──────────────────────────────────────────────────────
-  Map<String, dynamic>? _cacheQpcHafs;
-  Map<String, dynamic>? _cacheIndoPak;
-  Map<String, dynamic>? _cacheLiteration;
   final Map<String, Map<String, dynamic>> _cacheAyahAudios = {};
   List<SurahInfo>? _cacheSurahInfo;
-  Map<String, dynamic>? _cacheSurahInfoDetail;
-  final Map<String, Map<String, dynamic>> _cacheTranslations = {};
 
   // ── Generic loader ────────────────────────────────────────────────────────
   Future<Map<String, dynamic>> _load(String path) async {
     final String s = await rootBundle.loadString(path);
-    // Offload heavy JSON decoding to a background isolate to keep UI snappy
     return compute(_decodeJson, s);
   }
 
   static Map<String, dynamic> _decodeJson(String s) {
     return json.decode(s) as Map<String, dynamic>;
   }
-
-  Future<Map<String, dynamic>> _getQpcHafs() async =>
-      _cacheQpcHafs ??= await _load(_pathQpcHafs);
-
-  Future<Map<String, dynamic>> _getIndoPak() async =>
-      _cacheIndoPak ??= await _load(_pathIndoPak);
-
-  Future<Map<String, dynamic>> _getLiteration() async =>
-      _cacheLiteration ??= await _load(_pathLiteration);
 
   Future<Map<String, dynamic>> _getAyahAudio(String reciterId) async {
     if (_cacheAyahAudios.containsKey(reciterId)) {
@@ -78,16 +84,8 @@ class QuranService {
     return data;
   }
 
-  Future<Map<String, dynamic>> _getTranslation(TranslationId id) async {
-    final key = id.fileName;
-    if (!_cacheTranslations.containsKey(key)) {
-      _cacheTranslations[key] = await _load(_translationPath(id));
-    }
-    return _cacheTranslations[key]!;
-  }
-
   Future<Map<String, dynamic>> _getSurahInfoDetail() async =>
-      _cacheSurahInfoDetail ??= await _load(_pathSurahInfo);
+      QuranDb.instance.getSurahInfos(_dbSurahInfo);
 
   Future<SurahDetail> getSurahDetail(int surahNumber) async {
     final data = await _getSurahInfoDetail();
@@ -151,38 +149,86 @@ class QuranService {
 
   // ── Load ayahs for a surah ────────────────────────────────────────────────
   /// Returns a list of [AyahData] for [surahNumber] using [translation].
-  /// Runs all 5 JSON lookups in parallel for speed.
+  /// Script + transliteration + translation come from SQLite; audio stays JSON.
   Future<List<AyahData>> loadAyahs(
     int surahNumber,
     TranslationId translation, {
     String? ayahReciterId,
     String? customTranslationId,
   }) async {
-    // Fire all loads in parallel
-    final List<Future> futures = [
-      _getQpcHafs(),
-      _getIndoPak(),
-      _getLiteration(),
-      _getAyahAudio(ayahReciterId ?? 'mishary'),
-    ];
+    // ── Fire all data loads in parallel ──────────────────────────────────
+    final qpcFuture = QuranDb.instance.getAyahsBySurah(
+      _dbQpcHafs,
+      table: 'verses',
+      keyColumn: 'verse_key',
+      surahNumber: surahNumber,
+    );
 
-    // Load translation from downloaded file or bundled asset
+    final ipFuture = QuranDb.instance.getAyahsBySurah(
+      _dbIndoPak,
+      table: 'verses',
+      keyColumn: 'verse_key',
+      surahNumber: surahNumber,
+    );
+
+    final litFuture = QuranDb.instance.getAyahsBySurah(
+      _dbLiteration,
+      table: 'translation',
+      keyColumn: 'ayah_key',
+      surahNumber: surahNumber,
+      surahColumn: 'sura',
+    );
+
+    final audioFuture = _getAyahAudio(ayahReciterId ?? 'mishary');
+
+    // Translation: custom = JSON or SQLite download; built-in = SQLite
+    Future<Map<String, dynamic>> transFuture;
     if (customTranslationId != null) {
-      final json = await TranslationDownloadService.instance
-          .loadTranslationJson(customTranslationId);
-      if (json == null) {
+      final filePath = await TranslationDownloadService.instance
+          .getDownloadedFilePath(customTranslationId);
+      if (filePath == null) {
         throw Exception(
             'Translation "$customTranslationId" not downloaded. Requires one-time internet connection.');
       }
-      futures.add(Future.value(json));
+      if (filePath.endsWith('.db')) {
+        // Custom translation is SQLite
+        transFuture = QuranDb.instance.getAyahsBySurah(
+          filePath,
+          table: 'translation',
+          keyColumn: 'ayah_key',
+          surahNumber: surahNumber,
+          surahColumn: 'sura',
+        );
+      } else {
+        // Custom translation is JSON
+        transFuture = TranslationDownloadService.instance
+            .loadTranslationJson(customTranslationId)
+            .then((json) => json ?? {});
+      }
     } else {
-      futures.add(_getTranslation(translation));
+      final dbPath = _translationDbPath(translation);
+      if (dbPath.isNotEmpty) {
+        transFuture = QuranDb.instance.getAyahsBySurah(
+          dbPath,
+          table: 'translation',
+          keyColumn: 'ayah_key',
+          surahNumber: surahNumber,
+          surahColumn: 'sura',
+        );
+      } else {
+        // JSON fallback (ur-jalandhari)
+        transFuture = _loadTranslationJson(translation, surahNumber);
+      }
     }
 
-    final results = await Future.wait(futures);
+    final results = await Future.wait([
+      qpcFuture,
+      ipFuture,
+      litFuture,
+      audioFuture,
+      transFuture,
+    ]);
 
-    // Offload the mapping loop to a background isolate.
-    // This is especially beneficial for large surahs like Al-Baqarah.
     return compute(_parseAyahsIsolate, {
       'surahNumber': surahNumber,
       'qpcMap': results[0],
@@ -193,6 +239,17 @@ class QuranService {
     });
   }
 
+  /// Load a JSON translation file and filter to a single surah.
+  Future<Map<String, dynamic>> _loadTranslationJson(
+      TranslationId id, int surahNumber) async {
+    final all = await _load('$_base/${id.fileName}');
+    final prefix = '$surahNumber:';
+    return {
+      for (final e in all.entries)
+        if (e.key.startsWith(prefix)) e.key: e.value,
+    };
+  }
+
   static List<AyahData> _parseAyahsIsolate(Map<String, dynamic> params) {
     final int surahNumber = params['surahNumber'];
     final Map<String, dynamic> qpcMap = params['qpcMap'];
@@ -201,10 +258,8 @@ class QuranService {
     final Map<String, dynamic> audioMap = params['audioMap'];
     final Map<String, dynamic> transMap = params['transMap'];
 
-    // Determine ayah count from QPC-Hafs keys
     final ayahCount =
         qpcMap.keys.where((k) => k.startsWith('$surahNumber:')).length;
-
     if (ayahCount == 0) return [];
 
     final List<AyahData> ayahs = [];
@@ -216,8 +271,10 @@ class QuranService {
         verseKey: key,
         uthmani: (qpcMap[key]?['text'] as String?) ?? '',
         indoPak: (ipMap[key]?['text'] as String?) ?? '',
-        transliteration: (litMap[key]?['t'] as String?) ?? '',
-        translation: (transMap[key]?['t'] as String?) ?? '',
+        transliteration: (litMap[key]?['text'] as String?) ?? '',
+        translation: (transMap[key]?['text'] as String?) ??
+            (transMap[key]?['t'] as String?) ??
+            '',
         audioUrl: (audioMap[key]?['audio_url'] as String?),
       ));
     }
@@ -230,33 +287,42 @@ class QuranService {
     TranslationId translation, {
     String? ayahReciterId,
   }) async {
-    final results = await Future.wait([
-      _getQpcHafs(),
-      _getIndoPak(),
-      _getLiteration(),
-      _getAyahAudio(ayahReciterId ?? 'mishary'),
-      _getTranslation(translation),
-    ]);
+    final db = QuranDb.instance;
 
-    final qpcMap = results[0];
-    final ipMap = results[1];
-    final litMap = results[2];
-    final audioMap = results[3];
-    final transMap = results[4];
+    final verseKey = '$surahNumber:$ayahNumber';
 
-    final key = '$surahNumber:$ayahNumber';
-    if (!qpcMap.containsKey(key)) return null;
+    final uthmaniF = db.getSingleAyah(_dbQpcHafs,
+        table: 'verses', keyColumn: 'verse_key', verseKey: verseKey);
+    final indoPakF = db.getSingleAyah(_dbIndoPak,
+        table: 'verses', keyColumn: 'verse_key', verseKey: verseKey);
+    final litF = db.getSingleAyah(_dbLiteration,
+        table: 'translation', keyColumn: 'ayah_key', verseKey: verseKey);
+    final audioF = _getAyahAudio(ayahReciterId ?? 'mishary');
 
-    final uthmani = (qpcMap[key]?['text'] as String?) ?? '';
-    final indoPak = (ipMap[key]?['text'] as String?) ?? '';
-    final literation = (litMap[key]?['t'] as String?) ?? '';
-    final trans = (transMap[key]?['t'] as String?) ?? '';
-    final audioUrl = (audioMap[key]?['audio_url'] as String?);
+    final uthmani = await uthmaniF ?? '';
+    final indoPak = await indoPakF ?? '';
+    final literation = await litF ?? '';
+    final audioMap = await audioF;
 
+    // Translation
+    String trans = '';
+    final dbPath = _translationDbPath(translation);
+    if (dbPath.isNotEmpty) {
+      trans = await db.getSingleAyah(dbPath,
+              table: 'translation',
+              keyColumn: 'ayah_key',
+              verseKey: verseKey) ??
+          '';
+    } else {
+      final transMap = await _load(translation.fileName);
+      trans = (transMap[verseKey]?['t'] as String?) ?? '';
+    }
+
+    final audioUrl = (audioMap[verseKey]?['audio_url'] as String?);
     return AyahData(
       surahNumber: surahNumber,
       ayahNumber: ayahNumber,
-      verseKey: key,
+      verseKey: verseKey,
       uthmani: uthmani,
       indoPak: indoPak,
       transliteration: literation,
@@ -266,8 +332,7 @@ class QuranService {
   }
 
   /// Reload translation only (re-uses cached arabic/audio data).
-  /// Supports both built-in and downloadable translations.
-  /// If [customTranslationId] is non-null, it loads from a downloaded file.
+  /// Supports both built-in (SQLite) and downloadable (JSON) translations.
   Future<List<AyahData>> reloadTranslation(
     List<AyahData> existing,
     TranslationId newTranslation, {
@@ -275,21 +340,92 @@ class QuranService {
   }) async {
     if (existing.isEmpty) return existing;
 
-    Map<String, dynamic> transMap;
+    // Determine the surah number from the first ayah
+    final surahNumber = existing.first.surahNumber;
+
     if (customTranslationId != null) {
-      final json = await TranslationDownloadService.instance
-          .loadTranslationJson(customTranslationId);
-      if (json == null) {
+      final filePath = await TranslationDownloadService.instance
+          .getDownloadedFilePath(customTranslationId);
+      if (filePath == null) {
         throw Exception(
             'Translation "$customTranslationId" not downloaded. Requires one-time internet connection.');
       }
-      transMap = json;
-    } else {
-      transMap = await _getTranslation(newTranslation);
+
+      if (filePath.endsWith('.db')) {
+        // Custom translation is SQLite
+        final transMap = await QuranDb.instance.getAyahsBySurah(
+          filePath,
+          table: 'translation',
+          keyColumn: 'ayah_key',
+          surahNumber: surahNumber,
+          surahColumn: 'sura',
+        );
+        return existing.map((a) {
+          final trans = (transMap[a.verseKey]?['text'] as String?) ?? '';
+          return AyahData(
+            surahNumber: a.surahNumber,
+            ayahNumber: a.ayahNumber,
+            verseKey: a.verseKey,
+            uthmani: a.uthmani,
+            indoPak: a.indoPak,
+            transliteration: a.transliteration,
+            translation: trans,
+            audioUrl: a.audioUrl,
+          );
+        }).toList();
+      } else {
+        // Custom translation is JSON
+        final json = await TranslationDownloadService.instance
+            .loadTranslationJson(customTranslationId);
+        if (json == null) {
+          throw Exception(
+              'Translation "$customTranslationId" could not be loaded.');
+        }
+        return existing.map((a) {
+          final trans = (json[a.verseKey]?['t'] as String?) ?? '';
+          return AyahData(
+            surahNumber: a.surahNumber,
+            ayahNumber: a.ayahNumber,
+            verseKey: a.verseKey,
+            uthmani: a.uthmani,
+            indoPak: a.indoPak,
+            transliteration: a.transliteration,
+            translation: trans,
+            audioUrl: a.audioUrl,
+          );
+        }).toList();
+      }
     }
 
+    // Built-in translation — SQLite
+    final dbPath = _translationDbPath(newTranslation);
+    if (dbPath.isNotEmpty) {
+      final transMap = await QuranDb.instance.getAyahsBySurah(
+        dbPath,
+        table: 'translation',
+        keyColumn: 'ayah_key',
+        surahNumber: surahNumber,
+        surahColumn: 'sura',
+      );
+      return existing.map((a) {
+        final trans = (transMap[a.verseKey]?['text'] as String?) ?? '';
+        return AyahData(
+          surahNumber: a.surahNumber,
+          ayahNumber: a.ayahNumber,
+          verseKey: a.verseKey,
+          uthmani: a.uthmani,
+          indoPak: a.indoPak,
+          transliteration: a.transliteration,
+          translation: trans,
+          audioUrl: a.audioUrl,
+        );
+      }).toList();
+    }
+
+    // JSON fallback (ur-jalandhari)
+    final all = await _load('$_base/${newTranslation.fileName}');
     return existing.map((a) {
-      final trans = (transMap[a.verseKey]?['t'] as String?) ?? '';
+      final trans = (all[a.verseKey]?['t'] as String?) ?? '';
       return AyahData(
         surahNumber: a.surahNumber,
         ayahNumber: a.ayahNumber,
@@ -316,32 +452,35 @@ class QuranService {
     final verseKey = '${surah.number}:$ayahNum';
 
     // Load ONLY the specific dictionaries needed for the display to save massive memory parsing
-    final qpcMap = await _getQpcHafs();
-    final transMap = await _getTranslation(TranslationId.enSahih);
-
-    final uthmani = (qpcMap[verseKey]?['text'] as String?) ?? '';
-    final trans = (transMap[verseKey]?['t'] as String?) ?? '';
+    final db = QuranDb.instance;
+    final uthmani = await db.getSingleAyah(
+      _dbQpcHafs,
+      table: 'verses',
+      keyColumn: 'verse_key',
+      verseKey: verseKey,
+    );
+    final trans = await db.getSingleAyah(
+      _translationDbPath(TranslationId.enSahih),
+      table: 'translation',
+      keyColumn: 'ayah_key',
+      verseKey: verseKey,
+    );
 
     return AyahData(
       surahNumber: surah.number,
       ayahNumber: ayahNum,
       verseKey: verseKey,
-      uthmani: uthmani,
+      uthmani: uthmani ?? '',
       indoPak: '',
       transliteration: '',
-      translation: trans,
+      translation: trans ?? '',
       audioUrl: null,
     );
   }
 
   void clearCache() {
-    _cacheQpcHafs = null;
-    _cacheIndoPak = null;
-    _cacheLiteration = null;
     _cacheAyahAudios.clear();
     _cacheSurahInfo = null;
-    _cacheSurahInfoDetail = null;
-    _cacheTranslations.clear();
   }
 
   // ── Juz metadata (removed — now a compile-time constant in juz_metadata_data.dart) ──
