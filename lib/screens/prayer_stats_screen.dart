@@ -143,6 +143,7 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
     final monthDays = _getFullMonthDays(tracker);
     final accurateRates = _accuratePrayerRates(tracker);
 
+    final now = DateTime.now();
     int complete = 0;
     int totalPrayedMonth = 0;
     for (final day in monthDays) {
@@ -152,8 +153,13 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
         complete++;
       }
     }
-    final totalDays = monthDays.length;
-    final monthlyRate = totalDays > 0 ? complete / totalDays : 0.0;
+    final isCurrentMonth =
+        _displayDate.year == now.year && _displayDate.month == now.month;
+    final elapsedDays = isCurrentMonth ? now.day : monthDays.length;
+    final monthlyRate = elapsedDays > 0 ? complete / elapsedDays : 0.0;
+    final prayerPercentage = elapsedDays > 0
+        ? (totalPrayedMonth / (elapsedDays * 5)).clamp(0.0, 1.0)
+        : 0.0;
 
     return Scaffold(
       backgroundColor: qt.bg,
@@ -180,79 +186,96 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
           },
         ),
       ),
-      body: Column(
-        children: [
-          _buildMonthPeriodSelector(qt, monthName, yearNum),
-          _buildCalmTabPill(qt),
-          Expanded(
-            child: TabBarView(
-              controller: _tabs,
-              children: [
-                /* Tab 1: Short Term Weekly Focus */
-                SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(
-                      20, 16, 20, 24 + MediaQuery.of(context).padding.bottom),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildLifetimeHeroSection(qt, tracker),
-                      const SizedBox(height: 24),
-                      _buildSectionTitle("Weekly Devotion", qt),
-                      _buildSectionSubtitle(
-                          "Track your weekly daily rhythm. Swipe or tap arrows to navigate.",
-                          qt),
-                      const SizedBox(height: 14),
-                      _buildWeeklyChart(qt, weekDays),
-                      const SizedBox(height: 24),
-                      _buildSectionTitle("Prayer Consistency", qt),
-                      _buildSectionSubtitle(
-                          "Your individual prayer completion frequency across all logged days.",
-                          qt),
-                      const SizedBox(height: 14),
-                      _buildPrayerBreakdown(qt, tracker, accurateRates),
-                    ],
-                  ),
-                ),
-                /* Tab 2: Long Term Monthly Review */
-                SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(
-                      20, 16, 20, 24 + MediaQuery.of(context).padding.bottom),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildMonthlyDevotionSummaryCard(qt, monthName, complete,
-                          totalDays, monthlyRate, totalPrayedMonth),
-                      const SizedBox(height: 24),
-                      _buildSectionTitle("$monthName Calendar", qt),
-                      _buildSectionSubtitle(
-                          "A comprehensive look at your monthly submission progress.",
-                          qt),
-                      const SizedBox(height: 14),
-                      _buildGregorianCalendarGrid(
-                          qt, tracker, monthDays, monthName, yearNum),
-                      const SizedBox(height: 10),
-                      _buildCalendarLegend(qt),
-                      const SizedBox(height: 24),
-                      _buildSectionTitle("Monthly Progression", qt),
-                      _buildSectionSubtitle(
-                          "Perfect completion metrics captured over the last 6 months.",
-                          qt),
-                      const SizedBox(height: 14),
-                      _buildMonthlyTrend(qt, tracker),
-                      const SizedBox(height: 24),
-                      _buildSectionTitle("Milestones & Badges", qt),
-                      _buildSectionSubtitle(
-                          "Honorable seals representing active devotion on your path.",
-                          qt),
-                      const SizedBox(height: 14),
-                      _buildMilestones(qt, tracker),
-                    ],
-                  ),
-                ),
-              ],
+      body: NestedScrollView(
+        headerSliverBuilder: (context, _) {
+          return [
+            SliverToBoxAdapter(
+              child: _buildMonthPeriodSelector(qt, monthName, yearNum),
             ),
-          ),
-        ],
+            SliverToBoxAdapter(child: _buildCalmTabPill(qt)),
+          ];
+        },
+        body: TabBarView(
+          controller: _tabs,
+          children: [
+            SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                  20, 16, 20, 24 + MediaQuery.of(context).padding.bottom),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLifetimeHeroSection(qt, tracker, prayerPercentage),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle("Weekly Devotion", qt),
+                  _buildSectionSubtitle(
+                    "Track your weekly daily rhythm. Swipe or tap arrows to navigate.",
+                    qt,
+                  ),
+                  const SizedBox(height: 14),
+                  _buildWeeklyChart(qt, weekDays),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle("Prayer Consistency", qt),
+                  _buildSectionSubtitle(
+                    "Your individual prayer completion frequency across all logged days.",
+                    qt,
+                  ),
+                  const SizedBox(height: 14),
+                  _buildPrayerBreakdown(qt, tracker, accurateRates),
+                ],
+              ),
+            ),
+            SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                  20, 16, 20, 24 + MediaQuery.of(context).padding.bottom),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildMonthlyDevotionSummaryCard(
+                    qt,
+                    monthName,
+                    complete,
+                    elapsedDays,
+                    monthlyRate,
+                    totalPrayedMonth,
+                    prayerPercentage,
+                  ),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle("$monthName Calendar", qt),
+                  _buildSectionSubtitle(
+                    "A comprehensive look at your monthly submission progress.",
+                    qt,
+                  ),
+                  const SizedBox(height: 14),
+                  _buildGregorianCalendarGrid(
+                    qt,
+                    tracker,
+                    monthDays,
+                    monthName,
+                    yearNum,
+                  ),
+                  const SizedBox(height: 10),
+                  _buildCalendarLegend(qt),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle("Monthly Progression", qt),
+                  _buildSectionSubtitle(
+                    "Perfect completion metrics captured over the last 6 months.",
+                    qt,
+                  ),
+                  const SizedBox(height: 14),
+                  _buildMonthlyTrend(qt, tracker),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle("Milestones & Badges", qt),
+                  _buildSectionSubtitle(
+                    "Honorable seals representing active devotion on your path.",
+                    qt,
+                  ),
+                  const SizedBox(height: 14),
+                  _buildMilestones(qt, tracker),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -385,8 +408,14 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
     );
   }
 
-  Widget _buildMonthlyDevotionSummaryCard(QuranTheme qt, String monthName,
-      int complete, int totalDays, double rate, int totalPrayed) {
+  Widget _buildMonthlyDevotionSummaryCard(
+      QuranTheme qt,
+      String monthName,
+      int complete,
+      int totalDays,
+      double rate,
+      int totalPrayed,
+      double prayerPercentage) {
     final isDark = qt.brightness == Brightness.dark;
 
     return Container(
@@ -426,27 +455,44 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
                     Icon(Icons.spa_rounded, color: qt.emeraldLight, size: 20),
               ),
               const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "$monthName Summary",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? qt.textPrimary : Colors.white,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "$monthName Summary",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? qt.textPrimary : Colors.white,
+                      ),
                     ),
+                    Text(
+                      "Your monthly spiritual growth",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark
+                            ? qt.textMuted
+                            : Colors.white.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _showMetricsInfoDialog(qt),
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
                   ),
-                  Text(
-                    "Your monthly spiritual growth",
-                    style: TextStyle(
-                      fontSize: 12,
+                  child: Icon(Icons.info_outline_rounded,
                       color: isDark
                           ? qt.textMuted
-                          : Colors.white.withValues(alpha: 0.6),
-                    ),
-                  ),
-                ],
+                          : Colors.white.withValues(alpha: 0.7),
+                      size: 16),
+                ),
               ),
             ],
           ),
@@ -460,7 +506,7 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
                   isDark ? qt.textMuted : Colors.white.withValues(alpha: 0.7)),
               const SizedBox(width: 8),
               _summarySmallCard(
-                  "${(rate * 100).toInt()}%",
+                  "${(prayerPercentage * 100).toInt()}%",
                   "Devotion Rate",
                   isDark ? qt.textPrimary : Colors.white,
                   isDark ? qt.textMuted : Colors.white.withValues(alpha: 0.7)),
@@ -486,7 +532,7 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
                         : Colors.white.withValues(alpha: 0.8)),
               ),
               Text(
-                "${(rate * 100).round()}%",
+                "${(prayerPercentage * 100).round()}%",
                 style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
@@ -498,13 +544,15 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
-              value: rate,
+              value: prayerPercentage,
               minHeight: 6,
               backgroundColor: Colors.white.withValues(alpha: 0.15),
               valueColor: AlwaysStoppedAnimation<Color>(
-                rate >= 0.8
+                prayerPercentage >= 0.8
                     ? qt.emeraldLight
-                    : (rate >= 0.5 ? Colors.orangeAccent : Colors.redAccent),
+                    : (prayerPercentage >= 0.5
+                        ? Colors.orangeAccent
+                        : Colors.redAccent),
               ),
             ),
           ),
@@ -568,7 +616,8 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
     );
   }
 
-  Widget _buildLifetimeHeroSection(QuranTheme qt, PrayerTracker tracker) {
+  Widget _buildLifetimeHeroSection(
+      QuranTheme qt, PrayerTracker tracker, double prayerPercentage) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -628,8 +677,7 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
                 child: _heroTile(
                     icon: Icons.calendar_month_rounded,
                     color: Colors.teal,
-                    value:
-                        "${(tracker.monthlyCompletionRate(DateTime.now().year, DateTime.now().month) * 100).toInt()}%",
+                    value: "${(prayerPercentage * 100).toInt()}%",
                     label: "This Month",
                     qt: qt),
               ),
@@ -774,6 +822,8 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
                   barColor = qt.emeraldLight;
                 } else if (count > 0) {
                   barColor = Colors.orangeAccent;
+                } else if (isToday) {
+                  barColor = qt.emeraldLight.withValues(alpha: 0.35);
                 } else {
                   barColor = qt.borderGlass.withValues(alpha: 0.25);
                 }
@@ -1271,6 +1321,104 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
           ),
         );
       },
+    );
+  }
+
+  void _showMetricsInfoDialog(QuranTheme qt) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: qt.cardBg,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.info_outline_rounded, color: qt.emeraldLight, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              "Metrics Explained",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: qt.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _infoItem(
+                  "Perfect Days",
+                  "Number of days in this month where all 5 daily prayers "
+                      "(Fajr, Dhuhr, Asr, Maghrib, Isha) were completed.",
+                  qt),
+              const SizedBox(height: 12),
+              _infoItem(
+                  "Devotion Rate",
+                  "The percentage of individual prayers completed out of "
+                      "all possible prayers for the elapsed days this month. "
+                      "For example, if 20 out of 25 possible prayers were "
+                      "prayed in 5 days, the rate is 80%.",
+                  qt),
+              const SizedBox(height: 12),
+              _infoItem(
+                  "Total Prayers",
+                  "The total count of individual prayers (Fajr, Dhuhr, Asr, "
+                      "Maghrib, Isha) marked as prayed this month. Maximum "
+                      "is 5 prayers × number of elapsed days.",
+                  qt),
+              const SizedBox(height: 12),
+              _infoItem(
+                  "Overall Monthly Devotion",
+                  "A visual progress of your prayer completion for the "
+                      "month. It shows what percentage of all possible "
+                      "prayers you have completed so far.",
+                  qt),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              "Got it",
+              style: TextStyle(
+                color: qt.emeraldLight,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoItem(String title, String description, QuranTheme qt) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: qt.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          description,
+          style: TextStyle(
+            fontSize: 12,
+            color: qt.textMuted,
+            height: 1.4,
+          ),
+        ),
+      ],
     );
   }
 }

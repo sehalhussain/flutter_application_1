@@ -12,7 +12,7 @@
 // 2. FLAT HADITH LIBRARY (single `hadith_library` table in 6 separate .db
 //    files: sahih_al_bukhari, sahih_al_muslim, jami_at_tirmidhi,
 //    sunan_abi_dawud, sunan_an_nasai, sunan_ibn_majah):
-//      - columns: uuid, book_num, english_title, arabic_title, local_num,
+//      - columns: uuid, book_num, english_title, arabic_title, local_num (TEXT),
 //                 title, narrator, english_text, arabic_text, grade
 //
 // We use the same caching / `path_provider` pattern as `quran_db.dart` to
@@ -30,10 +30,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../models/hadith_models.dart';
-
-/// Public alias for the private flat-book spec so we can expose it
-/// in public API signatures without triggering
-/// library_private_types_in_public_api.
 
 class HadithDb {
   HadithDb._();
@@ -116,9 +112,7 @@ class HadithDb {
 
   // ── 2. Full book load (chapters + hadiths) ─────────────────────────────
 
-  /// Loads the full Riyad as-Salihin book as a `HadithBook` so all
-  /// existing UI (book list, chapter list, search, reader) works without
-  /// any change. Internally we only run 3 cheap SQL queries.
+  /// Loads the full Riyad as-Salihin book as a `HadithBook`
   Future<HadithBook> loadRiyadBook(String assetPath) async {
     final db = await _getDb(assetPath);
     final meta = await _loadMeta(assetPath);
@@ -179,7 +173,69 @@ class HadithDb {
     );
   }
 
-  // ── 3. Fast single-chapter load (e.g. when navigating directly) ───────
+  // ── 3. Fast single-chapter load ────────────────────────────────────────
+
+  Future<HadithBook> loadBookOverview(String assetPath) async {
+    if (assetPath == riyadAssetPath) {
+      return loadRiyadBookOverview(assetPath);
+    }
+
+    final spec = flatSpecFor(assetPath);
+    if (spec != null) {
+      return loadFlatBookOverview(spec);
+    }
+
+    return HadithBook(
+      name: '',
+      arabicName: '',
+      shortDesc: '',
+      numBooks: '0',
+      numHadiths: '0',
+      allBooks: const [],
+      assetPath: assetPath,
+    );
+  }
+
+  Future<HadithBook> loadRiyadBookOverview(String assetPath) async {
+    final db = await _getDb(assetPath);
+    final meta = await _loadMeta(assetPath);
+
+    final chapterRows = await db.query(
+      'chapters',
+      where: 'bookId = ?',
+      whereArgs: [meta.bookId],
+      orderBy: 'id ASC',
+    );
+
+    final chapters = <HadithChapter>[];
+    for (final row in chapterRows) {
+      final chapterId = (row['id'] as int?) ?? 0;
+      final hadithCount = Sqflite.firstIntValue(await db.rawQuery(
+        'SELECT COUNT(*) AS c FROM hadiths WHERE bookId = ? AND chapterId = ?',
+        [meta.bookId, chapterId],
+      )) ??
+          0;
+
+      chapters.add(HadithChapter(
+        num: chapterId.toString(),
+        englishTitle: (row['english'] as String?) ?? '',
+        arabicTitle: (row['arabic'] as String?) ?? '',
+        hadithList: const [],
+        hadithCount: hadithCount,
+        chapterKey: chapterId.toString(),
+      ));
+    }
+
+    return HadithBook(
+      name: meta.titleEn,
+      arabicName: meta.titleAr,
+      shortDesc: meta.authorEn,
+      numBooks: chapters.length.toString(),
+      numHadiths: chapters.fold(0, (sum, c) => sum + c.hadithCount).toString(),
+      allBooks: chapters,
+      assetPath: assetPath,
+    );
+  }
 
   Future<HadithChapter> loadChapter(
     String assetPath, {
@@ -221,8 +277,6 @@ class HadithDb {
 
   // ── 4. Random short hadith for "Hadith of the Day" (Riyad) ─────────────
 
-  /// Returns one short (≤ ~12 line) hadith picked at random.
-  /// Uses an `ORDER BY RANDOM()` SQL query for a single O(1) disk read.
   Future<Hadith?> getRandomShortHadith(String assetPath,
       {int maxNewlines = 12}) async {
     final db = await _getDb(assetPath);
@@ -258,11 +312,79 @@ class HadithDb {
     return _hadithFromRow(row, assetPath, chapterTitle);
   }
 
+  Future<HadithBook> loadFlatBookOverview(HadithBookSpec spec) async {
+    final db = await _getDb(spec.assetPath);
+
+    final rows = await db.rawQuery('''
+      SELECT english_title,
+             arabic_title,
+             COUNT(*) AS hadith_count
+      FROM hadith_library
+      GROUP BY english_title
+      ORDER BY MIN(CAST(local_num AS INTEGER)) ASC, english_title ASC
+    ''');
+
+    final chapters = <HadithChapter>[];
+    int index = 0;
+    for (final row in rows) {
+      index++;
+      final englishTitle = (row['english_title'] as String?) ?? '';
+      final arabicTitle = (row['arabic_title'] as String?) ?? '';
+      final hadithCount = (row['hadith_count'] as int?) ?? 0;
+
+      chapters.add(HadithChapter(
+        num: index.toString(),
+        englishTitle: englishTitle,
+        arabicTitle: arabicTitle,
+        hadithList: const [],
+        hadithCount: hadithCount,
+        chapterKey: englishTitle,
+      ));
+    }
+
+    final totalHadiths = chapters.fold(0, (sum, ch) => sum + ch.hadithCount);
+
+    return HadithBook(
+      name: spec.name,
+      arabicName: spec.arabicName,
+      shortDesc: spec.author,
+      numBooks: chapters.length.toString(),
+      numHadiths: totalHadiths.toString(),
+      allBooks: chapters,
+      assetPath: spec.assetPath,
+    );
+  }
+
+  Future<HadithChapter> loadFlatChapter(
+    HadithBookSpec spec, {
+    required String chapterKey,
+  }) async {
+    final db = await _getDb(spec.assetPath);
+    final rows = await db.query(
+      'hadith_library',
+      where: 'english_title = ?',
+      whereArgs: [chapterKey],
+      orderBy: 'CAST(local_num AS INTEGER) ASC, local_num ASC',
+    );
+
+    final hadiths = rows
+        .map((r) => _flatHadithFromRow(r, spec))
+        .toList(growable: false);
+
+    return HadithChapter(
+      num: (hadiths.isNotEmpty ? hadiths.first.localNum : '0'),
+      englishTitle: chapterKey,
+      arabicTitle: rows.isNotEmpty
+          ? (rows.first['arabic_title'] as String?) ?? ''
+          : '',
+      hadithList: hadiths,
+      hadithCount: hadiths.length,
+      chapterKey: chapterKey,
+    );
+  }
+
   // ── Helpers (Riyad schema) ──────────────────────────────────────────────
 
-  /// Build a `Hadith` model from a raw `hadiths` row.
-  /// Tolerant of optional columns (`idInBook`) so the same helper works
-  /// whether or not the DB has a per-chapter position number.
   Hadith _hadithFromRow(
       Map<String, Object?> row, String bookAsset, String chapterTitle) {
     final englishText = (row['text'] as String?) ?? '';
@@ -293,20 +415,9 @@ class HadithDb {
   }
 
   // ─────────────────────────────────────────────────────────────────────
-  // FLAT-TABLE HADITH LIBRARY
-  // (Sahih al-Bukhari, Sahih al-Muslim, Jami` at-Tirmidhi,
-  //  Sunan Abi Dawud, Sunan an-Nasai, Sunan Ibn Majah)
-  //
-  // These six books share the same single-table layout. The per-book
-  // chapter metadata is encoded in each row (english_title / arabic_title),
-  // so we group by `book_num` at runtime. This keeps disk access to
-  // 2 SQL queries per book (1 DISTINCT for chapter headers, 1 full
-  // pull for hadiths) and 1 query for a random short hadith.
+  // FLAT-TABLE HADITH LIBRARY (UPDATED FOR TEXT LOCAL_NUM)
   // ─────────────────────────────────────────────────────────────────────
 
-  /// Registry of every flat-table hadith book we ship. Order matches
-  /// `books.json` so the user-facing book list order is stable regardless
-  /// of asset registration order.
   static const List<HadithBookSpec> flatBooks = [
     HadithBookSpec(
       assetPath: 'assets/hadith/sahih_al_bukhari.db',
@@ -352,40 +463,32 @@ class HadithDb {
     ),
   ];
 
-  /// Build a quick lookup from .db asset path → book spec.
   static final Map<String, HadithBookSpec> _flatByAssetPath = {
     for (final spec in flatBooks) spec.assetPath: spec,
   };
 
-  /// Cheap test used by `HadithService` to know whether a given
-  /// asset path should be served from one of the flat-table DBs.
   static HadithBookSpec? flatSpecFor(String assetPath) =>
       _flatByAssetPath[assetPath];
 
   /// Loads a full book from the flat `hadith_library` table.
-  ///
-  /// Runs only 2 SQL queries total: one DISTINCT scan of chapter
-  /// metadata (book_num + titles) and one full hadith pull for that
-  /// book. Much faster than parsing the multi-MB JSON equivalents.
+  /// Modified to use natural alphanumeric sorting for the `local_num` TEXT type.
   Future<HadithBook> loadFlatBook(HadithBookSpec spec) async {
     final db = await _getDb(spec.assetPath);
 
-    // All hadith rows for this book. The flat DB has one book per
-    // file, so we don't filter by book_num.
+    // KEY CHANGE: Since local_num is text, we must first cast it to an integer
+    // to keep 2, 10, 119 sequential, and then sub-sort by raw string for alphanumeric suffixes ("119 a", "119 b")
     final hadithRows = await db.query(
       'hadith_library',
-      orderBy: 'local_num ASC',
+      orderBy: 'CAST(local_num AS INTEGER) ASC, local_num ASC',
     );
 
-    // Group hadiths by `english_title` (chapter name).
-    // Also track the arabic_title for each chapter.
     final Map<String, List<Hadith>> grouped = {};
     final Map<String, String> arabicTitles = {};
     for (final row in hadithRows) {
       final hadith = _flatHadithFromRow(row, spec);
       final key = (row['english_title'] as String?) ?? '';
       grouped.putIfAbsent(key, () => <Hadith>[]).add(hadith);
-      // Capture the arabic_title for this chapter (first occurrence wins).
+
       if (!arabicTitles.containsKey(key)) {
         arabicTitles[key] = (row['arabic_title'] as String?) ?? '';
       }
@@ -403,8 +506,6 @@ class HadithDb {
       ));
     }
 
-    // Compute counts directly from the chapters list to guarantee
-    // consistency with the displayed data.
     final totalHadiths =
         chapters.fold(0, (sum, ch) => sum + ch.hadithList.length);
 
@@ -435,15 +536,20 @@ class HadithDb {
     }
   }
 
+  /// Correctly extracts localNum as a safe String to protect alphanumeric tags.
   Hadith _flatHadithFromRow(Map<String, Object?> row, HadithBookSpec spec) {
     final title = (row['title'] as String?) ?? '';
     final narrator = (row['narrator'] as String?) ?? '';
-    final localNum = row['local_num']?.toString() ?? '';
+
+    // KEY CHANGE: Keep local_num strictly as string mapping from DB
+    final localNum = (row['local_num'] as String?) ?? '';
+
     final grade = (row['grade'] as String?) ?? '';
     final chapterEnglish = (row['english_title'] as String?) ?? spec.name;
     final bookFile = spec.assetPath.split('/').last;
     final bookNum = row['book_num']?.toString() ?? '';
     final syntheticUuid = '$bookFile#$bookNum#$localNum';
+
     return Hadith(
       title: title,
       narrator: narrator,

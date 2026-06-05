@@ -7,6 +7,7 @@ import '../../main.dart';
 import 'hadith_book_screen.dart';
 import 'hadith_chapter_screen.dart';
 import 'hadith_reader_screen.dart';
+import 'hadith_search_screen.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // HADITH HOME SCREEN
@@ -163,7 +164,21 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
                         ),
                       ),
                     ),
-                    const SizedBox(width: 44),
+                    SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: IconButton(
+                        icon: const Icon(Icons.search_rounded,
+                            color: Colors.white, size: 22),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const HadithSearchScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -637,8 +652,10 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
   Widget _buildLastReadBanner(HadithLastReadPosition lastRead, QuranTheme qt) {
     return GestureDetector(
       onTap: () async {
-        final book =
-            await HadithService.instance.loadHadithBook(lastRead.assetPath);
+        final book = await HadithService.instance.loadHadithBook(
+          lastRead.assetPath,
+          preloadAll: true,
+        );
         HadithChapter? foundChapter;
         for (final chapter in book.allBooks) {
           if (chapter.hadithList.any((h) => h.uuid == lastRead.hadithUuid)) {

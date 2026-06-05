@@ -39,6 +39,7 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
   int _currentChunk = 0;
   static const int _chunkSize = 15;
   bool _isLoadingMore = false;
+  bool _isLoadingChapter = false;
   bool _initialSearchApplied = false;
   Timer? _debounceTimer;
 
@@ -47,14 +48,10 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
   @override
   void initState() {
     super.initState();
-    _searchableHadiths = widget.chapter.hadithList
-        .map((h) => _SearchableHadith(h))
-        .toList(growable: false);
-    _filteredSearchable = List.of(_searchableHadiths);
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_onSearchChangedDelayed);
 
-    _loadInitialChunk();
+    _bootstrapChapter();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.initialSearchQuery != null &&
@@ -75,6 +72,40 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
     _scrollController.dispose();
     _debounceTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _bootstrapChapter() async {
+    if (widget.chapter.hadithList.isNotEmpty) {
+      _hydrateFromChapter(widget.chapter);
+      return;
+    }
+
+    setState(() => _isLoadingChapter = true);
+
+    try {
+      final chapter = await HadithService.instance.loadChapter(
+        widget.bookAsset,
+        chapterId: int.tryParse(widget.chapter.num) ?? 0,
+        chapterKey: widget.chapter.chapterKey ?? widget.chapter.englishTitle,
+      );
+
+      if (!mounted) return;
+      _hydrateFromChapter(chapter);
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingChapter = false);
+      }
+    }
+  }
+
+  void _hydrateFromChapter(HadithChapter chapter) {
+    setState(() {
+      _searchableHadiths = chapter.hadithList
+          .map((h) => _SearchableHadith(h))
+          .toList(growable: false);
+      _filteredSearchable = List.of(_searchableHadiths);
+      _loadInitialChunk();
+    });
   }
 
   void _loadInitialChunk() {
@@ -337,270 +368,285 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
               top: false,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: _displayedHadiths.isEmpty
+                child: _isLoadingChapter
                     ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: qt.textMuted.withOpacity(0.05),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(Icons.search_off_rounded,
-                                  size: 48,
-                                  color: qt.textMuted.withOpacity(0.4)),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              _isSearching
-                                  ? 'No hadiths found'
-                                  : 'No hadiths available',
-                              style: TextStyle(
-                                  color: qt.textMuted,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500),
-                            ),
-                          ],
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation(qt.emeraldLight),
                         ),
                       )
-                    : ListView.separated(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.only(
-                            bottom: 32, left: 4, right: 4),
-                        itemCount:
-                            _displayedHadiths.length + (_isLoadingMore ? 1 : 0),
-                        separatorBuilder: (_, __) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 24),
-                          child: Divider(
-                            color: qt.borderGlass.withOpacity(0.08),
-                            height: 1,
-                            thickness: 1,
-                          ),
-                        ),
-                        itemBuilder: (context, index) {
-                          if (index == _displayedHadiths.length) {
-                            return Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation(
-                                          qt.emeraldLight)),
+                    : _displayedHadiths.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: qt.textMuted.withOpacity(0.05),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(Icons.search_off_rounded,
+                                      size: 48,
+                                      color: qt.textMuted.withOpacity(0.4)),
                                 ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  _isSearching
+                                      ? 'No hadiths found'
+                                      : 'No hadiths available',
+                                  style: TextStyle(
+                                      color: qt.textMuted,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.separated(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.only(
+                                bottom: 32, left: 4, right: 4),
+                            itemCount: _displayedHadiths.length +
+                                (_isLoadingMore ? 1 : 0),
+                            separatorBuilder: (_, __) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 24),
+                              child: Divider(
+                                color: qt.borderGlass.withOpacity(0.08),
+                                height: 1,
+                                thickness: 1,
                               ),
-                            );
-                          }
-                          final hadith = _displayedHadiths[index];
-                          final isLastRead = progress.isLastRead(
-                              widget.bookAsset, hadith.uuid);
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Metadata Header block
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: qt.emeraldDeep.withOpacity(0.06),
-                                      borderRadius: BorderRadius.circular(100),
-                                    ),
-                                    child: Text(
-                                      'HADITH #${hadith.localNum}',
-                                      style: TextStyle(
-                                        color: qt.emeraldDeep,
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.5,
-                                      ),
+                            ),
+                            itemBuilder: (context, index) {
+                              if (index == _displayedHadiths.length) {
+                                return Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation(
+                                              qt.emeraldLight)),
                                     ),
                                   ),
-                                  const Spacer(),
-                                  if (isLastRead)
-                                    Row(
-                                      children: [
-                                        Icon(Icons.bookmark_added_rounded,
-                                            color: qt.emeraldDeep, size: 13),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'LAST READ',
+                                );
+                              }
+                              final hadith = _displayedHadiths[index];
+                              final isLastRead = progress.isLastRead(
+                                  widget.bookAsset, hadith.uuid);
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // Metadata Header block
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color:
+                                              qt.emeraldDeep.withOpacity(0.06),
+                                          borderRadius:
+                                              BorderRadius.circular(100),
+                                        ),
+                                        child: Text(
+                                          'HADITH #${hadith.localNum}',
                                           style: TextStyle(
                                             color: qt.emeraldDeep,
-                                            fontSize: 9.5,
+                                            fontSize: 10.5,
                                             fontWeight: FontWeight.bold,
                                             letterSpacing: 0.5,
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-
-                              // Hadith Title Text
-                              Text(
-                                hadith.title,
-                                style: TextStyle(
-                                  color: qt.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16.5,
-                                  height: 1.35,
-                                  letterSpacing: -0.2,
-                                ),
-                              ),
-
-                              // Narrator sub-labeling
-                              if (hadith.narrator.isNotEmpty) ...[
-                                const SizedBox(height: 8),
-                                Text(
-                                  '${hadith.narrator}',
-                                  style: TextStyle(
-                                    color: qt.emeraldMid,
-                                    fontSize: 12.5,
-                                    fontStyle: FontStyle.italic,
-                                    fontWeight: FontWeight.w400,
+                                      ),
+                                      const Spacer(),
+                                      if (isLastRead)
+                                        Row(
+                                          children: [
+                                            Icon(Icons.bookmark_added_rounded,
+                                                color: qt.emeraldDeep,
+                                                size: 13),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'LAST READ',
+                                              style: TextStyle(
+                                                color: qt.emeraldDeep,
+                                                fontSize: 9.5,
+                                                fontWeight: FontWeight.bold,
+                                                letterSpacing: 0.5,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                    ],
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 12),
 
-                              if (settings.showArabic &&
-                                  hadith.arabicText.isNotEmpty) ...[
-                                const SizedBox(height: 16),
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 18, vertical: 16),
-                                  decoration: BoxDecoration(
-                                    color: qt.brightness == Brightness.dark
-                                        ? Colors.white.withOpacity(
-                                            0.03) // Subtle whitish in dark mode
-                                        : Colors.white.withOpacity(
-                                            0.70), // Subtle whitish in light mode
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: qt.borderGlass.withOpacity(0.06),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    hadith.arabicText,
-                                    textAlign: TextAlign.right,
-                                    textDirection: TextDirection.rtl,
+                                  // Hadith Title Text
+                                  Text(
+                                    hadith.title,
                                     style: TextStyle(
-                                      fontFamily: 'indopak',
-                                      fontSize: settings.arabicFontSize,
                                       color: qt.textPrimary,
-                                      height: 1.85,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16.5,
+                                      height: 1.35,
+                                      letterSpacing: -0.2,
                                     ),
                                   ),
-                                ),
-                              ],
 
-                              const SizedBox(height: 16),
+                                  // Narrator sub-labeling
+                                  if (hadith.narrator.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '${hadith.narrator}',
+                                      style: TextStyle(
+                                        color: qt.emeraldMid,
+                                        fontSize: 12.5,
+                                        fontStyle: FontStyle.italic,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ),
+                                  ],
 
-                              // English Translation Paragraphs
-                              if (settings.showEnglish &&
-                                  hadith.englishText.trim().isNotEmpty)
-                                Text(
-                                  hadith.englishText
-                                      .trim()
-                                      .split('\n\n')
-                                      .map((p) => p
-                                          .replaceAll(RegExp(r'\s+'), ' ')
-                                          .trim())
-                                      .join('\n\n'),
-                                  style: TextStyle(
-                                    color: qt.textSecondary,
-                                    fontSize: settings.translationFontSize,
-                                    height: 1.6,
-                                    letterSpacing: 0.1,
-                                  ),
-                                  textAlign: TextAlign.start,
-                                ),
-
-                              if (settings.showEnglish &&
-                                  hadith.englishText.trim().isNotEmpty)
-                                const SizedBox(height: 20),
-
-                              Row(
-                                children: [
-                                  if (hadith.grade.isNotEmpty)
+                                  if (settings.showArabic &&
+                                      hadith.arabicText.isNotEmpty) ...[
+                                    const SizedBox(height: 16),
                                     Container(
+                                      width: double.infinity,
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 4),
+                                          horizontal: 18, vertical: 16),
                                       decoration: BoxDecoration(
-                                        color: qt.emeraldDeep.withOpacity(0.04),
-                                        borderRadius: BorderRadius.circular(6),
+                                        color: qt.brightness == Brightness.dark
+                                            ? Colors.white.withOpacity(
+                                                0.03) // Subtle whitish in dark mode
+                                            : Colors.white.withOpacity(
+                                                0.70), // Subtle whitish in light mode
+                                        borderRadius: BorderRadius.circular(16),
                                         border: Border.all(
                                           color:
-                                              qt.emeraldDeep.withOpacity(0.08),
+                                              qt.borderGlass.withOpacity(0.06),
+                                          width: 1,
                                         ),
                                       ),
                                       child: Text(
-                                        hadith.grade,
+                                        hadith.arabicText,
+                                        textAlign: TextAlign.right,
+                                        textDirection: TextDirection.rtl,
                                         style: TextStyle(
-                                            color: qt.emeraldDeep,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 0.2),
+                                          fontFamily: 'indopak',
+                                          fontSize: settings.arabicFontSize,
+                                          color: qt.textPrimary,
+                                          height: 1.85,
+                                        ),
                                       ),
                                     ),
-                                  const Spacer(),
+                                  ],
 
-                                  // Reading interactions bar
+                                  const SizedBox(height: 16),
+
+                                  // English Translation Paragraphs
+                                  if (settings.showEnglish &&
+                                      hadith.englishText.trim().isNotEmpty)
+                                    Text(
+                                      hadith.englishText
+                                          .trim()
+                                          .split('\n\n')
+                                          .map((p) => p
+                                              .replaceAll(RegExp(r'\s+'), ' ')
+                                              .trim())
+                                          .join('\n\n'),
+                                      style: TextStyle(
+                                        color: qt.textSecondary,
+                                        fontSize: settings.translationFontSize,
+                                        height: 1.6,
+                                        letterSpacing: 0.1,
+                                      ),
+                                      textAlign: TextAlign.start,
+                                    ),
+
+                                  if (settings.showEnglish &&
+                                      hadith.englishText.trim().isNotEmpty)
+                                    const SizedBox(height: 20),
+
                                   Row(
-                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      _buildBadgedAction(
-                                        qt,
-                                        icon: Icons.share_outlined,
-                                        color: qt.textMuted,
-                                        onPressed: () => _shareHadith(hadith),
-                                        tooltip: 'Share Hadith',
-                                      ),
-                                      const SizedBox(width: 8),
-                                      _buildBadgedAction(
-                                        qt,
-                                        icon: progress.isFavorite(
-                                                widget.bookAsset, hadith.uuid)
-                                            ? Icons.favorite_rounded
-                                            : Icons.favorite_border_rounded,
-                                        color: progress.isFavorite(
-                                                widget.bookAsset, hadith.uuid)
-                                            ? Colors.redAccent
-                                            : qt.textMuted,
-                                        onPressed: () =>
-                                            _toggleFavorite(hadith),
-                                        tooltip: 'Like Hadith',
-                                      ),
-                                      const SizedBox(width: 8),
-                                      _buildBadgedAction(
-                                        qt,
-                                        icon: isLastRead
-                                            ? Icons.bookmark_added_rounded
-                                            : Icons.bookmark_add_outlined,
-                                        color: isLastRead
-                                            ? qt.emeraldDeep
-                                            : qt.textMuted,
-                                        onPressed: () =>
-                                            _markAsLastRead(hadith),
-                                        tooltip: 'Mark as last read',
+                                      if (hadith.grade.isNotEmpty)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: qt.emeraldDeep
+                                                .withOpacity(0.04),
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                            border: Border.all(
+                                              color: qt.emeraldDeep
+                                                  .withOpacity(0.08),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            hadith.grade,
+                                            style: TextStyle(
+                                                color: qt.emeraldDeep,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                letterSpacing: 0.2),
+                                          ),
+                                        ),
+                                      const Spacer(),
+
+                                      // Reading interactions bar
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          _buildBadgedAction(
+                                            qt,
+                                            icon: Icons.share_outlined,
+                                            color: qt.textMuted,
+                                            onPressed: () =>
+                                                _shareHadith(hadith),
+                                            tooltip: 'Share Hadith',
+                                          ),
+                                          const SizedBox(width: 8),
+                                          _buildBadgedAction(
+                                            qt,
+                                            icon: progress.isFavorite(
+                                                    widget.bookAsset,
+                                                    hadith.uuid)
+                                                ? Icons.favorite_rounded
+                                                : Icons.favorite_border_rounded,
+                                            color: progress.isFavorite(
+                                                    widget.bookAsset,
+                                                    hadith.uuid)
+                                                ? Colors.redAccent
+                                                : qt.textMuted,
+                                            onPressed: () =>
+                                                _toggleFavorite(hadith),
+                                            tooltip: 'Like Hadith',
+                                          ),
+                                          const SizedBox(width: 8),
+                                          _buildBadgedAction(
+                                            qt,
+                                            icon: isLastRead
+                                                ? Icons.bookmark_added_rounded
+                                                : Icons.bookmark_add_outlined,
+                                            color: isLastRead
+                                                ? qt.emeraldDeep
+                                                : qt.textMuted,
+                                            onPressed: () =>
+                                                _markAsLastRead(hadith),
+                                            tooltip: 'Mark as last read',
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
                                 ],
-                              ),
-                            ],
-                          );
-                        },
-                      ),
+                              );
+                            },
+                          ),
               ),
             ),
           ),

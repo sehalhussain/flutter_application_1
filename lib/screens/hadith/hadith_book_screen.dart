@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../constants/quran_theme.dart';
 import '../../models/hadith_models.dart';
@@ -100,6 +99,7 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
 
   static const int _initialSearchLimit = 50;
   bool _showingAllResults = false;
+  bool _isLoadingSearchData = false;
   int _totalResultCount = 0;
 
   bool get _isCapped =>
@@ -110,7 +110,10 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
   @override
   void initState() {
     super.initState();
-    _bookFuture = HadithService.instance.loadHadithBook(widget.book.assetPath);
+    _bookFuture = HadithService.instance.loadHadithBook(
+      widget.book.assetPath,
+      preloadAll: false,
+    );
     _searchController.addListener(_onSearchChangedDelayed);
   }
 
@@ -127,7 +130,7 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
     _debounceTimer = Timer(const Duration(milliseconds: 150), _executeSearch);
   }
 
-  void _executeSearch() {
+  Future<void> _executeSearch() async {
     final raw = _searchController.text;
     final query = raw.toLowerCase().trim();
 
@@ -141,6 +144,27 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
         });
       }
       return;
+    }
+
+    if (_chapterIndices.isEmpty ||
+        _chapterIndices.any((ci) => ci.chapter.hadithList.isEmpty)) {
+      setState(() => _isLoadingSearchData = true);
+      try {
+        final fullBook = await HadithService.instance.loadHadithBook(
+          widget.book.assetPath,
+          preloadAll: true,
+        );
+        if (!mounted) return;
+
+        _allChapters = List.of(fullBook.allBooks);
+        _chapterIndices = _allChapters
+            .map((c) => _ChapterSearchIndex(c))
+            .toList(growable: false);
+      } finally {
+        if (mounted) {
+          setState(() => _isLoadingSearchData = false);
+        }
+      }
     }
 
     // Collect ALL results (no cap yet)
@@ -328,7 +352,8 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
               child: FutureBuilder<HadithBook>(
                 future: _bookFuture,
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+                  if (snapshot.connectionState == ConnectionState.waiting ||
+                      _isLoadingSearchData) {
                     return Center(
                         child: CircularProgressIndicator(
                             valueColor:
@@ -624,7 +649,7 @@ class _HadithBookScreenState extends State<HadithBookScreen> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      '${chapter.hadithList.length} hadith${chapter.hadithList.length != 1 ? 's' : ''}',
+                      '${chapter.hadithCount > 0 ? chapter.hadithCount : chapter.hadithList.length} hadith${(chapter.hadithCount > 0 ? chapter.hadithCount : chapter.hadithList.length) != 1 ? 's' : ''}',
                       style: TextStyle(
                           color: qt.emeraldDeep,
                           fontSize: 10,

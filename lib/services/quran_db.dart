@@ -25,6 +25,37 @@ class QuranDb {
   // ── In-memory cache of open DB handles ──────────────────────────────────
   final Map<String, Database> _dbs = {};
 
+  // ── Query result cache for frequently accessed data ─────────────────────
+  // Caches query results to avoid repeated database hits for the same data.
+  // Key format: 'assetPath|table|surahNumber|surahColumn'
+  final Map<String, Map<String, dynamic>> _queryCache = {};
+
+  // Cache statistics for performance monitoring (debug only)
+  int _cacheHits = 0;
+  int _cacheMisses = 0;
+
+  /// Get cache statistics (for debugging/performance monitoring)
+  Map<String, dynamic> getCacheStats() {
+    final total = _cacheHits + _cacheMisses;
+    return {
+      'hits': _cacheHits,
+      'misses': _cacheMisses,
+      'hitRate': total > 0
+          ? '${(_cacheHits / total * 100).toStringAsFixed(1)}%'
+          : '0%',
+      'cacheSize': _queryCache.length,
+      'openDatabases': _dbs.length,
+    };
+  }
+
+  /// Clear all query caches (useful for testing or memory pressure).
+  /// This does NOT close database connections.
+  void clearCache() {
+    _queryCache.clear();
+    _cacheHits = 0;
+    _cacheMisses = 0;
+  }
+
   /// Open a database by its asset path, copying it from assets on first use.
   Future<Database> _getDb(String assetPath) async {
     if (_dbs.containsKey(assetPath)) return _dbs[assetPath]!;
@@ -57,6 +88,9 @@ class QuranDb {
   /// [table] is "verses" for script DBs or "translation" for translation/TL DBs.
   /// [keyColumn] is "verse_key" for scripts or "ayah_key" for translations.
   /// [surahColumn] is "surah" for script DBs or "sura" for translation DBs.
+  ///
+  /// Results are cached in memory for optimal performance when the same
+  /// surah is requested multiple times (e.g., switching translations).
   Future<Map<String, dynamic>> getAyahsBySurah(
     String assetPath, {
     required String table,
@@ -65,6 +99,17 @@ class QuranDb {
     String surahColumn = 'surah',
   }) async {
     if (kIsWeb) return {};
+
+    // Generate a unique cache key for this specific query
+    final cacheKey = '$assetPath|$table|$surahNumber|$surahColumn';
+
+    // Check cache first for instant retrieval
+    if (_queryCache.containsKey(cacheKey)) {
+      _cacheHits++;
+      return _queryCache[cacheKey]!;
+    }
+
+    _cacheMisses++;
 
     final db = await _getDb(assetPath);
     final rows = await db.query(
@@ -76,13 +121,19 @@ class QuranDb {
 
     // Build the exact same map shape the isolate already expects:
     // { "1:1": {"text": "..."}, "1:2": {"text": "..."} }
-    return {
+    final result = {
       for (final row in rows)
         row[keyColumn] as String: {'text': row['text'] as String},
     };
+
+    // Cache the result for future requests
+    _queryCache[cacheKey] = result;
+
+    return result;
   }
 
   /// Query a per-ayah database for a single ayah using its verse key.
+  /// Results are cached for optimal performance.
   Future<String?> getSingleAyah(
     String assetPath, {
     required String table,
@@ -90,6 +141,19 @@ class QuranDb {
     required String verseKey,
   }) async {
     if (kIsWeb) return null;
+
+    // Generate a unique cache key for this specific query
+    final cacheKey = '$assetPath|$table|$verseKey';
+
+    // Check cache first for instant retrieval
+    if (_queryCache.containsKey(cacheKey)) {
+      _cacheHits++;
+      // Stored as a single-entry map, extract the text
+      final cached = _queryCache[cacheKey]!;
+      return cached.values.first['text'] as String?;
+    }
+
+    _cacheMisses++;
 
     final db = await _getDb(assetPath);
     final rows = await db.query(
@@ -100,20 +164,38 @@ class QuranDb {
       limit: 1,
     );
 
-    return rows.isNotEmpty ? rows.first['text'] as String : null;
+    final result = rows.isNotEmpty ? rows.first['text'] as String? : null;
+
+    // Cache the result for future requests (store as single-entry map for consistency)
+    if (result != null) {
+      _queryCache[cacheKey] = {
+        verseKey: {'text': result}
+      };
+    }
+
+    return result;
   }
 
   // ── Surah info query ────────────────────────────────────────────────────
 
   /// Query the surah_infos table for all surahs.
   /// Returns a map keyed by surah number string ("1", "2", ...).
+  /// Results are cached since surah info rarely changes.
   Future<Map<String, dynamic>> getSurahInfos(String assetPath) async {
     if (kIsWeb) return {};
+
+    // Use assetPath as cache key since this queries all surahs
+    if (_queryCache.containsKey(assetPath)) {
+      _cacheHits++;
+      return _queryCache[assetPath]!;
+    }
+
+    _cacheMisses++;
 
     final db = await _getDb(assetPath);
     final rows = await db.query('surah_infos');
 
-    return {
+    final result = {
       for (final row in rows)
         (row['surah_number'] as int).toString(): {
           'surah_number': row['surah_number'],
@@ -122,14 +204,22 @@ class QuranDb {
           'short_text': row['short_text'],
         },
     };
+
+    // Cache the result for future requests
+    _queryCache[assetPath] = result;
+
+    return result;
   }
 
   // ── Cleanup ─────────────────────────────────────────────────────────────
 
+  /// Close all open database connections and clear all caches.
+  /// Call this on app termination or when you need to free all resources.
   Future<void> closeAll() async {
     for (final db in _dbs.values) {
       await db.close();
     }
     _dbs.clear();
+    clearCache();
   }
 }

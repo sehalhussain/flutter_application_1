@@ -2,6 +2,7 @@ import 'dart:math' show pi;
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/prayer_service.dart';
 import '../providers/prayer_tracker_provider.dart';
@@ -833,10 +834,13 @@ class _PrayerScreenState extends State<PrayerScreen>
     final key = _dateKey(selectedDate);
     final beforeCount = tracker.prayedCountForDate(key);
 
+    HapticFeedback.lightImpact();
+
     tracker.togglePrayerForDate(key, prayer).then((_) {
       final afterCount = tracker.prayedCountForDate(key);
       if (beforeCount == 4 && afterCount == 5) {
         _triggerCelebration();
+        HapticFeedback.mediumImpact();
       }
     });
   }

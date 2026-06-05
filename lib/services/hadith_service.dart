@@ -27,31 +27,58 @@ class HadithService {
 
   /// Returns the in-memory `HadithBook` for an asset path. Cached on first
   /// call. All books are now served from SQLite.
-  Future<HadithBook> loadHadithBook(String assetPath) async {
-    if (_bookCache.containsKey(assetPath)) return _bookCache[assetPath]!;
+  Future<HadithBook> loadHadithBook(String assetPath,
+      {bool preloadAll = true}) async {
+    final cacheKey = '$assetPath::${preloadAll ? 'full' : 'summary'}';
+    if (_bookCache.containsKey(cacheKey)) return _bookCache[cacheKey]!;
 
-    HadithBook book;
-    if (assetPath == HadithDb.riyadAssetPath) {
-      book = await HadithDb.instance.loadRiyadBook(HadithDb.riyadAssetPath);
-    } else {
-      final flatSpec = HadithDb.flatSpecFor(assetPath);
-      if (flatSpec != null) {
-        book = await HadithDb.instance.loadFlatBook(flatSpec);
-      } else {
-        // Fallback: should not happen after refactor.
-        book = HadithBook(
-          name: '',
-          arabicName: '',
-          shortDesc: '',
-          numBooks: '',
-          numHadiths: '',
-          allBooks: [],
-          assetPath: assetPath,
-        );
-      }
-    }
-    _bookCache[assetPath] = book;
+    final book = preloadAll
+        ? await _loadFullBook(assetPath)
+        : await HadithDb.instance.loadBookOverview(assetPath);
+
+    _bookCache[cacheKey] = book;
     return book;
+  }
+
+  Future<HadithBook> _loadFullBook(String assetPath) async {
+    if (assetPath == HadithDb.riyadAssetPath) {
+      return HadithDb.instance.loadRiyadBook(HadithDb.riyadAssetPath);
+    }
+
+    final flatSpec = HadithDb.flatSpecFor(assetPath);
+    if (flatSpec != null) {
+      return HadithDb.instance.loadFlatBook(flatSpec);
+    }
+
+    return const HadithBook(
+      name: '',
+      arabicName: '',
+      shortDesc: '',
+      numBooks: '',
+      numHadiths: '',
+      allBooks: [],
+      assetPath: '',
+    );
+  }
+
+  Future<HadithChapter> loadChapter(String assetPath,
+      {required int chapterId, String? chapterKey}) async {
+    if (assetPath == HadithDb.riyadAssetPath) {
+      return HadithDb.instance.loadChapter(assetPath, chapterId: chapterId);
+    }
+
+    final flatSpec = HadithDb.flatSpecFor(assetPath);
+    if (flatSpec != null) {
+      return HadithDb.instance
+          .loadFlatChapter(flatSpec, chapterKey: chapterKey ?? '');
+    }
+
+    return const HadithChapter(
+      num: '',
+      englishTitle: '',
+      arabicTitle: '',
+      hadithList: [],
+    );
   }
 
   List<Hadith> getHadithChunk(List<Hadith> allHadiths, int start, int count) {
@@ -60,8 +87,10 @@ class HadithService {
   }
 
   // ── Sources for "Hadith of the Day" ──
-  static const List<String> _dailyHadithSources = [
+  // KEY CHANGE: Included flat book paths so daily quotes aren't locked to Riyad
+  static final List<String> _dailyHadithSources = [
     'assets/hadith/riyad_assalihin.db',
+    for (final s in HadithDb.flatBooks) s.assetPath,
   ];
 
   /// Returns one random short [Hadith] from any book, or `null` if loading fails.
@@ -76,6 +105,9 @@ class HadithService {
         return await HadithDb.instance
             .getRandomShortHadith(HadithDb.riyadAssetPath);
       }
+
+      // Pass maxNewlines argument to match interface signature if needed,
+      // or rely on its internal default.
       return await HadithDb.instance.getRandomShortHadithFlat();
     } catch (_) {
       return null;

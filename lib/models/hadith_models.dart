@@ -28,7 +28,8 @@ class Hadith {
       narrator: json['narrator'] as String? ?? '',
       englishText: json['english_text'] as String? ?? '',
       arabicText: json['arabic_text'] as String? ?? '',
-      localNum: json['local_num'] as String? ?? '',
+      // KEY FIX: Safely read local_num as a string, regardless of whether it's stored as int or string in JSON
+      localNum: json['local_num']?.toString() ?? '',
       grade: json['grade'] as String? ?? '',
       uuid: json['uuid'] as String? ?? '',
       bookAsset: bookAsset,
@@ -45,7 +46,8 @@ class Hadith {
       narrator: english['narrator'] as String? ?? '',
       englishText: english['text'] as String? ?? '',
       arabicText: json['arabic'] as String? ?? '',
-      localNum: (json['idInBook'] as int?).toString(),
+      // KEY FIX: Convert to string safely to support potential non-integer keys
+      localNum: json['idInBook']?.toString() ?? '',
       grade: '',
       uuid: 'riyad_${json['id']}',
       bookAsset: bookAsset,
@@ -59,12 +61,16 @@ class HadithChapter {
   final String englishTitle;
   final String arabicTitle;
   final List<Hadith> hadithList;
+  final int hadithCount;
+  final String? chapterKey;
 
   const HadithChapter({
     required this.num,
     required this.englishTitle,
     required this.arabicTitle,
     required this.hadithList,
+    this.hadithCount = 0,
+    this.chapterKey,
   });
 
   factory HadithChapter.fromJson(Map<String, dynamic> json, String bookAsset) {
@@ -74,10 +80,13 @@ class HadithChapter {
             .toList() ??
         [];
     return HadithChapter(
-      num: json['num'] as String? ?? '',
+      // KEY FIX: Ensure string format compatibility
+      num: json['num']?.toString() ?? '',
       englishTitle: json['english_title'] as String? ?? '',
       arabicTitle: json['arabic_title'] as String? ?? '',
       hadithList: hadithList,
+      hadithCount: json['hadith_count'] as int? ?? hadithList.length,
+      chapterKey: json['chapter_key'] as String?,
     );
   }
 }
@@ -113,8 +122,8 @@ class HadithBook {
         name: json['name'] as String? ?? '',
         arabicName: json['arabic_name'] as String? ?? '',
         shortDesc: json['short_desc'] as String? ?? '',
-        numBooks: json['num_books'] as String? ?? '',
-        numHadiths: json['num_hadiths'] as String? ?? '',
+        numBooks: json['num_books']?.toString() ?? '',
+        numHadiths: json['num_hadiths']?.toString() ?? '',
         allBooks: allBooks,
         assetPath: assetPath,
       );
@@ -123,7 +132,6 @@ class HadithBook {
       final arabicMeta = metadata['arabic'] as Map<String, dynamic>? ?? {};
       final englishMeta = metadata['english'] as Map<String, dynamic>? ?? {};
 
-      // Build a chapter index: chapterId -> chapter info
       final chaptersRaw = json['chapters'] as List<dynamic>? ?? [];
       final hadithsRaw = json['hadiths'] as List<dynamic>? ?? [];
 
@@ -162,8 +170,12 @@ class HadithBook {
         ));
       }
 
-      // Sort by chapter ID for consistent ordering
-      chapters.sort((a, b) => int.parse(a.num).compareTo(int.parse(b.num)));
+      // KEY FIX: Safely parse fallback integers if some formats use text-based keys
+      chapters.sort((a, b) {
+        final aNum = int.tryParse(a.num) ?? 0;
+        final bNum = int.tryParse(b.num) ?? 0;
+        return aNum.compareTo(bNum);
+      });
 
       final totalHadiths =
           chapters.fold(0, (sum, ch) => sum + ch.hadithList.length);
