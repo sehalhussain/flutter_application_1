@@ -162,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onRefresh: _handleRefresh,
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             children: [
               // --- DATE HEADER ---
               _DateHeader(
@@ -170,11 +170,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 timings: _todayTimings,
                 qt: qt,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
 
               // --- PRAYER CARD (with isolated countdown) ---
               _PrayerCard(timings: _todayTimings, qt: qt),
-              const SizedBox(height: 20),
+              const SizedBox(height: 32),
 
               // --- ESSENTIALS SECTION ---
               _EssentialsSection(
@@ -182,19 +182,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 onRefreshAyah: _refreshAyah,
                 qiblaDirection: PrayerService.instance.qiblaDirection,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 32),
 
               // --- ASMA UL HUSNA SLIDER ---
               _AsmaSlider(future: _namesFuture, qt: qt),
-              const SizedBox(height: 20),
+              const SizedBox(height: 32),
 
               // --- AYAH OF THE DAY ---
               _AyahSection(future: _ayahFuture, qt: qt),
-              const SizedBox(height: 24),
+              const SizedBox(height: 40),
 
               // --- HADITH OF THE DAY ---
               _HadithSection(future: _hadithFuture, qt: qt),
-              const SizedBox(height: 24),
+              const SizedBox(height: 40),
             ],
           ),
         ),
@@ -232,11 +232,11 @@ class _DateHeader extends StatelessWidget {
               letterSpacing: 2.0,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             "${timings!['date']['gregorian']['day']} ${timings!['date']['gregorian']['month']['en']}",
             style: TextStyle(
-              fontSize: 26,
+              fontSize: 28,
               fontWeight: FontWeight.bold,
               color: qt.textPrimary,
               letterSpacing: -0.5,
@@ -244,7 +244,7 @@ class _DateHeader extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
               color: qt.emeraldDeep.withOpacity(0.06),
               borderRadius: BorderRadius.circular(100),
@@ -254,7 +254,7 @@ class _DateHeader extends StatelessWidget {
               style: TextStyle(
                 color: qt.emeraldDeep,
                 fontWeight: FontWeight.bold,
-                fontSize: 12,
+                fontSize: 13,
                 letterSpacing: 0.2,
               ),
             ),
@@ -262,7 +262,7 @@ class _DateHeader extends StatelessWidget {
           const SizedBox(height: 2),
         ] else
           const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
+            padding: EdgeInsets.symmetric(vertical: 20),
             child: CircularProgressIndicator(),
           ),
       ],
@@ -635,7 +635,7 @@ class _PrayerCardState extends State<_PrayerCard>
         height: 220,
         decoration: BoxDecoration(
           color: qt.emeraldDeep,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
         ),
         child: const Center(
           child: CircularProgressIndicator(
@@ -1095,7 +1095,7 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
         ),
         const SizedBox(height: 16),
 
-        // Bento Grid Row 1: Quran (left) + Daily Duas (right) (Square-ish Tiles)
+        // Row 1: Quran (left) + Daily Duas (right)
         Row(
           children: [
             _EssentialCard(
@@ -1136,7 +1136,7 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
         ),
         const SizedBox(height: 16),
 
-        // Bento Grid Row 2: Hadith Library (Wide full-width card)
+        // Row 2: Hadith Library — premium list tile style
         _PremiumEssentialTile(
           icon: FlutterIslamicIcons.solidMohammad,
           iconColor: qt.brightness == Brightness.dark
@@ -1154,44 +1154,25 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
         ),
         const SizedBox(height: 16),
 
-        // Bento Grid Row 3: Hijri Calendar (left) + Prayer Stats (right) (Sleek Compact Bento Tiles)
-        Row(
-          children: [
-            _BentoCompactCard(
-              icon: Icons.calendar_month_rounded,
-              iconColor: qt.brightness == Brightness.dark
-                  ? const Color(0xFFFFB74D)
-                  : Colors.blue.shade600,
-              iconBg: qt.brightness == Brightness.dark
-                  ? const Color(0xFFFFB74D).withOpacity(0.12)
-                  : const Color(0xFFE3F2FD),
-              title: "Islamic Calendar",
-              subtitle: "Hijri Dates & Events",
-              onTap: () {
-                MainNavigation.pushOnShell(
-                    context, const HijriCalendarScreen());
-              },
-              qt: qt,
-            ),
-            const SizedBox(width: 16),
-            _BentoCompactCard(
-              icon: Icons.bar_chart_rounded,
-              iconColor: Colors.green.shade600,
-              iconBg: Colors.green.withOpacity(
-                qt.brightness == Brightness.dark ? 0.12 : 0.08,
-              ),
-              title: "Salah Stats",
-              subtitle: "Your Prayer History",
-              onTap: () {
-                MainNavigation.pushOnShell(context, const PrayerStatsScreen());
-              },
-              qt: qt,
-            ),
-          ],
+        // Row 3: Hijri Calendar
+        _PremiumEssentialTile(
+          icon: Icons.calendar_month_rounded,
+          iconColor: qt.brightness == Brightness.dark
+              ? const Color(0xFFFFB74D)
+              : Colors.blue.shade600,
+          iconBg: qt.brightness == Brightness.dark
+              ? const Color(0xFFFFB74D).withOpacity(0.12)
+              : const Color(0xFFE3F2FD),
+          title: "Hijri Calendar",
+          subtitle: "View Islamic events and dates",
+          onTap: () {
+            MainNavigation.pushOnShell(context, const HijriCalendarScreen());
+          },
+          qt: qt,
         ),
         const SizedBox(height: 16),
 
-        // ─── Expandable Section: Qibla Compass ───
+        // ─── Expandable: Qibla + Prayer Stats ───
         AnimatedCrossFade(
           firstChild: const SizedBox(width: double.infinity),
           secondChild: Column(
@@ -1200,6 +1181,29 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
               _QiblaCompassCard(
                 qiblaDirection: widget.qiblaDirection,
                 qt: qt,
+              ),
+              const SizedBox(height: 16),
+              Consumer<PrayerTracker>(
+                builder: (context, tracker, _) {
+                  final todayCount = tracker.todayPrayedCount;
+                  final streak = tracker.currentStreak;
+                  return _PremiumEssentialTile(
+                    icon: Icons.mosque_rounded,
+                    iconColor: Colors.green.shade600,
+                    iconBg: Colors.green.withOpacity(
+                      qt.brightness == Brightness.dark ? 0.12 : 0.08,
+                    ),
+                    title: "Prayer Stats",
+                    subtitle: todayCount > 0
+                        ? "$todayCount/5 today · $streak-day streak"
+                        : "Check your prayer consistency",
+                    onTap: () {
+                      MainNavigation.pushOnShell(
+                          context, const PrayerStatsScreen());
+                    },
+                    qt: qt,
+                  );
+                },
               ),
             ],
           ),
@@ -1270,106 +1274,6 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// BENTO COMPACT CARD (Shaped to match Wide Tiles visually in side-by-side splits)
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _BentoCompactCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final Color iconBg;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-  final QuranTheme qt;
-
-  const _BentoCompactCard({
-    required this.icon,
-    required this.iconColor,
-    required this.iconBg,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    required this.qt,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: RepaintBoundary(
-        child: GestureDetector(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            onTap();
-          },
-          child: Container(
-            height: 82, // Matches the exact height boundary of our wide tiles!
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: qt.cardBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: qt.borderGlass.withOpacity(0.14),
-                width: 1.0,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.015),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                )
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: iconBg,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Icon(icon, color: iconColor, size: 20),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: qt.textPrimary,
-                          letterSpacing: -0.15,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          color: qt.textMuted,
-                          height: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -1493,10 +1397,10 @@ class _AsmaSliderState extends State<_AsmaSlider> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: qt.cardBg,
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(24),
                                   // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
                                   border: Border.all(
-                                    color: qt.borderGlass.withOpacity(0.14),
+                                    color: qt.borderGlass.withOpacity(0.12),
                                     width: 1.0,
                                   ),
                                   boxShadow: [
@@ -1675,7 +1579,7 @@ class _AyahCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(28),
             // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
             border: Border.all(
-              color: qt.borderGlass.withOpacity(0.14),
+              color: qt.borderGlass.withOpacity(0.12),
               width: 1.0,
             ),
             boxShadow: [
@@ -1843,7 +1747,7 @@ class _HadithCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(28),
             // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
             border: Border.all(
-              color: qt.borderGlass.withOpacity(0.14),
+              color: qt.borderGlass.withOpacity(0.12),
               width: 1.0,
             ),
             boxShadow: [
@@ -2026,10 +1930,10 @@ class _EssentialCard extends StatelessWidget {
             height: 160,
             decoration: BoxDecoration(
               color: qt.cardBg,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(24),
               // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
               border: Border.all(
-                color: qt.borderGlass.withOpacity(0.14),
+                color: qt.borderGlass.withOpacity(0.12),
                 width: 1.0,
               ),
               boxShadow: [
@@ -2083,9 +1987,9 @@ class _EssentialCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+/// ═══════════════════════════════════════════════════════════════════════════
 // PREMIUM ESSENTIAL TILE — horizontal list tile style matching menu_screen
-// ═══════════════════════════════════════════════════════════════════════════
+/// ═══════════════════════════════════════════════════════════════════════════
 
 class _PremiumEssentialTile extends StatelessWidget {
   final IconData icon;
@@ -2118,10 +2022,10 @@ class _PremiumEssentialTile extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: qt.cardBg,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
             // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
             border: Border.all(
-              color: qt.borderGlass.withOpacity(0.14),
+              color: qt.borderGlass.withOpacity(0.12),
               width: 1.0,
             ),
             boxShadow: [
@@ -2176,9 +2080,9 @@ class _PremiumEssentialTile extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+/// ═══════════════════════════════════════════════════════════════════════════
 // QIBLA COMPASS CARD
-// ═══════════════════════════════════════════════════════════════════════════
+/// ═══════════════════════════════════════════════════════════════════════════
 
 class _QiblaCompassCard extends StatefulWidget {
   final double? qiblaDirection;
@@ -2291,10 +2195,10 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: qt.cardBg,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
           // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
           border: Border.all(
-            color: qt.borderGlass.withOpacity(0.14),
+            color: qt.borderGlass.withOpacity(0.12),
             width: 1.0,
           ),
         ),
@@ -2340,10 +2244,10 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
             color: qt.cardBg,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
             // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
             border: Border.all(
-              color: qt.borderGlass.withOpacity(0.14),
+              color: qt.borderGlass.withOpacity(0.12),
               width: 1.0,
             ),
             boxShadow: [
@@ -2451,7 +2355,7 @@ class _QiblaCompassCardState extends State<_QiblaCompassCard> {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
             color: qt.cardBg,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
               // THE CHANGE: Switching heavy borders to active state color transitions
               color:
