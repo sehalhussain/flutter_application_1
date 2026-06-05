@@ -909,23 +909,49 @@ class _PrayerScreenState extends State<PrayerScreen>
           const SizedBox(height: 12),
 
           // Cleaner Legend Row (Grabs correct Theme scope dynamically)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-            decoration: BoxDecoration(
-              color: qt.bg,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _legendDot(const Color(0xFFD1FAE5), 'All Prayed',
-                    Colors.green.shade800),
-                _legendDot(const Color(0xFFFEF3C7), 'Some Prayed',
-                    Colors.orange.shade800),
-                _legendDot(const Color(0xFFFEE2E2), 'None Prayed',
-                    Colors.red.shade800),
-              ],
-            ),
+          Builder(
+            builder: (context) {
+              final legendDark = qt.brightness == Brightness.dark;
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                decoration: BoxDecoration(
+                  color: qt.bg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _legendDot(
+                      legendDark
+                          ? const Color(0xFF064E3B)
+                          : const Color(0xFFD1FAE5),
+                      'All Prayed',
+                      legendDark
+                          ? const Color(0xFF6EE7B7)
+                          : const Color(0xFF065F46),
+                    ),
+                    _legendDot(
+                      legendDark
+                          ? const Color(0xFF713F12)
+                          : const Color(0xFFFEF3C7),
+                      'Some Prayed',
+                      legendDark
+                          ? const Color(0xFFFCD34D)
+                          : const Color(0xFF92400E),
+                    ),
+                    _legendDot(
+                      legendDark
+                          ? const Color(0xFF7F1D1D)
+                          : const Color(0xFFFEE2E2),
+                      'None Prayed',
+                      legendDark
+                          ? const Color(0xFFFCA5A5)
+                          : const Color(0xFF991B1B),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
           const SizedBox(height: 14),
           Row(
@@ -996,15 +1022,20 @@ class _PrayerScreenState extends State<PrayerScreen>
         final allDone = prayedCount == 5;
         final someDone = prayedCount > 0 && prayedCount < 5;
 
+        final isDark = qt.brightness == Brightness.dark;
+
         Color? completionBg;
         if (!isSelected) {
           if (allDone) {
-            completionBg = const Color(0xFFD1FAE5);
+            completionBg =
+                isDark ? const Color(0xFF064E3B) : const Color(0xFFD1FAE5);
           } else if (someDone) {
-            completionBg = const Color(0xFFFEF3C7);
+            completionBg =
+                isDark ? const Color(0xFF713F12) : const Color(0xFFFEF3C7);
           } else if (dDate
               .isBefore(DateTime(today.year, today.month, today.day))) {
-            completionBg = const Color(0xFFFEE2E2);
+            completionBg =
+                isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFEE2E2);
           }
         }
 
@@ -1036,14 +1067,18 @@ class _PrayerScreenState extends State<PrayerScreen>
                         color: isSelected
                             ? Colors.white
                             : (completionBg != null
-                                ? qt.textPrimary
+                                ? (isDark ? Colors.white70 : qt.textPrimary)
                                 : qt.textPrimary))),
                 const SizedBox(height: 1),
                 Text(dayData['date']['hijri']['day'],
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         fontSize: 8,
-                        color: isSelected ? Colors.white70 : qt.textMuted)),
+                        color: isSelected
+                            ? Colors.white60
+                            : (completionBg != null && isDark
+                                ? Colors.white54
+                                : qt.textMuted))),
               ],
             ),
           ),
@@ -1095,7 +1130,6 @@ class _PrayerScreenState extends State<PrayerScreen>
 
   // Fetches state theme context dynamically to resolve the Undefined name 'qt' error!
   Widget _legendDot(Color color, String label, Color textColor) {
-    final qt = QuranTheme.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1110,9 +1144,7 @@ class _PrayerScreenState extends State<PrayerScreen>
         const SizedBox(width: 4),
         Text(label,
             style: TextStyle(
-                fontSize: 10,
-                color: qt.textPrimary.withOpacity(0.8),
-                fontWeight: FontWeight.bold)),
+                fontSize: 10, color: textColor, fontWeight: FontWeight.bold)),
       ],
     );
   }

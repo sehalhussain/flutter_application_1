@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/name_model.dart';
 import '../services/data_service.dart';
 import '../constants/quran_theme.dart';
+import '../main.dart';
 
 class AsmaListScreen extends StatefulWidget {
   const AsmaListScreen({super.key});
@@ -65,7 +66,7 @@ class _AsmaListScreenState extends State<AsmaListScreen> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => MainNavigation.popShell(context),
                     ),
                     const Text("Asma ul Husna",
                         style: TextStyle(

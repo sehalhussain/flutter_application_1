@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/prayer_tracker_provider.dart';
 import '../constants/quran_theme.dart';
+import '../main.dart';
 
 class PrayerStatsScreen extends StatefulWidget {
   const PrayerStatsScreen({super.key});
@@ -172,7 +173,11 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_new_rounded,
               color: qt.textPrimary, size: 20),
-          onPressed: () => Navigator.maybePop(context),
+          onPressed: () {
+            if (!MainNavigation.popShell(context)) {
+              Navigator.maybePop(context);
+            }
+          },
         ),
       ),
       body: Column(
@@ -225,6 +230,8 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
                       const SizedBox(height: 14),
                       _buildGregorianCalendarGrid(
                           qt, tracker, monthDays, monthName, yearNum),
+                      const SizedBox(height: 10),
+                      _buildCalendarLegend(qt),
                       const SizedBox(height: 24),
                       _buildSectionTitle("Monthly Progression", qt),
                       _buildSectionSubtitle(
@@ -855,6 +862,66 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
     );
   }
 
+  Widget _buildCalendarLegend(QuranTheme qt) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: qt.cardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: qt.borderGlass.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _calendarLegendItem(
+            color: const Color(0xFFD1FAE5),
+            label: "All Prayed",
+            textColor: const Color(0xFF065F46),
+          ),
+          _calendarLegendItem(
+            color: const Color(0xFFFEF3C7),
+            label: "Some Prayed",
+            textColor: const Color(0xFF92400E),
+          ),
+          _calendarLegendItem(
+            color: const Color(0xFFFEE2E2),
+            label: "None Prayed",
+            textColor: const Color(0xFF991B1B),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _calendarLegendItem({
+    required Color color,
+    required String label,
+    required Color textColor,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: textColor,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildPrayerBreakdown(
       QuranTheme qt, PrayerTracker tracker, Map<String, double> rates) {
     final prayers = tracker.prayerNames;
@@ -1000,12 +1067,8 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
                       bg = const Color(0xFFD1FAE5);
                     } else if (count > 0 && count < 5) {
                       bg = const Color(0xFFFEF3C7);
-                    } else if (day['hasData'] as bool) {
-                      bg = const Color(0xFFFEE2E2);
                     } else if (!(day['isFuture'] as bool)) {
-                      bg = qt.brightness == Brightness.dark
-                          ? Colors.white.withValues(alpha: 0.04)
-                          : const Color(0xFFF3F4F6);
+                      bg = const Color(0xFFFEE2E2);
                     }
 
                     rowChildren.add(

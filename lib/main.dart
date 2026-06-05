@@ -307,9 +307,20 @@ class MainNavigation extends StatefulWidget {
   }
 
   /// Pop the current screen from the shell navigator.
-  static void popShell(BuildContext context) {
+  /// Returns `true` if a screen was actually popped.
+  static bool popShell(BuildContext context) {
     final state = context.findAncestorStateOfType<MainNavigationState>();
-    state?._popScreen();
+    if (state != null && state._screenStack.isNotEmpty) {
+      state._popScreen();
+      return true;
+    }
+    return false;
+  }
+
+  /// Returns `true` if the shell navigator has a screen to pop.
+  static bool canPopShell(BuildContext context) {
+    final state = context.findAncestorStateOfType<MainNavigationState>();
+    return state != null && state._screenStack.isNotEmpty;
   }
 
   /// Replace the entire shell body with a new screen (clears the stack).

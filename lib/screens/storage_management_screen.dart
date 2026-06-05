@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../services/quran_service.dart';
-import '../services/backup_service.dart';
 import '../constants/quran_theme.dart';
+import '../main.dart';
 
 class StorageManagementScreen extends StatefulWidget {
   const StorageManagementScreen({super.key});
@@ -66,13 +66,17 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
-    final isDark = qt.brightness == Brightness.dark;
 
     return DefaultTabController(
         length: 2,
         child: Scaffold(
           backgroundColor: qt.bg,
           appBar: AppBar(
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_ios_new_rounded,
+                  color: qt.textPrimary, size: 20),
+              onPressed: () => MainNavigation.popShell(context),
+            ),
             title: Text(
               "Manage Storage",
               style: TextStyle(
@@ -88,101 +92,6 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
           ),
           body: Column(
             children: [
-              // Backup & Restore Section (Matching Menu Screen Premium Theme)
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: qt.cardBg,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.cloud_sync_rounded,
-                              color: qt.emeraldDeep, size: 22),
-                          const SizedBox(width: 8),
-                          Text(
-                            "Backup & Restore",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                              color: qt.textPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Export your reading progress, bookmarks, and settings to move them securely to another device.",
-                        style: TextStyle(
-                          color: qt.textMuted,
-                          fontSize: 12,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: SizedBox(
-                              height: 44,
-                              child: ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: qt.emeraldDeep,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12)),
-                                ),
-                                icon: const Icon(Icons.upload_file_rounded,
-                                    size: 18),
-                                label: const Text(
-                                  "Export",
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13),
-                                ),
-                                onPressed: () =>
-                                    BackupService.exportBackup(context),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: SizedBox(
-                              height: 44,
-                              child: OutlinedButton.icon(
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: qt.textPrimary,
-                                  side: BorderSide(color: qt.borderGlass),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12)),
-                                ),
-                                icon: const Icon(Icons.download_rounded,
-                                    size: 18),
-                                label: const Text(
-                                  "Restore",
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13),
-                                ),
-                                onPressed: () =>
-                                    BackupService.importBackup(context),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
               TabBar(
                 labelColor: qt.emeraldDeep,
                 indicatorColor: qt.emeraldDeep,
@@ -198,7 +107,6 @@ class _StorageManagementScreenState extends State<StorageManagementScreen> {
                 ],
               ),
               const SizedBox(height: 10),
-
               Expanded(
                 child: _isLoading
                     ? Center(

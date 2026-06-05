@@ -4,6 +4,7 @@ import '../../constants/quran_theme.dart';
 import '../../models/dua_models.dart';
 import '../../providers/dua_progress_provider.dart';
 import '../../services/data_service.dart';
+import '../../main.dart';
 import 'dua_segment_screen.dart';
 import 'dua_title_screen.dart';
 
@@ -471,11 +472,11 @@ class _DuasScreenState extends State<DuasScreen>
                     SizedBox(
                       width: 44,
                       height: 44,
-                      child: Navigator.canPop(context)
+                      child: MainNavigation.canPopShell(context)
                           ? IconButton(
                               icon: const Icon(Icons.arrow_back_rounded,
                                   color: Colors.white, size: 22),
-                              onPressed: () => Navigator.pop(context),
+                              onPressed: () => MainNavigation.popShell(context),
                             )
                           : const SizedBox.shrink(),
                     ),

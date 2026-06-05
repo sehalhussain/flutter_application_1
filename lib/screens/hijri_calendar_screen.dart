@@ -206,11 +206,11 @@ class _HijriCalendarScreenState extends State<HijriCalendarScreen> {
                     SizedBox(
                       width: 48,
                       height: 48,
-                      child: Navigator.canPop(context)
+                      child: MainNavigation.canPopShell(context)
                           ? IconButton(
                               icon: const Icon(Icons.arrow_back,
                                   color: Colors.white),
-                              onPressed: () => Navigator.pop(context),
+                              onPressed: () => MainNavigation.popShell(context),
                             )
                           : const SizedBox.shrink(),
                     ),
