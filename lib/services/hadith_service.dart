@@ -87,10 +87,8 @@ class HadithService {
   }
 
   // ── Sources for "Hadith of the Day" ──
-  // KEY CHANGE: Included flat book paths so daily quotes aren't locked to Riyad
-  static final List<String> _dailyHadithSources = [
+  static const List<String> _dailyHadithSources = [
     'assets/hadith/riyad_assalihin.db',
-    for (final s in HadithDb.flatBooks) s.assetPath,
   ];
 
   /// Returns one random short [Hadith] from any book, or `null` if loading fails.
@@ -99,15 +97,11 @@ class HadithService {
     final rng = Random();
     final bookPath =
         _dailyHadithSources[rng.nextInt(_dailyHadithSources.length)];
-
     try {
       if (bookPath == HadithDb.riyadAssetPath) {
         return await HadithDb.instance
             .getRandomShortHadith(HadithDb.riyadAssetPath);
       }
-
-      // Pass maxNewlines argument to match interface signature if needed,
-      // or rely on its internal default.
       return await HadithDb.instance.getRandomShortHadithFlat();
     } catch (_) {
       return null;

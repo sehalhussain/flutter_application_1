@@ -6,14 +6,14 @@ import '../models/hadith_models.dart';
 
 class HadithLastReadPosition {
   final String assetPath;
-  final String hadithUuid;
+  final String hadithSrno;
   final String hadithTitle;
   final String chapterTitle;
   final String bookTitle;
 
   const HadithLastReadPosition({
     required this.assetPath,
-    required this.hadithUuid,
+    required this.hadithSrno,
     required this.hadithTitle,
     required this.chapterTitle,
     required this.bookTitle,
@@ -22,7 +22,7 @@ class HadithLastReadPosition {
   factory HadithLastReadPosition.fromJson(Map<String, dynamic> json) {
     return HadithLastReadPosition(
       assetPath: json['assetPath'] as String? ?? '',
-      hadithUuid: json['hadithUuid'] as String? ?? '',
+      hadithSrno: json['hadithSrno'] as String? ?? '',
       hadithTitle: json['hadithTitle'] as String? ?? '',
       chapterTitle: json['chapterTitle'] as String? ?? '',
       bookTitle: json['bookTitle'] as String? ?? '',
@@ -31,7 +31,7 @@ class HadithLastReadPosition {
 
   Map<String, dynamic> toJson() => {
         'assetPath': assetPath,
-        'hadithUuid': hadithUuid,
+        'hadithSrno': hadithSrno,
         'hadithTitle': hadithTitle,
         'chapterTitle': chapterTitle,
         'bookTitle': bookTitle,
@@ -65,24 +65,24 @@ class HadithProgress extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isFavorite(String assetPath, String hadithUuid) {
+  bool isFavorite(String assetPath, String hadithSrno) {
     return _favorites.any((favorite) =>
-        favorite.assetPath == assetPath && favorite.hadithUuid == hadithUuid);
+        favorite.assetPath == assetPath && favorite.hadithSrno == hadithSrno);
   }
 
-  bool isLastRead(String assetPath, String hadithUuid) {
+  bool isLastRead(String assetPath, String hadithSrno) {
     return _lastRead?.assetPath == assetPath &&
-        _lastRead?.hadithUuid == hadithUuid;
+        _lastRead?.hadithSrno == hadithSrno;
   }
 
-  Future<void> toggleFavorite(String assetPath, String hadithUuid) async {
+  Future<void> toggleFavorite(String assetPath, String hadithSrno) async {
     final existingIndex = _favorites.indexWhere((favorite) =>
-        favorite.assetPath == assetPath && favorite.hadithUuid == hadithUuid);
+        favorite.assetPath == assetPath && favorite.hadithSrno == hadithSrno);
     if (existingIndex >= 0) {
       _favorites.removeAt(existingIndex);
     } else {
       _favorites
-          .add(HadithFavorite(assetPath: assetPath, hadithUuid: hadithUuid));
+          .add(HadithFavorite(assetPath: assetPath, hadithSrno: hadithSrno));
     }
     notifyListeners();
     await _persistFavorites();
@@ -90,14 +90,14 @@ class HadithProgress extends ChangeNotifier {
 
   Future<void> setLastRead({
     required String assetPath,
-    required String hadithUuid,
+    required String hadithSrno,
     required String hadithTitle,
     required String chapterTitle,
     required String bookTitle,
   }) async {
     _lastRead = HadithLastReadPosition(
       assetPath: assetPath,
-      hadithUuid: hadithUuid,
+      hadithSrno: hadithSrno,
       hadithTitle: hadithTitle,
       chapterTitle: chapterTitle,
       bookTitle: bookTitle,
@@ -126,5 +126,5 @@ class HadithProgressProvider {
     return Provider.of<HadithProgress>(context, listen: listen);
   }
 
-  void toggleFavorite(String bookAsset, String uuid) {}
+  void toggleFavorite(String bookAsset, String srno) {}
 }

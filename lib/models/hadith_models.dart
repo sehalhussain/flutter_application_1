@@ -5,7 +5,7 @@ class Hadith {
   final String arabicText;
   final String localNum;
   final String grade;
-  final String uuid;
+  final String srno;
   final String bookAsset;
   final String chapterTitle;
 
@@ -16,7 +16,7 @@ class Hadith {
     required this.arabicText,
     required this.localNum,
     required this.grade,
-    required this.uuid,
+    required this.srno,
     required this.bookAsset,
     required this.chapterTitle,
   });
@@ -28,10 +28,9 @@ class Hadith {
       narrator: json['narrator'] as String? ?? '',
       englishText: json['english_text'] as String? ?? '',
       arabicText: json['arabic_text'] as String? ?? '',
-      // KEY FIX: Safely read local_num as a string, regardless of whether it's stored as int or string in JSON
       localNum: json['local_num']?.toString() ?? '',
       grade: json['grade'] as String? ?? '',
-      uuid: json['uuid'] as String? ?? '',
+      srno: json['uuid'] as String? ?? '',
       bookAsset: bookAsset,
       chapterTitle: chapterTitle,
     );
@@ -46,10 +45,9 @@ class Hadith {
       narrator: english['narrator'] as String? ?? '',
       englishText: english['text'] as String? ?? '',
       arabicText: json['arabic'] as String? ?? '',
-      // KEY FIX: Convert to string safely to support potential non-integer keys
       localNum: json['idInBook']?.toString() ?? '',
       grade: '',
-      uuid: 'riyad_${json['id']}',
+      srno: 'riyad_${json['id']}',
       bookAsset: bookAsset,
       chapterTitle: chapterTitle,
     );
@@ -212,17 +210,17 @@ class HadithBookInfo {
 
 class HadithFavorite {
   final String assetPath;
-  final String hadithUuid;
+  final String hadithSrno;
 
-  const HadithFavorite({required this.assetPath, required this.hadithUuid});
+  const HadithFavorite({required this.assetPath, required this.hadithSrno});
 
   Map<String, dynamic> toJson() => {
         'assetPath': assetPath,
-        'hadithUuid': hadithUuid,
+        'hadithSrno': hadithSrno,
       };
 
   factory HadithFavorite.fromJson(Map<String, dynamic> json) => HadithFavorite(
         assetPath: json['assetPath'] as String,
-        hadithUuid: json['hadithUuid'] as String,
+        hadithSrno: json['hadithSrno'] as String,
       );
 }

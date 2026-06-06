@@ -47,6 +47,8 @@ class HadithDb {
   /// Always `true` now that the .db is shipped in assets.
   static const bool riyadUseSql = true;
 
+  Future<Database> getDb(String assetPath) async => _getDb(assetPath);
+
   Future<Database> _getDb(String assetPath) async {
     if (_dbs.containsKey(assetPath)) return _dbs[assetPath]!;
 
@@ -211,9 +213,9 @@ class HadithDb {
     for (final row in chapterRows) {
       final chapterId = (row['id'] as int?) ?? 0;
       final hadithCount = Sqflite.firstIntValue(await db.rawQuery(
-        'SELECT COUNT(*) AS c FROM hadiths WHERE bookId = ? AND chapterId = ?',
-        [meta.bookId, chapterId],
-      )) ??
+            'SELECT COUNT(*) AS c FROM hadiths WHERE bookId = ? AND chapterId = ?',
+            [meta.bookId, chapterId],
+          )) ??
           0;
 
       chapters.add(HadithChapter(
@@ -367,16 +369,14 @@ class HadithDb {
       orderBy: 'CAST(local_num AS INTEGER) ASC, local_num ASC',
     );
 
-    final hadiths = rows
-        .map((r) => _flatHadithFromRow(r, spec))
-        .toList(growable: false);
+    final hadiths =
+        rows.map((r) => _flatHadithFromRow(r, spec)).toList(growable: false);
 
     return HadithChapter(
       num: (hadiths.isNotEmpty ? hadiths.first.localNum : '0'),
       englishTitle: chapterKey,
-      arabicTitle: rows.isNotEmpty
-          ? (rows.first['arabic_title'] as String?) ?? ''
-          : '',
+      arabicTitle:
+          rows.isNotEmpty ? (rows.first['arabic_title'] as String?) ?? '' : '',
       hadithList: hadiths,
       hadithCount: hadiths.length,
       chapterKey: chapterKey,
@@ -400,7 +400,7 @@ class HadithDb {
       arabicText: (row['arabic'] as String?) ?? '',
       localNum: localNum,
       grade: '',
-      uuid: 'riyad_${row['id']}',
+      srno: 'riyad_${row['id']}',
       bookAsset: bookAsset,
       chapterTitle: chapterTitle,
     );
@@ -548,7 +548,6 @@ class HadithDb {
     final chapterEnglish = (row['english_title'] as String?) ?? spec.name;
     final bookFile = spec.assetPath.split('/').last;
     final bookNum = row['book_num']?.toString() ?? '';
-    final syntheticUuid = '$bookFile#$bookNum#$localNum';
 
     return Hadith(
       title: title,
@@ -557,7 +556,7 @@ class HadithDb {
       arabicText: (row['arabic_text'] as String?) ?? '',
       localNum: localNum,
       grade: grade,
-      uuid: (row['uuid'] as String?) ?? syntheticUuid,
+      srno: (row['sr_no'] as int?)?.toString() ?? '',
       bookAsset: spec.assetPath,
       chapterTitle: chapterEnglish,
     );

@@ -7,6 +7,7 @@ import '../../models/hadith_models.dart';
 import '../../providers/quran_settings_provider.dart';
 import '../../providers/hadith_progress_provider.dart';
 import '../../providers/hadith_reader_settings_provider.dart';
+import 'hadith_search_screen.dart';
 
 class HadithReaderScreen extends StatefulWidget {
   final Hadith hadith;
@@ -26,7 +27,7 @@ class HadithReaderScreen extends StatefulWidget {
 
 class _HadithReaderScreenState extends State<HadithReaderScreen> {
   void _toggleFavorite(HadithProgressProvider progress) {
-    progress.toggleFavorite(widget.hadith.bookAsset, widget.hadith.uuid);
+    progress.toggleFavorite(widget.hadith.bookAsset, widget.hadith.srno);
   }
 
   void _openReaderSettings() {
@@ -84,7 +85,7 @@ class _HadithReaderScreenState extends State<HadithReaderScreen> {
     final progress = HadithProgressProvider.of(context, listen: true);
     final settings = HadithReaderSettingsProvider.of(context, listen: true);
     final isFavorite =
-        progress.isFavorite(widget.hadith.bookAsset, widget.hadith.uuid);
+        progress.isFavorite(widget.hadith.bookAsset, widget.hadith.srno);
     final canGoBack =
         Navigator.canPop(context) || MainNavigation.canPopShell(context);
     final topPadding = MediaQuery.of(context).padding.top;
@@ -159,23 +160,34 @@ class _HadithReaderScreenState extends State<HadithReaderScreen> {
                   ],
                 ),
                 const SizedBox(height: 10),
-                // Chapter Sub-title tag
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    widget.chapterTitle.toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white.withOpacity(0.95),
-                      letterSpacing: 0.5,
+                // Chapter Sub-title tag (tappable → unified search with this book)
+                GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => HadithSearchScreen(
+                          preSelectedBookTitle: widget.bookTitle,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      widget.chapterTitle.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white.withOpacity(0.95),
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                 ),

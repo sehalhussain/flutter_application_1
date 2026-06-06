@@ -8,6 +8,7 @@ import '../../providers/hadith_reader_settings_provider.dart';
 import '../../providers/quran_settings_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../services/hadith_service.dart';
+import 'hadith_search_screen.dart';
 
 class HadithChapterScreen extends StatefulWidget {
   final HadithChapter chapter;
@@ -151,7 +152,7 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
   bool _listsEqual(List<_SearchableHadith> a, List<_SearchableHadith> b) {
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {
-      if (a[i].hadith.uuid != b[i].hadith.uuid) return false;
+      if (a[i].hadith.srno != b[i].hadith.srno) return false;
     }
     return true;
   }
@@ -185,7 +186,7 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
 
   Future<void> _markAsLastRead(Hadith hadith) async {
     final progress = HadithProgressProvider.of(context, listen: false);
-    final isLastRead = progress.isLastRead(widget.bookAsset, hadith.uuid);
+    final isLastRead = progress.isLastRead(widget.bookAsset, hadith.srno);
 
     if (isLastRead) {
       await progress.clearLastRead();
@@ -200,7 +201,7 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
     } else {
       await progress.setLastRead(
         assetPath: widget.bookAsset,
-        hadithUuid: hadith.uuid,
+        hadithSrno: hadith.srno,
         hadithTitle: hadith.title,
         chapterTitle: widget.chapter.englishTitle,
         bookTitle: widget.bookName,
@@ -218,7 +219,7 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
 
   Future<void> _toggleFavorite(Hadith hadith) async {
     final progress = HadithProgressProvider.of(context, listen: false);
-    await progress.toggleFavorite(widget.bookAsset, hadith.uuid);
+    await progress.toggleFavorite(widget.bookAsset, hadith.srno);
   }
 
   void _shareHadith(Hadith hadith) {
@@ -324,22 +325,36 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
                           color: Colors.white70, size: 18),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          focusNode: _searchFocusNode,
-                          cursorColor: Colors.white,
-                          decoration: InputDecoration(
-                            hintText: 'Search hadiths in this chapter...',
-                            hintStyle: TextStyle(
-                                color: Colors.white.withOpacity(0.6),
-                                fontSize: 13),
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding:
-                                const EdgeInsets.symmetric(vertical: 12),
+                        child: GestureDetector(
+                          onTap: () {
+                            // Navigate to unified search with this book pre-filtered
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => HadithSearchScreen(
+                                  preSelectedBookTitle: widget.bookName,
+                                ),
+                              ),
+                            );
+                          },
+                          child: AbsorbPointer(
+                            child: TextField(
+                              controller: _searchController,
+                              focusNode: _searchFocusNode,
+                              cursorColor: Colors.white,
+                              decoration: InputDecoration(
+                                hintText: 'Search hadiths in this chapter...',
+                                hintStyle: TextStyle(
+                                    color: Colors.white.withOpacity(0.6),
+                                    fontSize: 13),
+                                border: InputBorder.none,
+                                isDense: true,
+                                contentPadding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 14),
+                            ),
                           ),
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 14),
                         ),
                       ),
                       if (_isSearching)
@@ -434,7 +449,7 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
                               }
                               final hadith = _displayedHadiths[index];
                               final isLastRead = progress.isLastRead(
-                                  widget.bookAsset, hadith.uuid);
+                                  widget.bookAsset, hadith.srno);
 
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -614,12 +629,12 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
                                             qt,
                                             icon: progress.isFavorite(
                                                     widget.bookAsset,
-                                                    hadith.uuid)
+                                                    hadith.srno)
                                                 ? Icons.favorite_rounded
                                                 : Icons.favorite_border_rounded,
                                             color: progress.isFavorite(
                                                     widget.bookAsset,
-                                                    hadith.uuid)
+                                                    hadith.srno)
                                                 ? Colors.redAccent
                                                 : qt.textMuted,
                                             onPressed: () =>

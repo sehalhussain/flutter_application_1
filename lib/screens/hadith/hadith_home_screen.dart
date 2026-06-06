@@ -49,7 +49,7 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
     for (final favorite in progress.favorites) {
       groupedFavorites
           .putIfAbsent(favorite.assetPath, () => <String>{})
-          .add(favorite.hadithUuid);
+          .add(favorite.hadithSrno);
     }
 
     final favorites = <FavoriteHadithItem>[];
@@ -57,7 +57,7 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
       final book = await HadithService.instance.loadHadithBook(assetPath);
       for (final chapter in book.allBooks) {
         for (final hadith in chapter.hadithList) {
-          if (groupedFavorites[assetPath]!.contains(hadith.uuid)) {
+          if (groupedFavorites[assetPath]!.contains(hadith.srno)) {
             favorites.add(FavoriteHadithItem(
               hadith: hadith,
               bookTitle: book.name,
@@ -108,7 +108,7 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
     final topPadding = MediaQuery.of(context).padding.top;
 
     final currentKey = progress.favorites
-        .map((favorite) => '${favorite.assetPath}|${favorite.hadithUuid}')
+        .map((favorite) => '${favorite.assetPath}|${favorite.hadithSrno}')
         .join(',');
     if (currentKey != _favoritesKey) {
       _favoritesKey = currentKey;
@@ -588,7 +588,7 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
                           GestureDetector(
                             onTap: () async {
                               await progress.toggleFavorite(
-                                  item.hadith.bookAsset, item.hadith.uuid);
+                                  item.hadith.bookAsset, item.hadith.srno);
                               setState(() {
                                 _favoritesFuture = _loadFavoriteHadiths();
                               });
@@ -658,7 +658,7 @@ class _HadithHomeScreenState extends State<HadithHomeScreen>
         );
         HadithChapter? foundChapter;
         for (final chapter in book.allBooks) {
-          if (chapter.hadithList.any((h) => h.uuid == lastRead.hadithUuid)) {
+          if (chapter.hadithList.any((h) => h.srno == lastRead.hadithSrno)) {
             foundChapter = chapter;
             break;
           }
