@@ -8,6 +8,16 @@ import '../../services/hadith_service.dart';
 import 'hadith_chapter_screen.dart';
 import 'hadith_reader_screen.dart';
 
+/// Whether [text] contains any Arabic Unicode characters (U+0600–U+06FF, U+0750–U+077F, U+08A0–U+08FF, U+FB50–U+FDFF, U+FE70–U+FEFF).
+bool _hasArabic(String text) {
+  return text.runes.any((r) =>
+      (r >= 0x0600 && r <= 0x06FF) ||
+      (r >= 0x0750 && r <= 0x077F) ||
+      (r >= 0x08A0 && r <= 0x08FF) ||
+      (r >= 0xFB50 && r <= 0xFDFF) ||
+      (r >= 0xFE70 && r <= 0xFEFF));
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // SEARCH RESULT TYPES
 // ═══════════════════════════════════════════════════════════════════════════
@@ -47,7 +57,7 @@ class HadithResult extends SearchResult {
     required super.score,
     this.subtitleTag,
   })  : isLongArabic = hadith.arabicText.length > 150,
-        isLongEnglish = hadith.englishText.length > 200;
+        isLongEnglish = hadith.englishText.length > 400;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -246,10 +256,6 @@ class _HadithSearchScreenState extends State<HadithSearchScreen> {
     );
     final sqlLike = '%$strippedQuery%';
 
-    if (book.assetPath == HadithDb.riyadAssetPath) {
-      return _searchRiyadBook(book, lowerQuery, sqlLike);
-    }
-
     final spec = HadithDb.flatSpecFor(book.assetPath);
     if (spec != null) {
       return _searchFlatBook(spec, book, lowerQuery, sqlLike);
@@ -259,122 +265,7 @@ class _HadithSearchScreenState extends State<HadithSearchScreen> {
   }
 
   // ═════════════════════════════════════════════════════════════════════════
-  // RIYAD AS-SALIHIN SEARCH
-  // ═════════════════════════════════════════════════════════════════════════
-
-  Future<List<SearchResult>> _searchRiyadBook(
-      HadithBookInfo book, String lowerQuery, String sqlLike) async {
-    final db = await HadithDb.instance.getDb(book.assetPath);
-    final results = <SearchResult>[];
-    final Set<String> matchedSrnos = {};
-
-    // 1. SR_NO EXACT MATCH: If user types a number, look it up by sr_no directly
-    final int? targetSrno;
-    final pureInt = int.tryParse(lowerQuery);
-    if (pureInt != null && pureInt > 0) {
-      targetSrno = pureInt;
-    } else {
-      final match = _smartKeywordRegex.firstMatch(lowerQuery);
-      if (match != null) {
-        final keyword = match.group(1)!.toLowerCase();
-        if (keyword == 'riyad' || keyword == 'salihin') {
-          targetSrno = int.tryParse(match.group(2)!);
-        } else {
-          targetSrno = null;
-        }
-      } else {
-        targetSrno = null;
-      }
-    }
-
-    if (targetSrno != null && targetSrno > 0) {
-      // Use `id` which is the true chronological row position (sequential, gapless)
-      final tp = targetSrno;
-      final offsetRows = await db.rawQuery('''
-        SELECT h.*, c.english AS chapter_english, c.arabic AS chapter_arabic, c.id AS chapter_id
-        FROM hadiths h
-        LEFT JOIN chapters c ON h.chapterId = c.id
-        WHERE h.id = ?
-        LIMIT 1
-      ''', [tp]);
-
-      if (offsetRows.isNotEmpty) {
-        final row = offsetRows.first;
-        final chapterName = (row['chapter_english'] as String?) ?? '';
-        final hadith = _riyadRowToHadith(row, book.assetPath, chapterName);
-
-        matchedSrnos.add(hadith.srno);
-        results.add(HadithResult(
-          hadith: hadith,
-          bookTitle: book.title,
-          bookAsset: book.assetPath,
-          chapterTitle: chapterName,
-          score: 50,
-          subtitleTag: 'Sr. #$targetSrno',
-        ));
-      }
-    }
-
-    // 2. Standard Text SQL Query
-    final rows = await db.rawQuery('''
-      SELECT h.*, c.english AS chapter_english, c.arabic AS chapter_arabic, c.id AS chapter_id
-      FROM hadiths h
-      LEFT JOIN chapters c ON h.chapterId = c.id
-      WHERE h.text LIKE ?
-         OR h.arabic LIKE ?
-         OR h.narrator LIKE ?
-      ORDER BY h.id ASC
-    ''', [sqlLike, sqlLike, sqlLike]);
-
-    final Map<int, List<Hadith>> chapterHadiths = {};
-    final Map<int, String> chapterNames = {};
-
-    for (final row in rows) {
-      final chapterId = (row['chapter_id'] as int?) ?? 0;
-      final chapterName = (row['chapter_english'] as String?) ?? '';
-      chapterNames[chapterId] = chapterName;
-
-      final hadith = _riyadRowToHadith(row, book.assetPath, chapterName);
-
-      // Avoid duplicating standard results if we already added it via smart positioning
-      if (!matchedSrnos.contains(hadith.srno)) {
-        chapterHadiths.putIfAbsent(chapterId, () => []).add(hadith);
-      }
-    }
-
-    for (final entry in chapterHadiths.entries) {
-      final chapter = HadithChapter(
-        num: entry.key.toString(),
-        englishTitle: chapterNames[entry.key] ?? '',
-        arabicTitle: '',
-        hadithList: const [],
-        hadithCount: entry.value.length,
-        chapterKey: entry.key.toString(),
-      );
-
-      results.add(ChapterResult(
-        chapter: chapter,
-        bookTitle: book.title,
-        bookAsset: book.assetPath,
-        score: 10,
-      ));
-
-      for (final hadith in entry.value) {
-        results.add(HadithResult(
-          hadith: hadith,
-          bookTitle: book.title,
-          bookAsset: book.assetPath,
-          chapterTitle: chapterNames[entry.key] ?? '',
-          score: _scoreHadith(hadith, lowerQuery),
-        ));
-      }
-    }
-
-    return results;
-  }
-
-  // ═════════════════════════════════════════════════════════════════════════
-  // FLAT BOOK SEARCH (Bukhari, Muslim, Tirmidhi, Dawud, Nasai, Ibn Majah)
+  // FLAT BOOK SEARCH (all books use the same hadith_library schema)
   // ═════════════════════════════════════════════════════════════════════════
 
   Future<List<SearchResult>> _searchFlatBook(HadithBookSpec spec,
@@ -530,22 +421,14 @@ class _HadithSearchScreenState extends State<HadithSearchScreen> {
     return 1;
   }
 
-  Hadith _riyadRowToHadith(
-      Map<String, Object?> row, String bookAsset, String chapterTitle) {
-    return Hadith(
-      title: '',
-      narrator: (row['narrator'] as String?) ?? '',
-      englishText: (row['text'] as String?) ?? '',
-      arabicText: (row['arabic'] as String?) ?? '',
-      localNum: (row['id'] as int?)?.toString() ?? '',
-      grade: '',
-      srno: 'riyad_${row['id']}',
-      bookAsset: bookAsset,
-      chapterTitle: chapterTitle,
-    );
-  }
-
   Hadith _flatRowToHadith(Map<String, Object?> row, HadithBookSpec spec) {
+    final rawSrNo = row['sr_no'];
+    final srno = rawSrNo is String
+        ? rawSrNo
+        : rawSrNo is int
+            ? rawSrNo.toString()
+            : '';
+
     return Hadith(
       title: (row['title'] as String?) ?? '',
       narrator: (row['narrator'] as String?) ?? '',
@@ -553,7 +436,7 @@ class _HadithSearchScreenState extends State<HadithSearchScreen> {
       arabicText: (row['arabic_text'] as String?) ?? '',
       localNum: (row['local_num'] as String?) ?? '',
       grade: (row['grade'] as String?) ?? '',
-      srno: (row['sr_no'] as int?)?.toString() ?? '',
+      srno: srno,
       bookAsset: spec.assetPath,
       chapterTitle: (row['english_title'] as String?) ?? '',
     );
@@ -595,10 +478,7 @@ class _HadithSearchScreenState extends State<HadithSearchScreen> {
       _selectedBooks ??= _books!.map((b) => b.title).toSet();
       if (_selectedBooks!.contains(bookTitle)) {
         _selectedBooks!.remove(bookTitle);
-        if (_selectedBooks!.isEmpty) {
-          // If nothing selected, treat as "all selected" (null = all)
-          _selectedBooks = null;
-        }
+        // If nothing selected, keep as empty set (no books = no results)
       } else {
         _selectedBooks!.add(bookTitle);
         // If all books are now selected, treat as null (all)
@@ -924,6 +804,27 @@ class _HadithSearchScreenState extends State<HadithSearchScreen> {
                             'Select All',
                             style: TextStyle(
                               color: qt.emeraldDeep,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _selectedBooks = {};
+                              if (_isSearching &&
+                                  _searchController.text.trim().isNotEmpty) {
+                                _executeSearch(_searchController.text.trim());
+                              }
+                            });
+                            setSheetState(() {});
+                          },
+                          child: Text(
+                            'Deselect All',
+                            style: TextStyle(
+                              color: qt.emeraldDeep.withOpacity(0.6),
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),
@@ -1418,8 +1319,13 @@ class _HadithSearchScreenState extends State<HadithSearchScreen> {
     );
   }
 
+  /// Whether the current search query contains Arabic characters.
+  bool get _searchQueryHasArabic => _hasArabic(_searchController.text.trim());
+
   Widget _buildHadithResultCard(QuranTheme qt, HadithResult result) {
     final settings = HadithReaderSettingsProvider.of(context, listen: true);
+    final showArabic =
+        _searchQueryHasArabic && result.hadith.arabicText.isNotEmpty;
 
     return RepaintBoundary(
       child: GestureDetector(
@@ -1524,7 +1430,7 @@ class _HadithSearchScreenState extends State<HadithSearchScreen> {
                 ),
                 const SizedBox(height: 10),
               ],
-              if (result.hadith.arabicText.isNotEmpty)
+              if (showArabic)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
@@ -1547,15 +1453,14 @@ class _HadithSearchScreenState extends State<HadithSearchScreen> {
                     ),
                   ),
                 ),
-              if (result.hadith.arabicText.isNotEmpty &&
-                  result.hadith.englishText.isNotEmpty)
+              if (showArabic && result.hadith.englishText.isNotEmpty)
                 const SizedBox(height: 10),
               if (result.hadith.englishText.isNotEmpty)
                 Text(
                   result.isLongEnglish
-                      ? '${result.hadith.englishText.substring(0, 200)}…'
+                      ? '${result.hadith.englishText.substring(0, 400)}…'
                       : result.hadith.englishText,
-                  maxLines: 4,
+                  maxLines: 8,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: qt.textSecondary,

@@ -7,7 +7,7 @@ import '../../models/hadith_models.dart';
 import '../../providers/quran_settings_provider.dart';
 import '../../providers/hadith_progress_provider.dart';
 import '../../providers/hadith_reader_settings_provider.dart';
-import 'hadith_search_screen.dart';
+import 'hadith_chapter_screen.dart';
 
 class HadithReaderScreen extends StatefulWidget {
   final Hadith hadith;
@@ -36,6 +36,26 @@ class _HadithReaderScreenState extends State<HadithReaderScreen> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) => const HadithReaderSettingsSheet(),
+    );
+  }
+
+  void _openChapter() {
+    final chapter = HadithChapter(
+      num: '',
+      englishTitle: widget.chapterTitle,
+      arabicTitle: '',
+      hadithList: const [],
+      hadithCount: 0,
+      chapterKey: widget.chapterTitle,
+    );
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => HadithChapterScreen(
+          chapter: chapter,
+          bookAsset: widget.hadith.bookAsset,
+          bookName: widget.bookTitle,
+        ),
+      ),
     );
   }
 
@@ -135,16 +155,19 @@ class _HadithReaderScreenState extends State<HadithReaderScreen> {
                           : const SizedBox.shrink(),
                     ),
                     Expanded(
-                      child: Text(
-                        widget.bookTitle,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.5,
+                      child: GestureDetector(
+                        onTap: () => _openChapter(),
+                        child: Text(
+                          widget.bookTitle,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                          ),
                         ),
                       ),
                     ),
@@ -160,17 +183,9 @@ class _HadithReaderScreenState extends State<HadithReaderScreen> {
                   ],
                 ),
                 const SizedBox(height: 10),
-                // Chapter Sub-title tag (tappable → unified search with this book)
+                // Chapter Sub-title tag (tappable → opens this chapter)
                 GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => HadithSearchScreen(
-                          preSelectedBookTitle: widget.bookTitle,
-                        ),
-                      ),
-                    );
-                  },
+                  onTap: () => _openChapter(),
                   child: Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 4),

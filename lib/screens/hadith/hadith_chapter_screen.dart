@@ -451,6 +451,11 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
                               final isLastRead = progress.isLastRead(
                                   widget.bookAsset, hadith.srno);
 
+                              // Determine if title should be shown (first occurrence or changed)
+                              final showTitle = index == 0 ||
+                                  hadith.title !=
+                                      _displayedHadiths[index - 1].title;
+
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
@@ -499,30 +504,32 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
                                   ),
                                   const SizedBox(height: 12),
 
-                                  // Hadith Title Text
-                                  Text(
-                                    hadith.title,
-                                    style: TextStyle(
-                                      color: qt.textPrimary,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16.5,
-                                      height: 1.35,
-                                      letterSpacing: -0.2,
-                                    ),
-                                  ),
-
-                                  // Narrator sub-labeling
-                                  if (hadith.narrator.isNotEmpty) ...[
-                                    const SizedBox(height: 8),
+                                  // Hadith Title Text — only shown when title differs from previous hadith
+                                  if (showTitle) ...[
                                     Text(
-                                      '${hadith.narrator}',
+                                      hadith.title,
                                       style: TextStyle(
-                                        color: qt.emeraldMid,
-                                        fontSize: 12.5,
-                                        fontStyle: FontStyle.italic,
-                                        fontWeight: FontWeight.w400,
+                                        color: qt.textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16.5,
+                                        height: 1.35,
+                                        letterSpacing: -0.2,
                                       ),
                                     ),
+
+                                    // Narrator sub-labeling
+                                    if (hadith.narrator.isNotEmpty) ...[
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        '${hadith.narrator}',
+                                        style: TextStyle(
+                                          color: qt.emeraldMid,
+                                          fontSize: 12.5,
+                                          fontStyle: FontStyle.italic,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                    ],
                                   ],
 
                                   if (settings.showArabic &&

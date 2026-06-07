@@ -18,6 +18,7 @@ import '../main.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'asma_list_screen.dart';
 import 'hadith/hadith_home_screen.dart';
+import 'hadith/hadith_chapter_screen.dart';
 import 'hadith/hadith_reader_screen.dart';
 import 'quran/quran_home_screen.dart';
 import 'quran/quran_reader_screen.dart';
@@ -1728,166 +1729,217 @@ class _HadithCard extends StatelessWidget {
     final bookTitle = _bookNameFromAsset(hadith.bookAsset);
 
     return RepaintBoundary(
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          MainNavigation.pushOnShell(
-            context,
-            HadithReaderScreen(
-              hadith: hadith,
-              bookTitle: bookTitle,
-              chapterTitle: hadith.chapterTitle,
-            ),
-          );
-        },
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: qt.cardBg,
-            borderRadius: BorderRadius.circular(28),
-            // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
-            border: Border.all(
-              color: qt.borderGlass.withOpacity(0.12),
-              width: 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Narrator ──
-              Text(
-                hadith.narrator,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: qt.emeraldDeep,
-                  height: 1.4,
-                  fontWeight: FontWeight.bold,
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              MainNavigation.pushOnShell(
+                context,
+                HadithReaderScreen(
+                  hadith: hadith,
+                  bookTitle: bookTitle,
+                  chapterTitle: hadith.chapterTitle,
                 ),
-              ),
-              const SizedBox(height: 16),
-              // ── English translation (formatted like reader screens) ──
-              Text(
-                hadith.englishText
-                    .trim()
-                    .split('\n\n')
-                    .map((p) => p.replaceAll(RegExp(r'\s+'), ' ').trim())
-                    .join('\n\n'),
-                textAlign: TextAlign.start,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: qt.textSecondary,
-                  height: 1.5,
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: qt.cardBg,
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(
+                  color: qt.borderGlass.withOpacity(0.12),
+                  width: 1.0,
                 ),
-              ),
-              const SizedBox(height: 20),
-
-              // ── Badges: Book name · Chapter · Hadith # ──
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  // Book name badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: qt.emeraldDeep.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.menu_book_rounded,
-                            size: 11, color: qt.emeraldDeep),
-                        const SizedBox(width: 5),
-                        Text(
-                          bookTitle,
-                          style: TextStyle(
-                            color: qt.emeraldDeep,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ],
-                    ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
-                  // Chapter badge
-                  if (hadith.chapterTitle.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: qt.emeraldDeep.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.folder_outlined,
-                              size: 11, color: qt.emeraldDeep),
-                          const SizedBox(width: 5),
-                          Flexible(
-                            child: Text(
-                              hadith.chapterTitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: qt.emeraldDeep,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  // Hadith number badge
-                  if (hadith.localNum.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: qt.emeraldDeep.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.tag_rounded,
-                              size: 11, color: qt.emeraldDeep),
-                          const SizedBox(width: 5),
-                          Text(
-                            'Hadith #${hadith.localNum}',
-                            style: TextStyle(
-                              color: qt.emeraldDeep,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                 ],
               ),
-            ],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (hadith.title.isNotEmpty) ...[
+                    Text(
+                      hadith.title,
+                      style: TextStyle(
+                        color: qt.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        height: 1.35,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  Text(
+                    hadith.narrator,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: qt.emeraldDeep,
+                      height: 1.4,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    hadith.englishText
+                        .trim()
+                        .split('\n\n')
+                        .map((p) => p.replaceAll(RegExp(r'\s+'), ' ').trim())
+                        .join('\n\n'),
+                    textAlign: TextAlign.start,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: qt.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      // Book name badge (tappable)
+                      GestureDetector(
+                        onTap: () {
+                          final chapter = HadithChapter(
+                            num: '',
+                            englishTitle: hadith.chapterTitle,
+                            arabicTitle: '',
+                            hadithList: const [],
+                            hadithCount: 0,
+                            chapterKey: hadith.chapterTitle,
+                          );
+                          MainNavigation.pushOnShell(
+                            context,
+                            HadithChapterScreen(
+                              chapter: chapter,
+                              bookAsset: hadith.bookAsset,
+                              bookName: bookTitle,
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: qt.emeraldDeep.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.menu_book_rounded,
+                                  size: 11, color: qt.emeraldDeep),
+                              const SizedBox(width: 5),
+                              Text(
+                                bookTitle,
+                                style: TextStyle(
+                                  color: qt.emeraldDeep,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Chapter badge (tappable)
+                      if (hadith.chapterTitle.isNotEmpty)
+                        GestureDetector(
+                          onTap: () {
+                            final chapter = HadithChapter(
+                              num: '',
+                              englishTitle: hadith.chapterTitle,
+                              arabicTitle: '',
+                              hadithList: const [],
+                              hadithCount: 0,
+                              chapterKey: hadith.chapterTitle,
+                            );
+                            MainNavigation.pushOnShell(
+                              context,
+                              HadithChapterScreen(
+                                chapter: chapter,
+                                bookAsset: hadith.bookAsset,
+                                bookName: bookTitle,
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: qt.emeraldDeep.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.folder_outlined,
+                                    size: 11, color: qt.emeraldDeep),
+                                const SizedBox(width: 5),
+                                Flexible(
+                                  child: Text(
+                                    hadith.chapterTitle,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: qt.emeraldDeep,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      if (hadith.localNum.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 7,
+                          ),
+                          decoration: BoxDecoration(
+                            color: qt.emeraldDeep.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.tag_rounded,
+                                  size: 11, color: qt.emeraldDeep),
+                              const SizedBox(width: 5),
+                              Text(
+                                'Hadith #${hadith.localNum}',
+                                style: TextStyle(
+                                  color: qt.emeraldDeep,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
