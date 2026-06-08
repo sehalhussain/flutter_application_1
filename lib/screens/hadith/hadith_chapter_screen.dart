@@ -516,20 +516,20 @@ class _HadithChapterScreenState extends State<HadithChapterScreen> {
                                         letterSpacing: -0.2,
                                       ),
                                     ),
+                                  ],
 
-                                    // Narrator sub-labeling
-                                    if (hadith.narrator.isNotEmpty) ...[
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        '${hadith.narrator}',
-                                        style: TextStyle(
-                                          color: qt.emeraldMid,
-                                          fontSize: 12.5,
-                                          fontStyle: FontStyle.italic,
-                                          fontWeight: FontWeight.w400,
-                                        ),
+                                  // Narrator sub-labeling — always shown for every hadith
+                                  if (hadith.narrator.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      hadith.narrator,
+                                      style: TextStyle(
+                                        color: qt.emeraldMid,
+                                        fontSize: 12.5,
+                                        fontStyle: FontStyle.italic,
+                                        fontWeight: FontWeight.w400,
                                       ),
-                                    ],
+                                    ),
                                   ],
 
                                   if (settings.showArabic &&
