@@ -32,7 +32,7 @@ class QuranService {
   static const _dbIndoPak =
       '$_base/Scripts/digital-khatt-indopak-ayah-by-ayah-script.db';
   static const _dbLiteration = '$_base/Transliteration/en-literation.db';
-  static const _dbSurahInfo = '$_base/Surah info/surah-info-en.db';
+  static const _dbSurahInfo = '$_base/SurahInfo/surah-info-en.db';
 
   // ── JSON asset paths (kept as-is per user request) ────────────────────────
   static const _pathAyahAudioDefault =

@@ -75,7 +75,7 @@ flutter:
     - assets/data/quran/Scripts/
     - assets/data/quran/Translations/
     - assets/data/quran/Transliteration/
-    - assets/data/quran/Surah info/
+    - assets/data/quran/SurahInfo/
     - assets/icons/
     - assets/fonts/
     - assets/hadith/
