@@ -12,7 +12,6 @@ import 'package:intl/intl.dart';
 import '../main.dart';
 import 'prayer_stats_screen.dart';
 
-/// Lightweight wrapper to keep off-screen list view items alive in memory
 class KeepAliveWrapper extends StatefulWidget {
   final Widget child;
   const KeepAliveWrapper({super.key, required this.child});
@@ -49,7 +48,6 @@ class _PrayerScreenState extends State<PrayerScreen>
   Map<String, dynamic>? _selectedDay;
   bool _isLoading = true;
 
-  // Initializing these inline completely prevents LateInitializationErrors
   final ConfettiController _confettiController = ConfettiController(
     duration: const Duration(seconds: 3),
   );
@@ -100,14 +98,12 @@ class _PrayerScreenState extends State<PrayerScreen>
           } else if (selectLastDay) {
             _selectedDay = data.last;
           } else {
-            // Smart update: check if we already have an existing day selected
             final existingDayStr = _selectedDay?['date']?['gregorian']?['day'];
             final existingDay = existingDayStr != null
                 ? int.tryParse(existingDayStr.toString())
                 : null;
 
             if (existingDay != null && existingDay <= data.length) {
-              // Maintain the current selected day if we are just refreshing
               _selectedDay = data.firstWhere((d) {
                 final parts = d['date']['gregorian']['date'].split('-');
                 return int.parse(parts[0]) == existingDay;
@@ -129,7 +125,6 @@ class _PrayerScreenState extends State<PrayerScreen>
           _isLoading = false;
         });
 
-        // Smoothly auto-scroll to center the active selected day in the horizontal slider
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _scrollToSelectedDay(animate: false);
         });
@@ -141,23 +136,31 @@ class _PrayerScreenState extends State<PrayerScreen>
     }
   }
 
-  /// Centers the active selected day in the horizontal scroll list
   void _scrollToSelectedDay({bool animate = true}) {
     if (_dateScrollController.hasClients &&
         _calendarData != null &&
         _selectedDay != null) {
       final index = _calendarData!.indexOf(_selectedDay!);
       if (index != -1) {
-        // Precise width sizing of each date item + spacing
-        const double itemWidth = 62.0;
-        const double spacing = 8.0;
         final double screenWidth = MediaQuery.of(context).size.width;
 
-        // Calculate centered offset position
-        final double targetOffset = (index * (itemWidth + spacing)) -
-            (screenWidth / 2) +
-            (itemWidth / 2) +
-            16;
+        // Dynamic horizontal layout math based on inactive (48px) and active (72px) states
+        double targetOffset = 0.0;
+        const double spacing = 8.0;
+
+        for (int i = 0; i < index; i++) {
+          targetOffset += 48.0 + spacing;
+        }
+
+        // Adding half the width of the active selected item (72.0)
+        targetOffset += 72.0 / 2.0;
+
+        // Account for horizontal list padding-left (16.0)
+        targetOffset += 16.0;
+
+        // Subtract half screen width to keep selected item at center-stage
+        targetOffset -= screenWidth / 2.0;
+
         final double maxScroll = _dateScrollController.position.maxScrollExtent;
         final double minScroll = _dateScrollController.position.minScrollExtent;
         final double clampedOffset = targetOffset.clamp(minScroll, maxScroll);
@@ -182,7 +185,6 @@ class _PrayerScreenState extends State<PrayerScreen>
 
     final currentDay = currentSelectedDate.day;
 
-    // Calculate target year and month
     int targetYear = _displayDate.year;
     int targetMonth = _displayDate.month - 1;
     if (targetMonth == 0) {
@@ -190,7 +192,6 @@ class _PrayerScreenState extends State<PrayerScreen>
       targetYear -= 1;
     }
 
-    // Safely clamp the selected day to the max days in the target month (e.g. 31st -> 30th)
     final maxDaysInTargetMonth = DateTime(targetYear, targetMonth + 1, 0).day;
     final targetDay = currentDay.clamp(1, maxDaysInTargetMonth);
 
@@ -207,7 +208,6 @@ class _PrayerScreenState extends State<PrayerScreen>
 
     final currentDay = currentSelectedDate.day;
 
-    // Calculate target year and month
     int targetYear = _displayDate.year;
     int targetMonth = _displayDate.month + 1;
     if (targetMonth == 13) {
@@ -215,7 +215,6 @@ class _PrayerScreenState extends State<PrayerScreen>
       targetYear += 1;
     }
 
-    // Safely clamp the selected day to the max days in the target month (e.g. 31st -> 30th)
     final maxDaysInTargetMonth = DateTime(targetYear, targetMonth + 1, 0).day;
     final targetDay = currentDay.clamp(1, maxDaysInTargetMonth);
 
@@ -281,17 +280,49 @@ class _PrayerScreenState extends State<PrayerScreen>
     return '$hour12:$minute $period';
   }
 
-  String? _getNextPrayer(Map<String, dynamic>? timings) {
-    if (timings == null) return null;
+  Map<String, String?> _getCurrentAndNextPrayer(Map<String, dynamic>? timings) {
+    if (timings == null) return {'current': null, 'next': null};
     final now = DateTime.now();
-    final timeStr =
-        "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
-    final prayerOrder = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+    final currentMinutes = now.hour * 60 + now.minute;
+
+    final prayerOrder = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+    final Map<String, int> prayerMinutes = {};
+
     for (final prayer in prayerOrder) {
-      final pTime = timings[prayer].toString().split(' ')[0];
-      if (pTime.compareTo(timeStr) > 0) return prayer;
+      final timeStr = timings[prayer].toString().split(' ')[0];
+      final parts = timeStr.split(':');
+      if (parts.length == 2) {
+        final h = int.tryParse(parts[0]) ?? 0;
+        final m = int.tryParse(parts[1]) ?? 0;
+        prayerMinutes[prayer] = h * 60 + m;
+      }
     }
-    return 'Fajr';
+
+    String? current;
+    String? next;
+
+    for (int i = 0; i < prayerOrder.length; i++) {
+      final p = prayerOrder[i];
+      final pMin = prayerMinutes[p];
+      if (pMin == null) continue;
+
+      if (currentMinutes >= pMin) {
+        current = p;
+      } else {
+        next = p;
+        break;
+      }
+    }
+
+    if (current == null) {
+      current = 'Isha';
+      next = 'Fajr';
+    } else if (next == null) {
+      current = 'Isha';
+      next = 'Fajr';
+    }
+
+    return {'current': current, 'next': next};
   }
 
   String _dateKey(DateTime date) {
@@ -332,7 +363,6 @@ class _PrayerScreenState extends State<PrayerScreen>
         children: [
           Column(
             children: [
-              // ── APPLE-LIKE HEADER ──
               RepaintBoundary(
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(16, 54, 16, 16),
@@ -481,8 +511,6 @@ class _PrayerScreenState extends State<PrayerScreen>
                   ),
                 ),
               ),
-
-              // ── CONTENT AREA ──
               Expanded(
                 child: GestureDetector(
                   onHorizontalDragEnd: (details) {
@@ -509,18 +537,16 @@ class _PrayerScreenState extends State<PrayerScreen>
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
                       children: [
-                        // Dynamic horizontal date carousel strip - protected with KeepAlive to maintain scroll offset
                         if (_calendarData != null && !_isLoading)
                           RepaintBoundary(
                             child: KeepAliveWrapper(
                               child: Container(
-                                height: 94,
+                                height: 74,
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 8),
                                 child: ListView.builder(
                                   controller: _dateScrollController,
                                   scrollDirection: Axis.horizontal,
-                                  // cacheExtent enables proactive pre-rendering of offscreen day tiles
                                   cacheExtent: 250,
                                   physics: const BouncingScrollPhysics(
                                     parent: AlwaysScrollableScrollPhysics(),
@@ -569,36 +595,20 @@ class _PrayerScreenState extends State<PrayerScreen>
                                         child: AnimatedContainer(
                                           duration:
                                               const Duration(milliseconds: 150),
-                                          width: 62,
+                                          width: isSelected ? 72 : 48,
                                           decoration: BoxDecoration(
                                             color: isSelected
                                                 ? qt.emeraldDeep
-                                                : (isToday
-                                                    ? qt.emeraldDeep
-                                                        .withOpacity(0.08)
-                                                    : qt.cardBg),
+                                                    .withOpacity(0.04)
+                                                : Colors.transparent,
                                             borderRadius:
-                                                BorderRadius.circular(16),
-                                            border: Border.all(
-                                              color: isSelected
-                                                  ? qt.emeraldDeep
-                                                  : (isToday
-                                                      ? qt.emeraldDeep
-                                                          .withOpacity(0.3)
-                                                      : qt.borderGlass
-                                                          .withOpacity(0.5)),
-                                              width: isSelected ? 1.5 : 1.0,
-                                            ),
-                                            boxShadow: isSelected
-                                                ? [
-                                                    BoxShadow(
-                                                      color: qt.emeraldDeep
-                                                          .withOpacity(0.2),
-                                                      blurRadius: 8,
-                                                      offset:
-                                                          const Offset(0, 3),
-                                                    )
-                                                  ]
+                                                BorderRadius.circular(12),
+                                            border: isSelected
+                                                ? Border.all(
+                                                    color: qt.emeraldDeep
+                                                        .withOpacity(0.04),
+                                                    width: 1.5,
+                                                  )
                                                 : null,
                                           ),
                                           child: Column(
@@ -608,53 +618,54 @@ class _PrayerScreenState extends State<PrayerScreen>
                                               Text(
                                                 weekdayStr,
                                                 style: TextStyle(
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 9,
+                                                  fontWeight: isSelected
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
                                                   color: isSelected
-                                                      ? Colors.white
-                                                          .withOpacity(0.7)
-                                                      : qt.textMuted,
+                                                      ? qt.textMuted
+                                                      : qt.textMuted
+                                                          .withOpacity(0.6),
                                                 ),
                                               ),
-                                              const SizedBox(height: 4),
+                                              const SizedBox(height: 2),
                                               Text(
                                                 dayData['date']['gregorian']
                                                     ['day'],
                                                 style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w800,
+                                                  fontSize:
+                                                      isSelected ? 15 : 13,
+                                                  fontWeight: isSelected
+                                                      ? FontWeight.w600
+                                                      : FontWeight.w400,
                                                   color: isSelected
-                                                      ? Colors.white
-                                                      : qt.textPrimary,
+                                                      ? qt.textPrimary
+                                                      : qt.textPrimary
+                                                          .withOpacity(isToday
+                                                              ? 0.9
+                                                              : 0.5),
                                                 ),
                                               ),
-                                              const SizedBox(height: 6),
+                                              const SizedBox(height: 4),
                                               if (dDate.isBefore(DateTime(
                                                   today.year,
                                                   today.month,
                                                   today.day + 1)))
                                                 Container(
-                                                  width: 5,
-                                                  height: 5,
+                                                  width: 4,
+                                                  height: 4,
                                                   decoration: BoxDecoration(
                                                     color: allDone
-                                                        ? (isSelected
-                                                            ? Colors.white
-                                                            : Colors.green)
+                                                        ? Colors.green
                                                         : (someDone
-                                                            ? (isSelected
-                                                                ? Colors
-                                                                    .amberAccent
-                                                                : Colors.amber)
-                                                            : (isSelected
-                                                                ? Colors.white30
-                                                                : Colors
-                                                                    .transparent)),
+                                                            ? Colors.amber
+                                                            : Colors
+                                                                .transparent),
                                                     shape: BoxShape.circle,
                                                   ),
                                                 )
                                               else
-                                                const SizedBox(height: 5),
+                                                const SizedBox(height: 4),
                                             ],
                                           ),
                                         ),
@@ -665,8 +676,6 @@ class _PrayerScreenState extends State<PrayerScreen>
                               ),
                             ),
                           ),
-
-                        // Remaining vertical content wrapped in visual edge padding
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Column(
@@ -757,7 +766,6 @@ class _PrayerScreenState extends State<PrayerScreen>
     );
   }
 
-  // ── DAILY PROGRESS ──
   Widget _buildDailyProgress(QuranTheme qt, PrayerTracker tracker) {
     final selectedDate = _selectedDateTime();
     if (selectedDate == null) return const SizedBox.shrink();
@@ -854,10 +862,11 @@ class _PrayerScreenState extends State<PrayerScreen>
     );
   }
 
-  // ── PRAYER TIMES CARD ──
   Widget _buildPrayerTimesCard(QuranTheme qt, PrayerTracker tracker) {
     final prayerOrder = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
-    final nextPrayer = _getNextPrayer(_selectedDay?['timings']);
+    final prayerMeta = _getCurrentAndNextPrayer(_selectedDay?['timings']);
+    final currentPrayer = prayerMeta['current'];
+    final nextPrayer = prayerMeta['next'];
     final isFutureDay = _isSelectedDayFuture();
 
     bool isToday = false;
@@ -894,19 +903,62 @@ class _PrayerScreenState extends State<PrayerScreen>
           final time =
               _selectedDay?['timings'][prayer].toString().split(' ')[0] ??
                   '--:--';
+
+          final isSunrise = (prayer == 'Sunrise');
+          final isCurrent = isToday && prayer == currentPrayer;
           final isNext = isToday && prayer == nextPrayer;
           final isPrayed = prayers[prayer] ?? false;
 
           final prayerTimePassed = isToday
               ? _hasPrayerTimePassed(prayer, _selectedDay?['timings'])
               : true;
-          final canTrack =
-              prayer != 'Sunrise' && !isFutureDay && prayerTimePassed;
+
+          final canTrack = !isSunrise && !isFutureDay && prayerTimePassed;
+
+          // Unified future/Sunrise row visual dimming logic
+          double rowOpacity = 1.0;
+          if (isSunrise) {
+            rowOpacity = 0.45;
+          } else if (isFutureDay) {
+            rowOpacity = 0.8; // Very subtle dimming for all future-day prayers
+          } else if (isToday) {
+            if (!isCurrent && !isNext) {
+              final currentIdx = currentPrayer != null
+                  ? prayerOrder.indexOf(currentPrayer)
+                  : -1;
+              final itemIdx = prayerOrder.indexOf(prayer);
+              if (currentIdx != -1 && itemIdx > currentIdx + 1) {
+                rowOpacity =
+                    0.8; // Very subtle dimming for chronologically subsequent items
+              }
+            }
+          }
+
+          // Build contextually correct descriptive subtexts
+          String subText = "";
+          if (isSunrise) {
+            subText = "Sunrise time";
+          } else if (isPrayed) {
+            subText = "Completed ✓";
+          } else if (isFutureDay) {
+            subText = "";
+          } else {
+            if (!isToday) {
+              subText = "Tap to mark as prayed";
+            } else {
+              if (prayerTimePassed) {
+                subText = "Tap to mark as prayed";
+              } else {
+                subText = "";
+              }
+            }
+          }
 
           return Container(
             decoration: BoxDecoration(
-              color: isNext
-                  ? qt.emeraldDeep.withOpacity(0.03)
+              // Extremely subtle dipped color background highlights for the active current prayer
+              color: isCurrent
+                  ? qt.emeraldDeep.withOpacity(0.06)
                   : Colors.transparent,
               border: Border(
                 bottom: index == prayerOrder.length - 1
@@ -916,127 +968,151 @@ class _PrayerScreenState extends State<PrayerScreen>
             ),
             child: Material(
               color: Colors.transparent,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: canTrack
-                          ? () => _togglePrayer(prayer, tracker)
-                          : null,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isPrayed
-                              ? Colors.green.withOpacity(0.12)
-                              : isNext
-                                  ? qt.emeraldDeep.withOpacity(0.08)
-                                  : qt.bg,
-                          border: Border.all(
+              child: Opacity(
+                opacity: rowOpacity,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: 16, vertical: isCurrent ? 16 : 13),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: canTrack
+                            ? () => _togglePrayer(prayer, tracker)
+                            : null,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
                             color: isPrayed
-                                ? Colors.green.withOpacity(0.4)
-                                : isNext
-                                    ? qt.emeraldDeep.withOpacity(0.3)
-                                    : qt.borderGlass.withOpacity(0.4),
-                            width: isPrayed || isNext ? 1.5 : 1.0,
-                          ),
-                        ),
-                        child: Center(
-                          child: isPrayed
-                              ? const Icon(
-                                  Icons.check_rounded,
-                                  color: Colors.green,
-                                  size: 18,
-                                )
-                              : Icon(
-                                  _getPrayerIcon(prayer),
-                                  color: isNext
-                                      ? qt.emeraldDeep
-                                      : !canTrack && prayer != 'Sunrise'
-                                          ? qt.textMuted.withOpacity(0.5)
-                                          : qt.textPrimary.withOpacity(0.8),
-                                  size: 18,
-                                ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                prayer,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                  color:
-                                      isPrayed ? Colors.green : qt.textPrimary,
-                                ),
-                              ),
-                              if (isNext) ...[
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: qt.emeraldDeep,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: const Text(
-                                    "NEXT",
-                                    style: TextStyle(
-                                        fontSize: 8,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.white,
-                                        letterSpacing: 0.5),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            isPrayed
-                                ? "Completed ✓"
-                                : (prayer == 'Sunrise'
-                                    ? "Sunrise time"
-                                    : !canTrack
-                                        ? (isFutureDay
-                                            ? "Upcoming"
-                                            : "Upcoming at ${_to12Hour(time)}")
-                                        : "Tap to mark as prayed"),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: isPrayed
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                              color: isPrayed ? Colors.green : qt.textMuted,
+                                ? Colors.green.withOpacity(0.12)
+                                : qt.bg, // Removed dark highlights on active icon background container
+                            border: Border.all(
+                              color: isPrayed
+                                  ? Colors.green.withOpacity(0.4)
+                                  : isCurrent
+                                      ? qt.emeraldDeep.withOpacity(0.5)
+                                      : qt.borderGlass.withOpacity(0.4),
+                              width: isPrayed || isCurrent ? 1.5 : 1.0,
                             ),
                           ),
-                        ],
+                          child: Center(
+                            child: isPrayed
+                                ? const Icon(
+                                    Icons.check_rounded,
+                                    color: Colors.green,
+                                    size: 18,
+                                  )
+                                : Icon(
+                                    _getPrayerIcon(prayer,
+                                        filled:
+                                            isCurrent), // Render filled solid icons for active prayer
+                                    color: isCurrent
+                                        ? qt.emeraldDeep
+                                        : !canTrack && !isSunrise
+                                            ? qt.textMuted.withOpacity(0.5)
+                                            : qt.textPrimary.withOpacity(0.8),
+                                    size: 18,
+                                  ),
+                          ),
+                        ),
                       ),
-                    ),
-                    Text(
-                      _to12Hour(time),
-                      style: TextStyle(
-                        fontFamily: 'monospace',
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: isPrayed
-                            ? Colors.green
-                            : isNext
-                                ? qt.emeraldDeep
-                                : qt.textSecondary,
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  prayer,
+                                  style: TextStyle(
+                                    fontWeight: isCurrent
+                                        ? FontWeight.w700
+                                        : FontWeight.bold,
+                                    fontSize: isCurrent ? 16 : 15,
+                                    color: isPrayed
+                                        ? Colors.green
+                                        : qt.textPrimary, // Force normal primary color text on current row
+                                  ),
+                                ),
+                                if (isCurrent) ...[
+                                  const SizedBox(width: 8),
+                                  // Sleek minimalistic current status indicator dot
+                                  Container(
+                                    width: 6,
+                                    height: 6,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.green,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ],
+                                if (isNext) ...[
+                                  const SizedBox(width: 8),
+                                  // Minimalist Stacked Upcoming / Next Badge
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: qt.emeraldLight.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          "Upcoming",
+                                          style: TextStyle(
+                                              fontSize: 8,
+                                              fontWeight: FontWeight.w500,
+                                              color: qt.textPrimary,
+                                              letterSpacing: 0.3),
+                                        ),
+                                        const SizedBox(height: 1),
+                                      ],
+                                    ),
+                                  ),
+                                ]
+                              ],
+                            ),
+                            if (subText.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                subText,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: isPrayed || isCurrent
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                  color: isPrayed
+                                      ? Colors.green
+                                      : isCurrent
+                                          ? qt.textPrimary.withOpacity(0.7)
+                                          : qt.textMuted,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                      Text(
+                        _to12Hour(time),
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontWeight:
+                              isCurrent ? FontWeight.w800 : FontWeight.bold,
+                          fontSize: isCurrent ? 14 : 13,
+                          color: isPrayed
+                              ? Colors.green
+                              : isCurrent
+                                  ? qt.emeraldDeep
+                                  : qt.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1068,7 +1144,6 @@ class _PrayerScreenState extends State<PrayerScreen>
     });
   }
 
-  // ── STATS SUMMARY CARD ──
   Widget _buildStatsSummaryCard(QuranTheme qt, PrayerTracker tracker) {
     final currentStreak = tracker.currentStreak;
     final bestStreak = tracker.bestStreak;
@@ -1211,7 +1286,6 @@ class _PrayerScreenState extends State<PrayerScreen>
     );
   }
 
-  // ── CALENDAR OVERVIEW CARD ──
   Widget _buildCalendarCard(QuranTheme qt, PrayerTracker tracker) {
     String englishMonth = "";
     String hijriDateString = "";
@@ -1398,7 +1472,6 @@ class _PrayerScreenState extends State<PrayerScreen>
     );
   }
 
-  // Optimized Calendar Grid (Row-Column Generation instead of GridView layout-thrashing)
   Widget _buildCalendarGrid(QuranTheme qt, PrayerTracker tracker) {
     if (_calendarData == null || _calendarData!.isEmpty) {
       return const SizedBox.shrink();
@@ -1533,8 +1606,6 @@ class _PrayerScreenState extends State<PrayerScreen>
     );
   }
 
-  // ── HELPERS ──
-
   bool _isSelectedDayToday() {
     if (_selectedDay == null) return false;
     final parts = _selectedDay!['date']['gregorian']['date'].split('-');
@@ -1555,20 +1626,20 @@ class _PrayerScreenState extends State<PrayerScreen>
     return currentMinutes >= prayerMinutes;
   }
 
-  IconData _getPrayerIcon(String prayer) {
+  IconData _getPrayerIcon(String prayer, {bool filled = false}) {
     switch (prayer) {
       case 'Fajr':
         return Icons.wb_twilight_rounded;
       case 'Sunrise':
-        return Icons.wb_sunny_outlined;
+        return filled ? Icons.wb_sunny_rounded : Icons.wb_sunny_outlined;
       case 'Dhuhr':
-        return Icons.sunny;
+        return filled ? Icons.wb_sunny_rounded : Icons.sunny;
       case 'Asr':
-        return Icons.filter_drama_outlined;
+        return filled ? Icons.cloud_rounded : Icons.filter_drama_outlined;
       case 'Maghrib':
-        return Icons.nights_stay_outlined;
+        return filled ? Icons.nights_stay_rounded : Icons.nights_stay_outlined;
       case 'Isha':
-        return Icons.bedtime_outlined;
+        return filled ? Icons.bedtime_rounded : Icons.bedtime_outlined;
       default:
         return Icons.access_time_rounded;
     }
@@ -1617,7 +1688,6 @@ class _PrayerScreenState extends State<PrayerScreen>
     );
   }
 
-  // ── LOCATION SELECTOR SHEET ──
   void _showLocationBottomSheet(BuildContext context) {
     final qt = QuranTheme.of(context);
     String searchQuery = '';
