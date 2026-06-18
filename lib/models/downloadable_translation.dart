@@ -55,4 +55,18 @@ const kDownloadableTranslations = [
     language: 'French',
     url: 'https://kitably-api.pages.dev/french/index.json',
   ),
+  DownloadableTranslation(
+    id: 'spanish',
+    displayName: 'Spanish – Noor International Center',
+    language: 'Spanish',
+    url: 'https://kitably-api.pages.dev/spanish/index.json',
+    format: TranslationFormat.sqlite, // Server serves a SQLite DB file
+  ),
+  DownloadableTranslation(
+    id: 'telugu',
+    displayName: 'Telugu – Noor International Center',
+    language: 'Telugu',
+    url: 'https://kitably-api.pages.dev/telugu/index.json',
+    format: TranslationFormat.sqlite, // Server serves a SQLite DB file
+  ),
 ];

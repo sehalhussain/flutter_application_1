@@ -17,6 +17,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/quran_models.dart';
 import '../constants/juz_data.dart';
+import '../constants/reciter_data.dart';
 import 'translation_download_service.dart';
 import 'quran_db.dart';
 
@@ -502,6 +503,21 @@ class QuranService {
       return surahAudio;
     } else {
       throw Exception('Failed to load surah audio metadata');
+    }
+  }
+
+  /// Returns the direct audio URL for a surah based on reciter.
+  /// For the Yasser Urdu reciter, constructs URL from the archive pattern.
+  /// Otherwise fetches from the API.
+  Future<String?> getSurahAudioUrl(int surahNumber, String reciterId) async {
+    if (reciterId == 'yasser_urdu') {
+      return getYasserUrduSurahUrl(surahNumber);
+    }
+    try {
+      final audio = await getSurahAudio(surahNumber);
+      return audio.reciters[reciterId]?.url;
+    } catch (_) {
+      return null;
     }
   }
 

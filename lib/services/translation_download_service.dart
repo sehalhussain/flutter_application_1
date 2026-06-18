@@ -10,6 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 import '../models/downloadable_translation.dart';
 
 class TranslationDownloadService extends ChangeNotifier {
@@ -210,6 +211,38 @@ class TranslationDownloadService extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error loading translation $id: $e');
       return null;
+    }
+  }
+
+  /// Returns the translation of ayah 1:1 for a custom translation.
+  /// Works for both JSON and SQLite downloaded files.
+  Future<String> getFirstAyahTranslation(String id) async {
+    final path = await getDownloadedPath(id);
+    if (path == null) return '';
+
+    if (isSqliteFile(path)) {
+      try {
+        final db = await sqflite.openDatabase(path, readOnly: true);
+        final rows = await db.query('translation',
+            columns: ['text'],
+            where: 'sura = ? AND ayah = ?',
+            whereArgs: [1, 1],
+            limit: 1);
+        await db.close();
+        if (rows.isNotEmpty && rows.first['text'] != null) {
+          return rows.first['text'] as String;
+        }
+      } catch (_) {}
+      return '';
+    }
+
+    try {
+      final file = File(path);
+      final content = await file.readAsString();
+      final map = json.decode(content) as Map<String, dynamic>;
+      return (map['1:1']?['t'] as String?) ?? '';
+    } catch (_) {
+      return '';
     }
   }
 

@@ -19,6 +19,7 @@ import '/constants/juz_metadata_data.dart';
 import 'tafsir_screen.dart';
 import 'surah_info_screen.dart';
 import '../../widgets/quran_reader_tips.dart';
+import '../../constants/reciter_data.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Quran Reader Screen
@@ -224,6 +225,13 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   }
 
   Future<void> _fetchSurahAudioAndCheckDownload() async {
+    final settings = QuranSettingsProvider.of(context, listen: false);
+    if (settings.selectedReciterId == kYasserUrduReciterId) {
+      // Yasser Urdu doesn't use the API; just check download status
+      final downloaded = await _checkSurahDownloaded();
+      if (mounted) _isSurahDownloadedNotifier.value = downloaded;
+      return;
+    }
     try {
       final audio =
           await QuranService.instance.getSurahAudio(widget.surahNumber);
@@ -404,16 +412,18 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     if (_playingAyahNotifier.value != null) await _stopAyahPlay();
 
     final settings = QuranSettingsProvider.of(context, listen: false);
+    final reciterId = settings.selectedReciterId;
     final offlinePath = await QuranService.instance
-        .getDownloadedSurahPath(widget.surahNumber, settings.selectedReciterId);
+        .getDownloadedSurahPath(widget.surahNumber, reciterId);
 
     try {
       await _surahAudio.stop();
 
       final surahName =
           _surahInfo?.nameEnglish ?? "Surah ${widget.surahNumber}";
-      final reciterName =
-          _surahAudioData?.reciters[settings.selectedReciterId]?.reciterName;
+      final reciterName = reciterId == kYasserUrduReciterId
+          ? kYasserUrduReciterName
+          : _surahAudioData?.reciters[reciterId]?.reciterName;
 
       if (offlinePath != null) {
         await QuranAudioHandler.instance.setSurahSource(
@@ -423,7 +433,12 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
           isLocal: true,
         );
       } else {
-        final url = _surahAudioData?.reciters[settings.selectedReciterId]?.url;
+        String? url;
+        if (reciterId == kYasserUrduReciterId) {
+          url = getYasserUrduSurahUrl(widget.surahNumber);
+        } else {
+          url = _surahAudioData?.reciters[reciterId]?.url;
+        }
         if (url == null) return;
         await QuranAudioHandler.instance.setSurahSource(
           url,
@@ -442,21 +457,33 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
   Future<void> _downloadSurah() async {
     final settings = QuranSettingsProvider.of(context, listen: false);
-    final reciter = _surahAudioData?.reciters[settings.selectedReciterId];
-    if (reciter == null) return;
+    final reciterId = settings.selectedReciterId;
+
+    String? url;
+    String? reciterName;
+
+    if (reciterId == kYasserUrduReciterId) {
+      url = getYasserUrduSurahUrl(widget.surahNumber);
+      reciterName = kYasserUrduReciterName;
+    } else {
+      final reciter = _surahAudioData?.reciters[reciterId];
+      if (reciter == null) return;
+      url = reciter.url;
+      reciterName = reciter.reciterName;
+    }
 
     _downloadProgressNotifier.value = 0.0;
     try {
       await QuranService.instance.downloadSurah(
         widget.surahNumber,
-        settings.selectedReciterId,
-        reciter.url,
+        reciterId,
+        url!,
         onProgress: (p) => _downloadProgressNotifier.value = p,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-              'Downloaded Surah ${widget.surahNumber} by ${reciter.reciterName}'),
+          content:
+              Text('Downloaded Surah ${widget.surahNumber} by $reciterName'),
           backgroundColor: QuranTheme.of(context).emeraldDeep,
         ));
         _isSurahDownloadedNotifier.value = true;
@@ -477,7 +504,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     if (!mounted) return false;
     final settings = QuranSettingsProvider.of(context, listen: false);
     String reciterId = settings.selectedReciterId;
-    if (_surahAudioData != null) {
+    if (reciterId != kYasserUrduReciterId && _surahAudioData != null) {
       if (_surahAudioData!.reciters[reciterId] == null &&
           _surahAudioData!.reciters.isNotEmpty) {
         reciterId = _surahAudioData!.reciters.keys.first;
@@ -2082,7 +2109,9 @@ class _SettingsSheet extends StatelessWidget {
           const SizedBox(height: 8),
           _playModeToggle(settings, qt),
           const SizedBox(height: 16),
-          if (settings.playMode == PlayMode.surah && surahAudio != null) ...[
+          if (settings.playMode == PlayMode.surah &&
+              (surahAudio != null ||
+                  settings.selectedReciterId == kYasserUrduReciterId)) ...[
             _label('Reciter', qt),
             const SizedBox(height: 8),
             _reciterDropdown(context, settings, qt),
@@ -2192,14 +2221,13 @@ class _SettingsSheet extends StatelessWidget {
           Container(height: 1, color: qt.borderGlass),
           const SizedBox(height: 12),
           if (settings.isCustomTranslation)
-            FutureBuilder<Map<String, dynamic>?>(
+            FutureBuilder<String>(
               future: TranslationDownloadService.instance
-                  .loadTranslationJson(settings.customTranslationId!),
+                  .getFirstAyahTranslation(settings.customTranslationId!),
               builder: (context, snapshot) {
                 String text = _getBismillahTranslation(settings);
                 if (snapshot.hasData && snapshot.data != null) {
-                  final translationMap = snapshot.data!;
-                  text = (translationMap['1:1']?['t'] as String?) ?? text;
+                  text = snapshot.data!;
                 }
                 return Text(
                   text,
@@ -2394,6 +2422,16 @@ class _SettingsSheet extends StatelessWidget {
 
   Widget _reciterDropdown(
       BuildContext context, QuranSettings settings, QuranTheme qt) {
+    // Build items from API reciters + always include Yasser Urdu
+    final List<MapEntry<String, String>> reciterEntries = [];
+    if (surahAudio != null) {
+      for (final e in surahAudio!.reciters.entries) {
+        reciterEntries.add(MapEntry(e.key, e.value.reciterName));
+      }
+    }
+    // Always add Yasser Urdu reciter
+    reciterEntries.add(MapEntry(kYasserUrduReciterId, kYasserUrduReciterName));
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
@@ -2402,13 +2440,14 @@ class _SettingsSheet extends StatelessWidget {
           border: Border.all(color: qt.borderGlass)),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: settings.selectedReciterId,
+          value: reciterEntries.any((e) => e.key == settings.selectedReciterId)
+              ? settings.selectedReciterId
+              : reciterEntries.first.key,
           dropdownColor: qt.cardBg,
           isExpanded: true,
           style: TextStyle(color: qt.textPrimary, fontSize: 14),
-          items: surahAudio!.reciters.entries
-              .map((e) => DropdownMenuItem(
-                  value: e.key, child: Text(e.value.reciterName)))
+          items: reciterEntries
+              .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
               .toList(),
           onChanged: (v) {
             if (v != null) settings.setSelectedReciterId(v);

@@ -56,7 +56,11 @@ class QuranDb {
     _cacheMisses = 0;
   }
 
-  /// Open a database by its asset path, copying it from assets on first use.
+  /// Open a database by its asset or file path.
+  ///
+  /// If [assetPath] is an existing file on disk (e.g. a downloaded SQLite
+  /// translation), it opens it directly. Otherwise it treats it as a bundled
+  /// asset path, copying it from assets on first use.
   Future<Database> _getDb(String assetPath) async {
     if (_dbs.containsKey(assetPath)) return _dbs[assetPath]!;
 
@@ -64,6 +68,15 @@ class QuranDb {
       throw UnsupportedError('sqflite is not supported on web');
     }
 
+    final fileOnDisk = File(assetPath);
+    if (await fileOnDisk.exists()) {
+      // Already a physical file – open it directly (e.g. downloaded translation)
+      final db = await openDatabase(assetPath, readOnly: true);
+      _dbs[assetPath] = db;
+      return db;
+    }
+
+    // Bundled asset – copy from assets to local storage on first use.
     final fileName = assetPath.split('/').last;
     final dir = await getApplicationDocumentsDirectory();
     final localPath = '${dir.path}/$fileName';
