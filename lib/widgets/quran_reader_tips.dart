@@ -4,11 +4,18 @@ import '../constants/quran_theme.dart';
 import '../providers/quran_settings_provider.dart';
 
 /// Lightweight sequential overlay for first-time Quran reader visitors.
-/// Blurs the background with an elegant glassmorphism style and reveals 3 centered tips cards.
+/// Blurs the background with an elegant glassmorphism style and reveals tips cards.
+/// When [showOnlyTranslationTip] is true, only the first translation tip is shown
+/// (used for existing users who update the app).
 class QuranReaderTips extends StatefulWidget {
   final Widget child;
+  final bool showOnlyTranslationTip;
 
-  const QuranReaderTips({super.key, required this.child});
+  const QuranReaderTips({
+    super.key,
+    required this.child,
+    this.showOnlyTranslationTip = false,
+  });
 
   @override
   State<QuranReaderTips> createState() => QuranReaderTipsState();
@@ -21,26 +28,44 @@ class QuranReaderTipsState extends State<QuranReaderTips>
   late Animation<double> _fade;
   late Animation<Offset> _slide;
 
-  static final _tips = [
-    _TipData(
-      title: 'Customize Your Reading View',
-      subtitle:
-          'Tap the settings icon to change font size, scripts, translations, or reciter.',
-      icon: Icons.tune_rounded,
-    ),
-    _TipData(
-      title: 'Read Tafsir',
-      subtitle:
-          'Tap "Read Tafsir" on any ayah to explore in-depth explanations from Ibn Kathir and more.',
-      icon: Icons.menu_book_rounded,
-    ),
-    _TipData(
-      title: 'Interactive Audio Bar',
-      subtitle:
-          'Control playback, change listening modes, or view surah highlights via the information icon.',
-      icon: Icons.play_arrow_rounded,
-    ),
-  ];
+  List<_TipData> get _tips {
+    if (widget.showOnlyTranslationTip) {
+      return [
+        const _TipData(
+          title: 'Listen with Translation',
+          subtitle:
+              'Tap the settings icon, switch to "Full Surah" mode, and choose a reciter with Urdu or English translation from the top of the list.',
+          icon: Icons.translate_rounded,
+        ),
+      ];
+    }
+    return [
+      const _TipData(
+        title: 'Listen with Translation',
+        subtitle:
+            'Tap the settings icon, switch to "Full Surah" mode, and choose a reciter with Urdu or English translation from the top of the list.',
+        icon: Icons.translate_rounded,
+      ),
+      const _TipData(
+        title: 'Customize Your Reading View',
+        subtitle:
+            'Tap the settings icon to change font size, scripts, translations, or reciter.',
+        icon: Icons.tune_rounded,
+      ),
+      const _TipData(
+        title: 'Read Tafsir',
+        subtitle:
+            'Tap "Read Tafsir" on any ayah to explore in-depth explanations from Ibn Kathir and more.',
+        icon: Icons.menu_book_rounded,
+      ),
+      const _TipData(
+        title: 'Interactive Audio Bar',
+        subtitle:
+            'Control playback, change listening modes, or view surah highlights via the information icon.',
+        icon: Icons.play_arrow_rounded,
+      ),
+    ];
+  }
 
   @override
   void initState() {
@@ -81,7 +106,11 @@ class QuranReaderTipsState extends State<QuranReaderTips>
   void _dismiss() {
     _currentTip = null;
     final settings = QuranSettingsProvider.of(context, listen: false);
-    settings.markQuranReaderTipsSeen();
+    if (widget.showOnlyTranslationTip) {
+      settings.markTranslationReciterTipSeen();
+    } else {
+      settings.markQuranReaderTipsSeen();
+    }
     if (mounted) setState(() {});
   }
 

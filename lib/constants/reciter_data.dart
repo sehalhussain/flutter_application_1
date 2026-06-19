@@ -1,6 +1,9 @@
 // lib/constants/reciter_data.dart
 //
-// Custom reciter data for Yasser Al Dossary with Urdu Translation
+// Custom reciter data for reciters that use archive.org or other URLs
+// rather than the QuranAPI.
+
+// ── Yasser Al Dossary with Urdu Translation ──────────────────────────────
 // URL pattern: https://dn720703.ca.archive.org/0/items/TheholyQuranUrduYasserAlDossari/{surahNumber}%20{surahName}.mp3
 
 /// ID used across the app to identify this custom reciter.
@@ -139,4 +142,48 @@ String getYasserUrduSurahUrl(int surahNumber) {
   final paddedNumber = surahNumber.toString().padLeft(3, '0');
   final surahName = kSurahNamesForUrl[index];
   return 'https://dn720703.ca.archive.org/0/items/TheholyQuranUrduYasserAlDossari/$paddedNumber%20$surahName.mp3';
+}
+
+// ── Abdul Basit Abdul Samad with Urdu Translation ─────────────────────────
+// URL pattern: https://dn710805.ca.archive.org/0/items/AbdulBasitAbdulSamadQuranWithUrduTranslation/{3digitSurah}%20www.quranaudio.info.mp3
+
+/// ID used across the app to identify this custom reciter.
+const kAbdulBasitUrduReciterId = 'abdul_basit_urdu';
+
+/// Display name for the custom reciter.
+const kAbdulBasitUrduReciterName =
+    'Abdul Basit Abdul Samad with Urdu Translation';
+
+/// Construct the audio URL for a given surah number using the Abdul Basit
+/// with Urdu Translation archive.
+///
+/// Example: surah 1 → "https://dn710805.ca.archive.org/0/items/AbdulBasitAbdulSamadQuranWithUrduTranslation/001%20www.quranaudio.info.mp3"
+String getAbdulBasitUrduSurahUrl(int surahNumber) {
+  if (surahNumber < 1 || surahNumber > 114) {
+    throw ArgumentError('Surah number must be between 1 and 114');
+  }
+  final paddedNumber = surahNumber.toString().padLeft(3, '0');
+  return 'https://dn710805.ca.archive.org/0/items/AbdulBasitAbdulSamadQuranWithUrduTranslation/$paddedNumber%20www.quranaudio.info.mp3';
+}
+
+// ── Abdul Basit Abdul Samad with English Translation ──────────────────────
+// URL pattern: https://download.quranicaudio.com/quran/abdulbasit_w_ibrahim_walk_si/{3digitSurah}.mp3
+
+/// ID used across the app to identify this custom reciter.
+const kAbdulBasitEnglishReciterId = 'abdul_basit_english';
+
+/// Display name for the custom reciter.
+const kAbdulBasitEnglishReciterName =
+    'Abdul Basit Abdul Samad with English Translation';
+
+/// Construct the audio URL for a given surah number using the Abdul Basit
+/// with English Translation archive.
+///
+/// Example: surah 1 → "https://download.quranicaudio.com/quran/abdulbasit_w_ibrahim_walk_si/001.mp3"
+String getAbdulBasitEnglishSurahUrl(int surahNumber) {
+  if (surahNumber < 1 || surahNumber > 114) {
+    throw ArgumentError('Surah number must be between 1 and 114');
+  }
+  final paddedNumber = surahNumber.toString().padLeft(3, '0');
+  return 'https://download.quranicaudio.com/quran/abdulbasit_w_ibrahim_walk_si/$paddedNumber.mp3';
 }

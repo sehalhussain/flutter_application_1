@@ -201,10 +201,17 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       _loading = false;
     });
 
-    // Show first-time tips if not seen yet
+    // Show tips for new users or updating users who haven't seen the translation reciter tip
     if (!settings.hasSeenQuranReaderTips) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
+          _tipsKey.currentState?.startTips();
+        }
+      });
+    } else if (!settings.hasSeenTranslationReciterTip) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          // Only show the single translation tip for existing users who update
           _tipsKey.currentState?.startTips();
         }
       });
@@ -225,13 +232,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   }
 
   Future<void> _fetchSurahAudioAndCheckDownload() async {
-    final settings = QuranSettingsProvider.of(context, listen: false);
-    if (settings.selectedReciterId == kYasserUrduReciterId) {
-      // Yasser Urdu doesn't use the API; just check download status
-      final downloaded = await _checkSurahDownloaded();
-      if (mounted) _isSurahDownloadedNotifier.value = downloaded;
-      return;
-    }
+    // Always fetch API data so the dropdown has all reciters,
+    // even when a custom reciter is currently selected.
     try {
       final audio =
           await QuranService.instance.getSurahAudio(widget.surahNumber);
@@ -423,7 +425,11 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
           _surahInfo?.nameEnglish ?? "Surah ${widget.surahNumber}";
       final reciterName = reciterId == kYasserUrduReciterId
           ? kYasserUrduReciterName
-          : _surahAudioData?.reciters[reciterId]?.reciterName;
+          : reciterId == kAbdulBasitUrduReciterId
+              ? kAbdulBasitUrduReciterName
+              : reciterId == kAbdulBasitEnglishReciterId
+                  ? kAbdulBasitEnglishReciterName
+                  : _surahAudioData?.reciters[reciterId]?.reciterName;
 
       if (offlinePath != null) {
         await QuranAudioHandler.instance.setSurahSource(
@@ -436,6 +442,10 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         String? url;
         if (reciterId == kYasserUrduReciterId) {
           url = getYasserUrduSurahUrl(widget.surahNumber);
+        } else if (reciterId == kAbdulBasitUrduReciterId) {
+          url = getAbdulBasitUrduSurahUrl(widget.surahNumber);
+        } else if (reciterId == kAbdulBasitEnglishReciterId) {
+          url = getAbdulBasitEnglishSurahUrl(widget.surahNumber);
         } else {
           url = _surahAudioData?.reciters[reciterId]?.url;
         }
@@ -465,6 +475,12 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     if (reciterId == kYasserUrduReciterId) {
       url = getYasserUrduSurahUrl(widget.surahNumber);
       reciterName = kYasserUrduReciterName;
+    } else if (reciterId == kAbdulBasitUrduReciterId) {
+      url = getAbdulBasitUrduSurahUrl(widget.surahNumber);
+      reciterName = kAbdulBasitUrduReciterName;
+    } else if (reciterId == kAbdulBasitEnglishReciterId) {
+      url = getAbdulBasitEnglishSurahUrl(widget.surahNumber);
+      reciterName = kAbdulBasitEnglishReciterName;
     } else {
       final reciter = _surahAudioData?.reciters[reciterId];
       if (reciter == null) return;
@@ -504,7 +520,10 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     if (!mounted) return false;
     final settings = QuranSettingsProvider.of(context, listen: false);
     String reciterId = settings.selectedReciterId;
-    if (reciterId != kYasserUrduReciterId && _surahAudioData != null) {
+    if (reciterId != kYasserUrduReciterId &&
+        reciterId != kAbdulBasitUrduReciterId &&
+        reciterId != kAbdulBasitEnglishReciterId &&
+        _surahAudioData != null) {
       if (_surahAudioData!.reciters[reciterId] == null &&
           _surahAudioData!.reciters.isNotEmpty) {
         reciterId = _surahAudioData!.reciters.keys.first;
@@ -547,6 +566,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
       backgroundColor: qt.bg,
       body: QuranReaderTips(
         key: _tipsKey,
+        showOnlyTranslationTip: settings.hasSeenQuranReaderTips &&
+            !settings.hasSeenTranslationReciterTip,
         child: Stack(children: [
           Positioned.fill(child: Container(color: qt.bg)),
           SafeArea(
@@ -2111,7 +2132,10 @@ class _SettingsSheet extends StatelessWidget {
           const SizedBox(height: 16),
           if (settings.playMode == PlayMode.surah &&
               (surahAudio != null ||
-                  settings.selectedReciterId == kYasserUrduReciterId)) ...[
+                  settings.selectedReciterId == kYasserUrduReciterId ||
+                  settings.selectedReciterId == kAbdulBasitUrduReciterId ||
+                  settings.selectedReciterId ==
+                      kAbdulBasitEnglishReciterId)) ...[
             _label('Reciter', qt),
             const SizedBox(height: 8),
             _reciterDropdown(context, settings, qt),
@@ -2422,15 +2446,22 @@ class _SettingsSheet extends StatelessWidget {
 
   Widget _reciterDropdown(
       BuildContext context, QuranSettings settings, QuranTheme qt) {
-    // Build items from API reciters + always include Yasser Urdu
+    // Custom reciters shown first on top
     final List<MapEntry<String, String>> reciterEntries = [];
+
+    // 1. Add custom reciters first
+    reciterEntries.add(MapEntry(kYasserUrduReciterId, kYasserUrduReciterName));
+    reciterEntries
+        .add(MapEntry(kAbdulBasitUrduReciterId, kAbdulBasitUrduReciterName));
+    reciterEntries.add(
+        MapEntry(kAbdulBasitEnglishReciterId, kAbdulBasitEnglishReciterName));
+
+    // 2. Add API-based reciters below
     if (surahAudio != null) {
       for (final e in surahAudio!.reciters.entries) {
         reciterEntries.add(MapEntry(e.key, e.value.reciterName));
       }
     }
-    // Always add Yasser Urdu reciter
-    reciterEntries.add(MapEntry(kYasserUrduReciterId, kYasserUrduReciterName));
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14),
