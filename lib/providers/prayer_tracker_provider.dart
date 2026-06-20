@@ -178,6 +178,19 @@ class PrayerTracker extends ChangeNotifier {
         .fold<int>(0, (sum, day) => sum + day.values.where((v) => v).length);
   }
 
+  /// Total missed prayers across all logged days (from first logged date onward).
+  /// Each logged day counts 5 - (prayers done) as missed.
+  int get totalMissed {
+    if (_prayerLog.isEmpty) return 0;
+    int missed = 0;
+    for (final day in _prayerLog.values) {
+      if (day.isNotEmpty) {
+        missed += (5 - day.values.where((v) => v == true).length);
+      }
+    }
+    return missed;
+  }
+
   /// Check if a milestone is achieved.
   bool hasMilestone(String milestone) {
     switch (milestone) {

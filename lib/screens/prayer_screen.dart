@@ -280,6 +280,17 @@ class _PrayerScreenState extends State<PrayerScreen>
     return '$hour12:$minute $period';
   }
 
+  bool _isPostMidnightBeforeFajr(Map<String, dynamic>? timings) {
+    if (timings == null) return false;
+    final now = DateTime.now();
+    final fajrStr = timings['Fajr'].toString().split(' ')[0];
+    final parts = fajrStr.split(':');
+    if (parts.length != 2) return false;
+    final fajrMinutes = int.parse(parts[0]) * 60 + int.parse(parts[1]);
+    final currentMinutes = now.hour * 60 + now.minute;
+    return currentMinutes < fajrMinutes && now.hour < 5;
+  }
+
   Map<String, String?> _getCurrentAndNextPrayer(Map<String, dynamic>? timings) {
     if (timings == null) return {'current': null, 'next': null};
     final now = DateTime.now();
@@ -315,9 +326,10 @@ class _PrayerScreenState extends State<PrayerScreen>
     }
 
     if (current == null) {
-      current = 'Isha';
+      // Before Fajr time — no current highlight, Fajr is next
       next = 'Fajr';
     } else if (next == null) {
+      // After Isha time — keep Isha as current, Fajr as next
       current = 'Isha';
       next = 'Fajr';
     }
@@ -1130,13 +1142,22 @@ class _PrayerScreenState extends State<PrayerScreen>
     final today = DateTime(now.year, now.month, now.day);
     if (selectedDate.isAfter(today)) return;
 
-    final key = _dateKey(selectedDate);
-    final beforeCount = tracker.prayedCountForDate(key);
+    // Post-midnight: Isha belongs to yesterday's date
+    String effectiveKey = _dateKey(selectedDate);
+    final timings = _selectedDay?['timings'];
+    final postMidnightIsha =
+        prayer == 'Isha' && _isPostMidnightBeforeFajr(timings);
+    if (postMidnightIsha) {
+      final yesterday = today.subtract(const Duration(days: 1));
+      effectiveKey = _dateKey(yesterday);
+    }
+
+    final beforeCount = tracker.prayedCountForDate(effectiveKey);
 
     HapticFeedback.lightImpact();
 
-    tracker.togglePrayerForDate(key, prayer).then((_) {
-      final afterCount = tracker.prayedCountForDate(key);
+    tracker.togglePrayerForDate(effectiveKey, prayer).then((_) {
+      final afterCount = tracker.prayedCountForDate(effectiveKey);
       if (beforeCount == 4 && afterCount == 5) {
         _triggerCelebration();
         HapticFeedback.mediumImpact();
@@ -1146,8 +1167,8 @@ class _PrayerScreenState extends State<PrayerScreen>
 
   Widget _buildStatsSummaryCard(QuranTheme qt, PrayerTracker tracker) {
     final currentStreak = tracker.currentStreak;
-    final bestStreak = tracker.bestStreak;
     final totalPrayers = tracker.totalPrayersLogged;
+    final totalMissed = tracker.totalMissed;
 
     return GestureDetector(
       onTap: () {
@@ -1214,16 +1235,8 @@ class _PrayerScreenState extends State<PrayerScreen>
                 _statTile(
                   icon: Icons.local_fire_department_rounded,
                   value: "$currentStreak",
-                  label: "Active Streak",
+                  label: "Current Streak",
                   color: Colors.orange,
-                  qt: qt,
-                ),
-                const SizedBox(width: 8),
-                _statTile(
-                  icon: Icons.workspace_premium_rounded,
-                  value: "$bestStreak",
-                  label: "Best Streak",
-                  color: Colors.amber,
                   qt: qt,
                 ),
                 const SizedBox(width: 8),
@@ -1232,6 +1245,14 @@ class _PrayerScreenState extends State<PrayerScreen>
                   value: "$totalPrayers",
                   label: "Total Logged",
                   color: qt.emeraldDeep,
+                  qt: qt,
+                ),
+                const SizedBox(width: 8),
+                _statTile(
+                  icon: Icons.hide_source_rounded,
+                  value: "$totalMissed",
+                  label: "Total Missed",
+                  color: Colors.redAccent,
                   qt: qt,
                 ),
               ],

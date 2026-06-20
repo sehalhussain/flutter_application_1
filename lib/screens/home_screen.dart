@@ -468,11 +468,42 @@ class _PrayerCardState extends State<_PrayerCard>
     return currentMinutes >= prayerMinutes;
   }
 
+  bool _isPostMidnightBeforeFajr(Map<String, dynamic> pTimings) {
+    final now = DateTime.now();
+    if (now.hour >= 5) return false;
+    final fajrStr = pTimings['Fajr'].toString().split(' ')[0];
+    final parts = fajrStr.split(':');
+    if (parts.length < 2) return false;
+    final fajrMinutes = int.parse(parts[0]) * 60 + int.parse(parts[1]);
+    final currentMinutes = now.hour * 60 + now.minute;
+    return currentMinutes < fajrMinutes;
+  }
+
+  String _getDateKeyForPrayerToggle(String prayer) {
+    final now = DateTime.now();
+    final isPostMidnightBeforeFajr = now.hour < 3;
+    if (isPostMidnightBeforeFajr && prayer == 'Isha') {
+      final yesterday = now.subtract(const Duration(days: 1));
+      return _dateKey(yesterday);
+    }
+    return _dateKey(now);
+  }
+
+  String _dateKey(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
   void _toggleCurrentPrayer(String prayer, PrayerTracker tracker) {
     HapticFeedback.lightImpact();
-    final beforeCount = tracker.todayPrayedCount;
     final todayPrayers = tracker.todayPrayers;
     final isAlreadyPrayed = todayPrayers[prayer] ?? false;
+
+    // After midnight till Fajr, the current prayer is Isha but it belongs to
+    // the previous calendar day, so redirect the toggle to yesterday's date.
+    final targetDateKey = _getDateKeyForPrayerToggle(prayer);
+    final effectiveBeforeCount = tracker.prayedCountForDate(targetDateKey);
+    final effectivePrayed =
+        tracker.prayersForDate(targetDateKey)[prayer] ?? false;
 
     // Trigger highly polished feedback glow and sweep shimmer on logging
     if (!isAlreadyPrayed) {
@@ -498,9 +529,49 @@ class _PrayerCardState extends State<_PrayerCard>
       _decayTimer?.cancel();
     }
 
-    tracker.togglePrayer(prayer).then((_) {
+    _applyPrayerToggle(
+      tracker: tracker,
+      prayer: prayer,
+      dateKey: targetDateKey,
+      beforeCount: effectiveBeforeCount,
+      isAlreadyPrayed: effectivePrayed,
+    );
+  }
+
+  void _applyPrayerToggle({
+    required PrayerTracker tracker,
+    required String prayer,
+    required String dateKey,
+    required int beforeCount,
+    required bool isAlreadyPrayed,
+  }) {
+    // Trigger highly polished feedback glow and sweep shimmer on logging
+    if (!isAlreadyPrayed) {
+      _feedbackController.forward(from: 0.0);
+
+      // Momentarily enter high focus "Active" mode to let user celebrate success
+      setState(() {
+        _showFullPrayedLabel = true;
+      });
+
+      // After 4 seconds, slowly decay back into clean "Ambient" mode
+      _decayTimer?.cancel();
+      _decayTimer = Timer(const Duration(seconds: 4), () {
+        if (mounted) {
+          setState(() {
+            _showFullPrayedLabel = false;
+          });
+        }
+      });
+    } else {
+      // Direct unmarking: Cancel decay layout instantly but don't animate size changes
+      // simultaneously with the fade to ensure a smooth transition
+      _decayTimer?.cancel();
+    }
+
+    tracker.togglePrayerForDate(dateKey, prayer).then((_) {
       if (!mounted) return;
-      final afterCount = tracker.todayPrayedCount;
+      final afterCount = tracker.prayedCountForDate(dateKey);
       if (beforeCount == 4 && afterCount == 5) {
         HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -727,9 +798,17 @@ class _PrayerCardState extends State<_PrayerCard>
     return Consumer<PrayerTracker>(
       builder: (context, tracker, _) {
         final todayPrayers = tracker.todayPrayers;
-        final isCurrentPrayed = todayPrayers[currentPrayer] ?? false;
-        final currentTimePassed =
-            nextIdx == 0 ? true : _hasPrayerTimePassed(currentPrayer, pTimings);
+        final isPostMidnightIsha =
+            currentPrayer == 'Isha' && _isPostMidnightBeforeFajr(pTimings);
+        final effectiveKey = isPostMidnightIsha
+            ? _getDateKeyForPrayerToggle('Isha')
+            : _dateKey(DateTime.now());
+        final isCurrentPrayed = isPostMidnightIsha
+            ? (tracker.prayersForDate(effectiveKey)['Isha'] ?? false)
+            : (todayPrayers[currentPrayer] ?? false);
+        final currentTimePassed = nextIdx == 0 || isPostMidnightIsha
+            ? true
+            : _hasPrayerTimePassed(currentPrayer, pTimings);
 
         return ScaleTransition(
           scale: _subtleScaleAnimation,
