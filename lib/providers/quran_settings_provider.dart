@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/quran_models.dart';
+import '../widgets/quran_reader_tips.dart';
 
 class QuranSettings extends ChangeNotifier {
   // ── Defaults ──────────────────────────────────────────────────────────────
@@ -25,6 +26,9 @@ class QuranSettings extends ChangeNotifier {
   bool _showBismillahSplash = true;
   bool _hasSeenQuranReaderTips = false;
   bool _hasSeenTranslationReciterTip = false;
+  bool _ayahTranslationEnabled = false;
+  String _ayahTranslationLanguageId = 'translation_english';
+  int _tipsContentVersion = 0;
 
   // ── Getters ───────────────────────────────────────────────────────────────
   ArabicScript get script => _script;
@@ -43,6 +47,9 @@ class QuranSettings extends ChangeNotifier {
   bool get showBismillahSplash => _showBismillahSplash;
   bool get hasSeenQuranReaderTips => _hasSeenQuranReaderTips;
   bool get hasSeenTranslationReciterTip => _hasSeenTranslationReciterTip;
+  bool get ayahTranslationEnabled => _ayahTranslationEnabled;
+  String get ayahTranslationLanguageId => _ayahTranslationLanguageId;
+  int get tipsContentVersion => _tipsContentVersion;
 
   // ── Init ──────────────────────────────────────────────────────────────────
   Future<void> load() async {
@@ -77,6 +84,11 @@ class QuranSettings extends ChangeNotifier {
     _hasSeenQuranReaderTips = prefs.getBool('quran_reader_tips_seen') ?? false;
     _hasSeenTranslationReciterTip =
         prefs.getBool('quran_translation_reciter_tip_seen') ?? false;
+    _ayahTranslationEnabled =
+        prefs.getBool('quran_ayah_translation_enabled') ?? false;
+    _ayahTranslationLanguageId =
+        prefs.getString('quran_ayah_translation_lang') ?? 'translation_english';
+    _tipsContentVersion = prefs.getInt('quran_tips_content_version') ?? 0;
 
     notifyListeners();
   }
@@ -193,12 +205,34 @@ class QuranSettings extends ChangeNotifier {
     p.setBool('quran_reader_tips_seen', true);
   }
 
+  Future<void> setAyahTranslationEnabled(bool v) async {
+    _ayahTranslationEnabled = v;
+    notifyListeners();
+    final p = await SharedPreferences.getInstance();
+    p.setBool('quran_ayah_translation_enabled', v);
+  }
+
+  Future<void> setAyahTranslationLanguageId(String v) async {
+    _ayahTranslationLanguageId = v;
+    notifyListeners();
+    final p = await SharedPreferences.getInstance();
+    p.setString('quran_ayah_translation_lang', v);
+  }
+
   /// Mark the translation reciter tip as seen.
   Future<void> markTranslationReciterTipSeen() async {
     _hasSeenTranslationReciterTip = true;
     notifyListeners();
     final p = await SharedPreferences.getInstance();
     p.setBool('quran_translation_reciter_tip_seen', true);
+  }
+
+  /// Mark the tips content version as up-to-date (called when any tips overlay is dismissed).
+  Future<void> markTipsContentVersionCurrent() async {
+    _tipsContentVersion = kCurrentTipsVersion;
+    notifyListeners();
+    final p = await SharedPreferences.getInstance();
+    p.setInt('quran_tips_content_version', kCurrentTipsVersion);
   }
 }
 

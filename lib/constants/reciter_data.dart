@@ -187,3 +187,42 @@ String getAbdulBasitEnglishSurahUrl(int surahNumber) {
   final paddedNumber = surahNumber.toString().padLeft(3, '0');
   return 'https://download.quranicaudio.com/quran/abdulbasit_w_ibrahim_walk_si/$paddedNumber.mp3';
 }
+
+// ── Ayah-by-Ayah Translation Audio URLs ───────────────────────────────────
+// Used in ayah-by-ayah mode: plays Arabic first, then translation immediately after.
+
+/// ID for English translation audio in ayah-by-ayah mode.
+const kAyahTranslationEnglishId = 'translation_english';
+
+/// ID for Urdu translation audio in ayah-by-ayah mode.
+const kAyahTranslationUrduId = 'translation_urdu';
+
+/// Display name for English translation audio.
+const kAyahTranslationEnglishName = 'English (Sahih International)';
+
+/// Display name for Urdu translation audio.
+const kAyahTranslationUrduName = 'Urdu (Shamshad Ali Khan)';
+
+/// All available ayah translation options.
+const List<Map<String, String>> kAyahTranslationLanguages = [
+  {'id': kAyahTranslationEnglishId, 'name': kAyahTranslationEnglishName},
+  {'id': kAyahTranslationUrduId, 'name': kAyahTranslationUrduName},
+];
+
+/// Construct the ayah translation audio URL for English.
+///
+/// Example: surah 1, ayah 1 → "https://everyayah.com/data/English/Sahih_Intnl_Ibrahim_Walk_192kbps/001001.mp3"
+String getAyahTranslationEnglishUrl(int surahNumber, int ayahNumber) {
+  final paddedSurah = surahNumber.toString().padLeft(3, '0');
+  final paddedAyah = ayahNumber.toString().padLeft(3, '0');
+  return 'https://everyayah.com/data/English/Sahih_Intnl_Ibrahim_Walk_192kbps/$paddedSurah$paddedAyah.mp3';
+}
+
+/// Construct the ayah translation audio URL for Urdu.
+///
+/// Example: surah 1, ayah 1 → "https://everyayah.com/data/translations/urdu_shamshad_ali_khan_46kbps/001001.mp3"
+String getAyahTranslationUrduUrl(int surahNumber, int ayahNumber) {
+  final paddedSurah = surahNumber.toString().padLeft(3, '0');
+  final paddedAyah = ayahNumber.toString().padLeft(3, '0');
+  return 'https://everyayah.com/data/translations/urdu_shamshad_ali_khan_46kbps/$paddedSurah$paddedAyah.mp3';
+}

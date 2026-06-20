@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import '../constants/quran_theme.dart';
 import '../providers/quran_settings_provider.dart';
 
+/// Version of the tips content. Increment this whenever the tip data changes
+/// so existing users who have already dismissed the old tips will see the new ones.
+const int kCurrentTipsVersion = 2;
+
 /// Lightweight sequential overlay for first-time Quran reader visitors.
 /// Blurs the background with an elegant glassmorphism style and reveals tips cards.
 /// When [showOnlyTranslationTip] is true, only the first translation tip is shown
@@ -34,7 +38,7 @@ class QuranReaderTipsState extends State<QuranReaderTips>
         const _TipData(
           title: 'Listen with Translation',
           subtitle:
-              'Tap the settings icon, switch to "Full Surah" mode, and choose a reciter with Urdu or English translation from the top of the list.',
+              'Tap the settings icon, goto audio settings, and turn on play with translation, then select Urdu or English translation.',
           icon: Icons.translate_rounded,
         ),
       ];
@@ -43,7 +47,7 @@ class QuranReaderTipsState extends State<QuranReaderTips>
       const _TipData(
         title: 'Listen with Translation',
         subtitle:
-            'Tap the settings icon, switch to "Full Surah" mode, and choose a reciter with Urdu or English translation from the top of the list.',
+            'Tap the settings icon, goto audio settings, turn on play with translation, and then select Urdu or English translation.',
         icon: Icons.translate_rounded,
       ),
       const _TipData(
@@ -111,6 +115,7 @@ class QuranReaderTipsState extends State<QuranReaderTips>
     } else {
       settings.markQuranReaderTipsSeen();
     }
+    settings.markTipsContentVersionCurrent();
     if (mounted) setState(() {});
   }
 

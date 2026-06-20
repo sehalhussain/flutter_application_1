@@ -851,7 +851,7 @@ class _PrayerCardState extends State<_PrayerCard>
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 28,
+                              fontSize: 24,
                               height: 1.1,
                             ),
                           ),
@@ -868,7 +868,7 @@ class _PrayerCardState extends State<_PrayerCard>
                               Text(
                                 _formatTime(currentTimeStr),
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.85),
+                                  color: Colors.white.withOpacity(0.95),
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -1016,9 +1016,9 @@ class _PrayerCardState extends State<_PrayerCard>
                           Text(
                             nextPrayer,
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withOpacity(0.8),
                               fontWeight: FontWeight.bold,
-                              fontSize: 28,
+                              fontSize: 22,
                               height: 1.1,
                             ),
                           ),
