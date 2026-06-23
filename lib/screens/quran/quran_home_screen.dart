@@ -1135,7 +1135,7 @@ class _SurahTile extends StatelessWidget {
             )),
             Text(surah.nameArabic,
                 style: TextStyle(
-                    fontFamily: 'QPC Hafs',
+                    fontFamily: 'IndopakN',
                     fontSize: 22,
                     color: qt.emeraldDeep)),
           ]),

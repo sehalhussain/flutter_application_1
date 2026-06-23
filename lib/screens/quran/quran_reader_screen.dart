@@ -2086,129 +2086,133 @@ class _SettingsSheet extends StatefulWidget {
   State<_SettingsSheet> createState() => _SettingsSheetState();
 }
 
-class _SettingsSheetState extends State<_SettingsSheet>
-    with SingleTickerProviderStateMixin {
-  int _activeTabIndex = 0; // 0 = Display, 1 = Audio
+class _SettingsSheetState extends State<_SettingsSheet> {
+  int _activeTabIndex = 0;
+
+  void _switchTab(int index) {
+    if (index == _activeTabIndex) return;
+    HapticFeedback.selectionClick();
+    setState(() => _activeTabIndex = index);
+  }
 
   @override
   Widget build(BuildContext context) {
     final settings = QuranSettingsProvider.of(context);
     final qt = QuranTheme.of(context);
-
-    // Precise padding for iOS-style home indicator & system UI insets
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final systemBottomPadding = MediaQuery.of(context).padding.bottom;
     final safeBottomSpacer =
         bottomInset > 0 ? bottomInset + 16.0 : systemBottomPadding + 28.0;
-
-    // Fixed modal height to eliminate resizing layout jitter when switching tabs
-    final double sheetHeight = MediaQuery.of(context).size.height * 0.95;
+    final sheetHeight = MediaQuery.of(context).size.height * 0.95;
 
     return Container(
       height: sheetHeight,
       padding: EdgeInsets.only(bottom: safeBottomSpacer),
       decoration: BoxDecoration(
         color: qt.cardBg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 24,
+            offset: const Offset(0, -8),
+          ),
+        ],
       ),
       child: SafeArea(
         bottom: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Apple-style minimalist drag handle
+            // Drag handle
             Center(
               child: Container(
-                width: 40,
-                height: 5,
-                margin: const EdgeInsets.only(top: 12, bottom: 12),
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(top: 10, bottom: 8),
                 decoration: BoxDecoration(
-                  color: qt.textMuted.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(3),
+                  color: qt.textMuted.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
             ),
 
-            // Clean modal title header with tight horizontal margins
+            // Header
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Reading Settings',
-                    style: TextStyle(
-                      color: qt.textPrimary,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 24,
-                      letterSpacing: -0.6,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Settings',
+                        style: TextStyle(
+                          color: qt.textPrimary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 26,
+                          letterSpacing: -0.8,
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Personalize your reading experience',
+                        style: TextStyle(
+                          color: qt.textMuted,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    icon: Icon(Icons.close_rounded,
-                        color: qt.textMuted, size: 24),
-                    style: IconButton.styleFrom(
-                      backgroundColor: qt.brightness == Brightness.dark
-                          ? Colors.white.withOpacity(0.06)
-                          : Colors.black.withOpacity(0.04),
-                      padding: const EdgeInsets.all(10),
-                    ),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
+                  _closeButton(qt),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-            // Minimal segment pill bar matching full viewport horizontal limits
+            // Sliding Tab Bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: qt.brightness == Brightness.dark
-                      ? Colors.white.withOpacity(0.05)
-                      : Colors.black.withOpacity(0.04),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _tabPill(
-                        label: 'Display & Text',
-                        icon: Icons.text_fields_rounded,
-                        isActive: _activeTabIndex == 0,
-                        onTap: () => setState(() => _activeTabIndex = 0),
-                        qt: qt,
-                      ),
-                    ),
-                    Expanded(
-                      child: _tabPill(
-                        label: 'Audio Flow',
-                        icon: Icons.volume_up_rounded,
-                        isActive: _activeTabIndex == 1,
-                        onTap: () => setState(() => _activeTabIndex = 1),
-                        qt: qt,
-                      ),
-                    ),
-                  ],
-                ),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _SlidingTabBar(
+                tabs: const [
+                  _TabItem(label: 'Display', icon: Icons.text_fields_rounded),
+                  _TabItem(label: 'Audio', icon: Icons.headphones_rounded),
+                ],
+                activeIndex: _activeTabIndex,
+                onTap: _switchTab,
+                qt: qt,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // Scrollable preferences container with widened padding limits
+            // Content with fade transition
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  transitionBuilder:
-                      (Widget child, Animation<double> animation) {
+                  duration: const Duration(milliseconds: 280),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (child, animation) {
                     return FadeTransition(
-                      opacity: animation,
+                      opacity: CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      ),
                       child: child,
+                    );
+                  },
+                  layoutBuilder: (currentChild, previousChildren) {
+                    return Stack(
+                      alignment: Alignment.topCenter,
+                      children: <Widget>[
+                        ...previousChildren,
+                        if (currentChild != null) currentChild,
+                      ],
                     );
                   },
                   child: _activeTabIndex == 0
@@ -2223,158 +2227,120 @@ class _SettingsSheetState extends State<_SettingsSheet>
     );
   }
 
-  Widget _tabPill({
-    required String label,
-    required IconData icon,
-    required bool isActive,
-    required VoidCallback onTap,
-    required QuranTheme qt,
-  }) {
-    final isDark = qt.brightness == Brightness.dark;
-    final activeGreenColor = isDark ? qt.emeraldGlow : qt.emeraldDeep;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isActive
-              ? (isDark ? Colors.white.withOpacity(0.12) : Colors.white)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: isActive && !isDark
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  )
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isActive ? activeGreenColor : qt.textMuted,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: isActive ? activeGreenColor : qt.textMuted,
-                fontSize: 14,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-          ],
+  Widget _closeButton(QuranTheme qt) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          Navigator.of(context).pop();
+        },
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: qt.brightness == Brightness.dark
+                ? Colors.white.withOpacity(0.06)
+                : Colors.black.withOpacity(0.04),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            Icons.close_rounded,
+            color: qt.textSecondary,
+            size: 20,
+          ),
         ),
       ),
     );
   }
+
+  // ─── DISPLAY TAB ───────────────────────────────────────────────────────────
 
   Widget _buildDisplayTab(QuranSettings settings, QuranTheme qt) {
     return Column(
       key: const ValueKey<int>(0),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 8),
-
-        // --- APPEARANCE ---
-        _label('Appearance', qt),
+        _SectionHeader(
+          title: 'Appearance',
+          subtitle: 'Choose your preferred theme',
+          qt: qt,
+        ),
         const SizedBox(height: 10),
-        _groupContainer(
-          qt,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: _themeToggle(settings, qt),
+        _Card(qt: qt, child: _themeToggle(settings, qt)),
+        const SizedBox(height: 28),
+        _SectionHeader(
+          title: 'Translation',
+          subtitle: 'Select your preferred language pack',
+          qt: qt,
+        ),
+        const SizedBox(height: 10),
+        _Card(
+          qt: qt,
+          child: _TranslationDropdown(
+            settings: settings,
+            onTranslationChanged: widget.onTranslationChanged,
           ),
         ),
         const SizedBox(height: 28),
-
-        // --- TRANSLATION PACK ---
-        _label('Translation Pack', qt),
-        const SizedBox(height: 10),
-        _groupContainer(
-          qt,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: _TranslationDropdown(
-              settings: settings,
-              onTranslationChanged: widget.onTranslationChanged,
-            ),
-          ),
+        _SectionHeader(
+          title: 'Preview',
+          subtitle: 'See your changes in real time',
+          qt: qt,
         ),
-        const SizedBox(height: 28),
-
-        // --- LIVE PREVIEW ---
-        _label('Live Preview', qt),
         const SizedBox(height: 10),
         _buildPreviewCard(settings, qt),
         const SizedBox(height: 28),
-
-        // --- CUSTOMIZE TEXT & DISPLAY (Unifying scripts, sizes, and visibilities into 1 card) ---
-        _label('Customize Quran Text', qt),
+        _SectionHeader(
+          title: 'Quran Text',
+          subtitle: 'Adjust script, size & visibility',
+          qt: qt,
+        ),
         const SizedBox(height: 10),
-        _groupContainer(
-          qt,
+        _Card(
+          qt: qt,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Arabic Font Style (Uthmani vs IndoPak toggle)
                 _scriptToggle(settings, qt),
-                const SizedBox(height: 24),
-
-                // Arabic Font Size slider
-                _sliderLabel('Arabic Font Size',
-                    '${settings.arabicFontSize.round()}px', qt),
-                _sliderWrapper(
-                  settings.arabicFontSize,
-                  20,
-                  72,
-                  settings.setArabicFontSize,
-                  qt,
+                const SizedBox(height: 26),
+                _FontSlider(
+                  label: 'Arabic Font Size',
+                  value: settings.arabicFontSize,
+                  min: 20,
+                  max: 72,
+                  unit: 'px',
+                  onChanged: settings.setArabicFontSize,
+                  qt: qt,
                 ),
-                const SizedBox(height: 24),
-
-                // Translation Font Size slider
-                _sliderLabel('Translation Size',
-                    '${settings.translationFontSize.round()}px', qt),
-                _sliderWrapper(
-                  settings.translationFontSize,
-                  10,
-                  28,
-                  settings.setTranslationFontSize,
-                  qt,
+                const SizedBox(height: 22),
+                _FontSlider(
+                  label: 'Translation Size',
+                  value: settings.translationFontSize,
+                  min: 10,
+                  max: 28,
+                  unit: 'px',
+                  onChanged: settings.setTranslationFontSize,
+                  qt: qt,
                 ),
-                const SizedBox(height: 24),
-
-                // Subtle hairline separator inside the card
-                Container(
-                  height: 0.5,
-                  color: qt.brightness == Brightness.dark
-                      ? Colors.white.withOpacity(0.1)
-                      : Colors.black.withOpacity(0.08),
-                ),
-                const SizedBox(height: 12),
-
-                // Transliteration Visibility Toggle
-                _toggleRow(
-                  title: 'Show Transliteration',
+                const SizedBox(height: 20),
+                _thinDivider(qt),
+                const SizedBox(height: 14),
+                _ToggleRow(
+                  icon: Icons.translate_rounded,
+                  title: 'Transliteration',
+                  subtitle: 'Show phonetic pronunciation',
                   value: settings.showTransliteration,
                   onChanged: settings.setShowTransliteration,
                   qt: qt,
                 ),
-                const SizedBox(height: 8),
-
-                // Translation Text Visibility Toggle
-                _toggleRow(
-                  title: 'Show Translation Text',
+                const SizedBox(height: 10),
+                _ToggleRow(
+                  icon: Icons.language_rounded,
+                  title: 'Translation Text',
+                  subtitle: 'Show meaning below Arabic',
                   value: settings.showTranslation,
                   onChanged: settings.setShowTranslation,
                   qt: qt,
@@ -2383,35 +2349,40 @@ class _SettingsSheetState extends State<_SettingsSheet>
             ),
           ),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 40),
       ],
     );
   }
+
+  // ─── AUDIO TAB ─────────────────────────────────────────────────────────────
 
   Widget _buildAudioTab(QuranSettings settings, QuranTheme qt) {
     return Column(
       key: const ValueKey<int>(1),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 8),
-
-        // --- PLAYBACK MODE ---
-        _label('Playback Flow', qt),
+        _SectionHeader(
+          title: 'Playback Mode',
+          subtitle: 'How would you like to listen?',
+          qt: qt,
+        ),
         const SizedBox(height: 10),
-        _groupContainer(
-          qt,
+        _Card(
+          qt: qt,
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: _playModeToggle(settings, qt),
           ),
         ),
         const SizedBox(height: 28),
-
-        // --- RECITER & VOICE CONTROLS ---
-        _label('Reciters & Voices', qt),
+        _SectionHeader(
+          title: 'Reciter',
+          subtitle: 'Choose your preferred voice',
+          qt: qt,
+        ),
         const SizedBox(height: 10),
-        _groupContainer(
-          qt,
+        _Card(
+          qt: qt,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Column(
@@ -2423,21 +2394,26 @@ class _SettingsSheetState extends State<_SettingsSheet>
                         settings.selectedReciterId ==
                             kAbdulBasitUrduReciterId ||
                         settings.selectedReciterId ==
-                            kAbdulBasitEnglishReciterId)) ...[
+                            kAbdulBasitEnglishReciterId))
                   _reciterDropdown(context, settings, qt),
-                ],
                 if (settings.playMode == PlayMode.ayah) ...[
                   _ayahReciterDropdown(context, settings, qt),
-                  const SizedBox(height: 16),
-                  _toggleRow(
+                  const SizedBox(height: 18),
+                  _thinDivider(qt),
+                  const SizedBox(height: 14),
+                  _ToggleRow(
+                    icon: Icons.skip_next_rounded,
                     title: 'Auto-continue Ayahs',
+                    subtitle: 'Automatically play next ayah',
                     value: settings.ayahAutoContinue,
                     onChanged: settings.setAyahAutoContinue,
                     qt: qt,
                   ),
-                  const SizedBox(height: 8),
-                  _toggleRow(
+                  const SizedBox(height: 10),
+                  _ToggleRow(
+                    icon: Icons.record_voice_over_rounded,
                     title: 'Play With Translation',
+                    subtitle: 'Read translation after each ayah',
                     value: settings.ayahTranslationEnabled,
                     onChanged: settings.setAyahTranslationEnabled,
                     qt: qt,
@@ -2451,10 +2427,12 @@ class _SettingsSheetState extends State<_SettingsSheet>
             ),
           ),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 40),
       ],
     );
   }
+
+  // ─── PREVIEW CARD ──────────────────────────────────────────────────────────
 
   Widget _buildPreviewCard(QuranSettings settings, QuranTheme qt) {
     final isIndoPak = settings.script == ArabicScript.indoPak;
@@ -2471,93 +2449,127 @@ class _SettingsSheetState extends State<_SettingsSheet>
             customTrans.language.toLowerCase().contains('urdu'));
 
     final isDark = qt.brightness == Brightness.dark;
-    final activeGreenColor = isDark ? qt.emeraldGlow : qt.emeraldDeep;
+    final accent = isDark ? qt.emeraldGlow : qt.emeraldDeep;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       decoration: BoxDecoration(
-        color: qt.brightness == Brightness.dark
-            ? Colors.white.withOpacity(0.04)
-            : Colors.black.withOpacity(0.025),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: activeGreenColor.withOpacity(0.12),
-          width: 1,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            accent.withOpacity(0.06),
+            isDark
+                ? Colors.white.withOpacity(0.02)
+                : Colors.black.withOpacity(0.015),
+          ],
         ),
+        border: Border.all(color: accent.withOpacity(0.15), width: 1),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Dynamic Badge
-          Align(
-            alignment: Alignment.topLeft,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: activeGreenColor.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: accent.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: accent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'LIVE PREVIEW',
+                        style: TextStyle(
+                          color: accent,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '1:1',
+                  style: TextStyle(
+                    color: qt.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ',
+              textAlign: TextAlign.right,
+              textDirection: TextDirection.rtl,
+              style: TextStyle(
+                fontFamily: isIndoPak ? 'IndoPak' : 'QPC Hafs',
+                fontFeatures: isIndoPak
+                    ? const [
+                        FontFeature.enable('liga'),
+                        FontFeature.enable('ccmp')
+                      ]
+                    : null,
+                fontSize: settings.arabicFontSize * 1,
+                color: qt.textPrimary,
+                height: 1.7,
               ),
-              child: Text(
-                'LIVE PREVIEW',
-                style: TextStyle(
-                  color: activeGreenColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10,
-                  letterSpacing: 1.0,
+            ),
+            if (settings.showTransliteration) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                child: Text(
+                  'Bismillaahir Rahmaanir Raheem',
+                  textAlign: TextAlign.left,
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: settings.translationFontSize * 1,
+                    fontStyle: FontStyle.italic,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
               ),
-            ),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            'بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ',
-            textAlign: TextAlign.right,
-            textDirection: TextDirection.rtl,
-            style: TextStyle(
-              fontFamily: isIndoPak ? 'IndoPak' : 'QPC Hafs',
-              fontFeatures: isIndoPak
-                  ? const [
-                      FontFeature.enable('liga'),
-                      FontFeature.enable('ccmp')
-                    ]
-                  : null,
-              fontSize: settings.arabicFontSize * 0.95,
-              color: qt.textPrimary,
-              height: 1.6,
-            ),
-          ),
-          if (settings.showTransliteration) ...[
-            const SizedBox(height: 12),
-            Text(
-              'Bismillaahir Rahmaanir Raheem',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: activeGreenColor,
-                fontSize: settings.translationFontSize,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
+            ],
+            if (settings.showTranslation) ...[
+              const SizedBox(height: 14),
+              if (settings.isCustomTranslation)
+                FutureBuilder<String>(
+                  future: TranslationDownloadService.instance
+                      .getFirstAyahTranslation(settings.customTranslationId!),
+                  builder: (context, snapshot) {
+                    String text = _getBismillahTranslation(settings);
+                    if (snapshot.hasData && snapshot.data != null) {
+                      text = snapshot.data!;
+                    }
+                    return _previewTranslationText(text, isUrdu, settings, qt);
+                  },
+                )
+              else
+                _previewTranslationText(
+                    _getBismillahTranslation(settings), isUrdu, settings, qt),
+            ],
           ],
-          if (settings.showTranslation) ...[
-            const SizedBox(height: 16),
-            if (settings.isCustomTranslation)
-              FutureBuilder<String>(
-                future: TranslationDownloadService.instance
-                    .getFirstAyahTranslation(settings.customTranslationId!),
-                builder: (context, snapshot) {
-                  String text = _getBismillahTranslation(settings);
-                  if (snapshot.hasData && snapshot.data != null) {
-                    text = snapshot.data!;
-                  }
-                  return _previewTranslationText(text, isUrdu, settings, qt);
-                },
-              )
-            else
-              _previewTranslationText(
-                  _getBismillahTranslation(settings), isUrdu, settings, qt),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -2574,7 +2586,7 @@ class _SettingsSheetState extends State<_SettingsSheet>
             ? settings.translationFontSize + 2
             : settings.translationFontSize,
         color: qt.textSecondary,
-        height: 1.4,
+        height: 1.5,
       ),
     );
   }
@@ -2610,163 +2622,87 @@ class _SettingsSheetState extends State<_SettingsSheet>
     }
   }
 
-  // Apple iOS grouped section labels
-  Widget _label(String text, QuranTheme qt) => Padding(
-        padding: const EdgeInsets.only(left: 6, bottom: 2),
-        child: Text(
-          text.toUpperCase(),
-          style: TextStyle(
-            color: qt.brightness == Brightness.dark
-                ? qt.emeraldGlow
-                : qt.emeraldDeep,
-            fontSize: 11.5,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.2,
-          ),
-        ),
-      );
+  // ─── SHARED HELPERS ────────────────────────────────────────────────────────
 
-  Widget _sliderLabel(String title, String val, QuranTheme qt) => Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title,
-              style: TextStyle(
-                  color: qt.textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600)),
-          Text(val,
-              style: TextStyle(
-                  color: qt.brightness == Brightness.dark
-                      ? qt.emeraldGlow
-                      : qt.emeraldDeep,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800)),
-        ],
-      );
-
-  Widget _sliderWrapper(double current, double min, double max,
-      Function(double) onChanged, QuranTheme qt) {
-    final activeColor =
-        qt.brightness == Brightness.dark ? qt.emeraldLight : qt.emeraldDeep;
-    return SliderTheme(
-      data: SliderThemeData(
-        activeTrackColor: activeColor,
-        inactiveTrackColor:
-            (qt.brightness == Brightness.dark ? Colors.white : Colors.black)
-                .withOpacity(0.08),
-        thumbColor:
-            qt.brightness == Brightness.dark ? Colors.white : qt.emeraldDeep,
-        overlayColor: Colors.transparent,
-        trackHeight: 4,
-        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-      ),
-      child: Slider(
-        value: current,
-        min: min,
-        max: max,
-        onChanged: onChanged,
-      ),
-    );
-  }
-
-  // Apple-style list card grouping
-  Widget _groupContainer(QuranTheme qt, {required Widget child}) {
-    final isDark = qt.brightness == Brightness.dark;
+  Widget _thinDivider(QuranTheme qt) {
     return Container(
-      width: double.infinity,
+      height: 0.5,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withOpacity(0.04)
-            : Colors.black.withOpacity(0.02),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: child,
+        color: qt.brightness == Brightness.dark
+            ? Colors.white.withOpacity(0.08)
+            : Colors.black.withOpacity(0.06),
       ),
     );
   }
 
-  // Classic Apple Settings style list toggle row (stripped of icons and duplicate labels)
-  Widget _toggleRow({
-    required String title,
-    required bool value,
-    required Function(bool) onChanged,
-    required QuranTheme qt,
-  }) {
-    final isDark = qt.brightness == Brightness.dark;
-    final activeColor = isDark ? qt.emeraldLight : qt.emeraldDeep;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              title,
-              style: TextStyle(
-                  color: value ? activeColor : qt.textPrimary,
-                  fontSize: 15,
-                  fontWeight: value ? FontWeight.w600 : FontWeight.w500),
-            ),
-          ),
-          Transform.scale(
-            scale: 0.85,
-            child: Switch(
-              value: value,
-              onChanged: onChanged,
-              activeTrackColor: activeColor,
-              activeColor: Colors.white,
-              inactiveThumbColor: Colors.white,
-              inactiveTrackColor: isDark
-                  ? Colors.white.withOpacity(0.12)
-                  : Colors.black.withOpacity(0.1),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Segmented style script selector
-  Widget _scriptToggle(QuranSettings settings, QuranTheme qt) {
-    const scripts = [
-      (ArabicScript.uthmani, 'Uthmani Script'),
-      (ArabicScript.indoPak, 'IndoPak Script')
+  Widget _themeToggle(QuranSettings settings, QuranTheme qt) {
+    const modes = [
+      (ThemeMode.system, 'Auto', Icons.brightness_auto_rounded),
+      (ThemeMode.light, 'Light', Icons.light_mode_rounded),
+      (ThemeMode.dark, 'Dark', Icons.dark_mode_rounded),
     ];
     final isDark = qt.brightness == Brightness.dark;
-    final activeGreenColor = isDark ? qt.emeraldGlow : qt.emeraldDeep;
+    final accent = isDark ? qt.emeraldGlow : qt.emeraldDeep;
 
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withOpacity(0.04)
-              : Colors.black.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(12)),
+    return Padding(
+      padding: const EdgeInsets.all(12),
       child: Row(
-        children: scripts.map((s) {
-          final active = settings.script == s.$1;
+        children: modes.map((m) {
+          final active = settings.themeMode == m.$1;
           return Expanded(
-            child: GestureDetector(
-              onTap: () => settings.setScript(s.$1),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                    color: active
-                        ? (isDark
-                            ? Colors.white.withOpacity(0.1)
-                            : Colors.white)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(10)),
-                child: Text(
-                  s.$2,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: active ? activeGreenColor : qt.textMuted,
-                      fontSize: 13,
-                      fontWeight: active ? FontWeight.w700 : FontWeight.w500),
+            child: Padding(
+              padding: EdgeInsets.only(
+                  left: 3, right: modes.last == m ? 3 : 1.5, top: 3, bottom: 3),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    settings.setThemeMode(m.$1);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: active
+                          ? (isDark
+                              ? Colors.white.withOpacity(0.1)
+                              : Colors.white)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: active && !isDark
+                          ? [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.06),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              )
+                            ]
+                          : null,
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          m.$3,
+                          size: 20,
+                          color: active ? accent : qt.textMuted,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          m.$2,
+                          style: TextStyle(
+                            color: active ? accent : qt.textMuted,
+                            fontSize: 12,
+                            fontWeight:
+                                active ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -2776,96 +2712,214 @@ class _SettingsSheetState extends State<_SettingsSheet>
     );
   }
 
-  // Modern Theme Toggles
-  Widget _themeToggle(QuranSettings settings, QuranTheme qt) {
+  Widget _scriptToggle(QuranSettings settings, QuranTheme qt) {
+    const scripts = [
+      (ArabicScript.uthmani, 'Uthmani'),
+      (ArabicScript.indoPak, 'IndoPak'),
+    ];
     final isDark = qt.brightness == Brightness.dark;
-    final activeGreenColor = isDark ? qt.emeraldGlow : qt.emeraldDeep;
+    final accent = isDark ? qt.emeraldGlow : qt.emeraldDeep;
 
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withOpacity(0.04)
-              : Colors.black.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(12)),
-      child: Row(children: [
-        Expanded(
-            child: _modeBtn(
-                'System',
-                settings.themeMode == ThemeMode.system,
-                () => settings.setThemeMode(ThemeMode.system),
-                activeGreenColor,
-                qt)),
-        Expanded(
-            child: _modeBtn(
-                'Light Mode',
-                settings.themeMode == ThemeMode.light,
-                () => settings.setThemeMode(ThemeMode.light),
-                activeGreenColor,
-                qt)),
-        Expanded(
-            child: _modeBtn(
-                'Dark Mode',
-                settings.themeMode == ThemeMode.dark,
-                () => settings.setThemeMode(ThemeMode.dark),
-                activeGreenColor,
-                qt)),
-      ]),
+        color: isDark
+            ? Colors.white.withOpacity(0.04)
+            : Colors.black.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: scripts.map((s) {
+          final active = settings.script == s.$1;
+          return Expanded(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  settings.setScript(s.$1);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOutCubic,
+                  padding: const EdgeInsets.symmetric(vertical: 11),
+                  decoration: BoxDecoration(
+                    color: active
+                        ? (isDark
+                            ? Colors.white.withOpacity(0.1)
+                            : Colors.white)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: active && !isDark
+                        ? [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            )
+                          ]
+                        : null,
+                  ),
+                  child: Text(
+                    s.$2,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: active ? accent : qt.textMuted,
+                      fontSize: 13.5,
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
-  // Play Mode Toggles
   Widget _playModeToggle(QuranSettings settings, QuranTheme qt) {
     final isDark = qt.brightness == Brightness.dark;
-    final activeGreenColor = isDark ? qt.emeraldGlow : qt.emeraldDeep;
+    final accent = isDark ? qt.emeraldGlow : qt.emeraldDeep;
 
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withOpacity(0.04)
-              : Colors.black.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(12)),
-      child: Row(children: [
+    return Row(
+      children: [
         Expanded(
-            child: _modeBtn(
-                '▶  Full Surah',
-                settings.playMode == PlayMode.surah,
-                () => settings.setPlayMode(PlayMode.surah),
-                activeGreenColor,
-                qt)),
+          child: _modeCard(
+            icon: Icons.play_circle_rounded,
+            label: 'Full Surah',
+            subtitle: 'Continuous playback',
+            active: settings.playMode == PlayMode.surah,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              settings.setPlayMode(PlayMode.surah);
+            },
+            accent: accent,
+            qt: qt,
+          ),
+        ),
+        const SizedBox(width: 8),
         Expanded(
-            child: _modeBtn(
-                '≡  Ayah by Ayah',
-                settings.playMode == PlayMode.ayah,
-                () => settings.setPlayMode(PlayMode.ayah),
-                activeGreenColor,
-                qt)),
-      ]),
+          child: _modeCard(
+            icon: Icons.view_headline_rounded,
+            label: 'Ayah by Ayah',
+            subtitle: 'Step through each',
+            active: settings.playMode == PlayMode.ayah,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              settings.setPlayMode(PlayMode.ayah);
+            },
+            accent: accent,
+            qt: qt,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _modeBtn(String label, bool active, VoidCallback onTap,
-      Color highlightColor, QuranTheme qt) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
+  Widget _modeCard({
+    required IconData icon,
+    required String label,
+    required String subtitle,
+    required bool active,
+    required VoidCallback onTap,
+    required Color accent,
+    required QuranTheme qt,
+  }) {
+    final isDark = qt.brightness == Brightness.dark;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+          decoration: BoxDecoration(
             color: active
-                ? (qt.brightness == Brightness.dark
-                    ? Colors.white.withOpacity(0.1)
-                    : Colors.white)
+                ? (isDark ? Colors.white.withOpacity(0.1) : Colors.white)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(10)),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
+            borderRadius: BorderRadius.circular(14),
+            border: active
+                ? Border.all(color: accent.withOpacity(0.2), width: 1)
+                : null,
+            boxShadow: active && !isDark
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    )
+                  ]
+                : null,
+          ),
+          child: Column(
+            children: [
+              Icon(icon, size: 24, color: active ? accent : qt.textMuted),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: active ? accent : qt.textPrimary,
+                  fontSize: 13,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: qt.textMuted,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _styledDropdown({
+    required String value,
+    required List<DropdownMenuItem<String>> items,
+    required ValueChanged<String?>? onChanged,
+    required QuranTheme qt,
+  }) {
+    final isDark = qt.brightness == Brightness.dark;
+    final accent = isDark ? qt.emeraldGlow : qt.emeraldDeep;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withOpacity(0.03)
+            : Colors.white.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: qt.textMuted.withOpacity(0.1)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          dropdownColor: qt.cardBg,
+          isExpanded: true,
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: qt.textMuted,
+            size: 22,
+          ),
           style: TextStyle(
-              color: active ? highlightColor : qt.textMuted,
-              fontSize: 13,
-              fontWeight: active ? FontWeight.w700 : FontWeight.w500),
+            color: accent,
+            fontSize: 14.5,
+            fontWeight: FontWeight.w600,
+          ),
+          items: items,
+          onChanged: onChanged,
         ),
       ),
     );
@@ -2879,122 +2933,460 @@ class _SettingsSheetState extends State<_SettingsSheet>
         .add(MapEntry(kAbdulBasitUrduReciterId, kAbdulBasitUrduReciterName));
     reciterEntries.add(
         MapEntry(kAbdulBasitEnglishReciterId, kAbdulBasitEnglishReciterName));
-
     if (widget.surahAudio != null) {
       for (final e in widget.surahAudio!.reciters.entries) {
         reciterEntries.add(MapEntry(e.key, e.value.reciterName));
       }
     }
 
-    final isDark = qt.brightness == Brightness.dark;
-    final activeGreenColor = isDark ? qt.emeraldGlow : qt.emeraldDeep;
+    final currentId =
+        reciterEntries.any((e) => e.key == settings.selectedReciterId)
+            ? settings.selectedReciterId
+            : reciterEntries.first.key;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withOpacity(0.03)
-              : Colors.white.withOpacity(0.6),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: qt.textMuted.withOpacity(0.12))),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: reciterEntries.any((e) => e.key == settings.selectedReciterId)
-              ? settings.selectedReciterId
-              : reciterEntries.first.key,
-          dropdownColor: qt.cardBg,
-          isExpanded: true,
-          style: TextStyle(
-              color: activeGreenColor,
-              fontSize: 14.5,
-              fontWeight: FontWeight.w700),
-          items: reciterEntries
-              .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
-              .toList(),
-          onChanged: (v) {
-            if (v != null) settings.setSelectedReciterId(v);
-          },
-        ),
-      ),
+    return _styledDropdown(
+      value: currentId,
+      items: reciterEntries
+          .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+          .toList(),
+      onChanged: (v) {
+        if (v != null) {
+          HapticFeedback.selectionClick();
+          settings.setSelectedReciterId(v);
+        }
+      },
+      qt: qt,
     );
   }
 
   Widget _ayahReciterDropdown(
       BuildContext context, QuranSettings settings, QuranTheme qt) {
-    final isDark = qt.brightness == Brightness.dark;
-    final activeGreenColor = isDark ? qt.emeraldGlow : qt.emeraldDeep;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withOpacity(0.03)
-              : Colors.white.withOpacity(0.6),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: qt.textMuted.withOpacity(0.12))),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: settings.selectedAyahReciterId,
-          dropdownColor: qt.cardBg,
-          isExpanded: true,
-          style: TextStyle(
-              color: activeGreenColor,
-              fontSize: 14.5,
-              fontWeight: FontWeight.w700),
-          items: kAyahReciters
-              .map((r) => DropdownMenuItem(value: r.id, child: Text(r.name)))
-              .toList(),
-          onChanged: (v) {
-            if (v != null) {
-              settings.setSelectedAyahReciterId(v);
-              widget.onAyahReciterChanged();
-            }
-          },
-        ),
-      ),
+    return _styledDropdown(
+      value: settings.selectedAyahReciterId,
+      items: kAyahReciters
+          .map((r) => DropdownMenuItem(value: r.id, child: Text(r.name)))
+          .toList(),
+      onChanged: (v) {
+        if (v != null) {
+          HapticFeedback.selectionClick();
+          settings.setSelectedAyahReciterId(v);
+          widget.onAyahReciterChanged();
+        }
+      },
+      qt: qt,
     );
   }
 
   Widget _ayahTranslationLanguageDropdown(
       BuildContext context, QuranSettings settings, QuranTheme qt) {
-    final isDark = qt.brightness == Brightness.dark;
-    final activeGreenColor = isDark ? qt.emeraldGlow : qt.emeraldDeep;
+    return _styledDropdown(
+      value: settings.ayahTranslationLanguageId,
+      items: kAyahTranslationLanguages
+          .map((lang) => DropdownMenuItem(
+                value: lang['id'],
+                child: Text(lang['name'] ?? ''),
+              ))
+          .toList(),
+      onChanged: (v) {
+        if (v != null) {
+          HapticFeedback.selectionClick();
+          settings.setAyahTranslationLanguageId(v);
+        }
+      },
+      qt: qt,
+    );
+  }
+}
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withOpacity(0.03)
-              : Colors.white.withOpacity(0.6),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: qt.textMuted.withOpacity(0.12))),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: settings.ayahTranslationLanguageId,
-          dropdownColor: qt.cardBg,
-          isExpanded: true,
-          style: TextStyle(
-              color: activeGreenColor,
-              fontSize: 14.5,
-              fontWeight: FontWeight.w700),
-          items: kAyahTranslationLanguages.map((lang) {
-            return DropdownMenuItem(
-              value: lang['id'],
-              child: Text(lang['name'] ?? ''),
-            );
-          }).toList(),
-          onChanged: (v) {
-            if (v != null) settings.setAyahTranslationLanguageId(v);
-          },
-        ),
+// ═══════════════════════════════════════════════════════════════════════════════
+// EXTRACTED REUSABLE WIDGETS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── SECTION HEADER (fixed: no more clipping) ───────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final QuranTheme qt;
+
+  const _SectionHeader({
+    required this.title,
+    required this.subtitle,
+    required this.qt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = qt.brightness == Brightness.dark;
+    final accent = isDark ? qt.emeraldGlow : qt.emeraldDeep;
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                title.toUpperCase(),
+                style: TextStyle(
+                  color: accent,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Container(
+                  height: 0.5,
+                  margin: const EdgeInsets.only(top: 5),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.06)
+                        : Colors.black.withOpacity(0.05),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: qt.textMuted,
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Custom Translation Selector Component (Clean & Borderless)
-// ─────────────────────────────────────────────────────────────────────────────
+class _Card extends StatelessWidget {
+  final QuranTheme qt;
+  final Widget child;
+
+  const _Card({required this.qt, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = qt.brightness == Brightness.dark;
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withOpacity(0.04)
+            : Colors.black.withOpacity(0.02),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withOpacity(0.06)
+              : Colors.black.withOpacity(0.04),
+          width: 0.5,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _FontSlider extends StatefulWidget {
+  final String label;
+  final double value;
+  final double min;
+  final double max;
+  final String unit;
+  final ValueChanged<double> onChanged;
+  final QuranTheme qt;
+
+  const _FontSlider({
+    required this.label,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.unit,
+    required this.onChanged,
+    required this.qt,
+  });
+
+  @override
+  State<_FontSlider> createState() => _FontSliderState();
+}
+
+class _FontSliderState extends State<_FontSlider> {
+  bool _isDragging = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = widget.qt.brightness == Brightness.dark;
+    final accent = isDark ? widget.qt.emeraldLight : widget.qt.emeraldDeep;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              widget.label,
+              style: TextStyle(
+                color: widget.qt.textPrimary,
+                fontSize: 14.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: accent.withOpacity(_isDragging ? 0.15 : 0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '${widget.value.round()}${widget.unit}',
+                style: TextStyle(
+                  color: accent,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SliderTheme(
+          data: SliderThemeData(
+            activeTrackColor: accent,
+            inactiveTrackColor:
+                (isDark ? Colors.white : Colors.black).withOpacity(0.06),
+            thumbColor: isDark ? Colors.white : accent,
+            overlayColor: accent.withOpacity(0.12),
+            trackHeight: 4,
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 9),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
+          ),
+          child: Slider(
+            value: widget.value,
+            min: widget.min,
+            max: widget.max,
+            onChangeStart: (_) => setState(() => _isDragging = true),
+            onChangeEnd: (_) {
+              HapticFeedback.selectionClick();
+              setState(() => _isDragging = false);
+            },
+            onChanged: widget.onChanged,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ToggleRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final QuranTheme qt;
+
+  const _ToggleRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+    required this.qt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = qt.brightness == Brightness.dark;
+    final accent = isDark ? qt.emeraldLight : qt.emeraldDeep;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: value
+                  ? accent.withOpacity(0.1)
+                  : (isDark
+                      ? Colors.white.withOpacity(0.04)
+                      : Colors.black.withOpacity(0.03)),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              icon,
+              size: 18,
+              color: value ? accent : qt.textMuted,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: qt.textPrimary,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: qt.textMuted,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Transform.scale(
+            scale: 0.82,
+            child: Switch(
+              value: value,
+              onChanged: (v) {
+                HapticFeedback.selectionClick();
+                onChanged(v);
+              },
+              activeTrackColor: accent,
+              activeColor: Colors.white,
+              inactiveThumbColor:
+                  isDark ? Colors.white.withOpacity(0.7) : Colors.white,
+              inactiveTrackColor: isDark
+                  ? Colors.white.withOpacity(0.1)
+                  : Colors.black.withOpacity(0.08),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── SLIDING TAB BAR (layout-safe: no LayoutBuilder) ────────────────────────
+
+class _TabItem {
+  final String label;
+  final IconData icon;
+  const _TabItem({required this.label, required this.icon});
+}
+
+class _SlidingTabBar extends StatelessWidget {
+  final List<_TabItem> tabs;
+  final int activeIndex;
+  final ValueChanged<int> onTap;
+  final QuranTheme qt;
+
+  const _SlidingTabBar({
+    required this.tabs,
+    required this.activeIndex,
+    required this.onTap,
+    required this.qt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = qt.brightness == Brightness.dark;
+    final accent = isDark ? qt.emeraldGlow : qt.emeraldDeep;
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withOpacity(0.05)
+            : Colors.black.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Stack(
+        children: [
+          // Indicator uses AnimatedSlide: offset is relative to its own size,
+          // so offset (1,0) shifts right by exactly one tab-width.
+          AnimatedSlide(
+            offset: Offset(activeIndex.toDouble(), 0),
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            child: FractionallySizedBox(
+              widthFactor: 1.0 / tabs.length,
+              alignment: Alignment.centerLeft,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withOpacity(0.12) : Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: !isDark
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          )
+                        ]
+                      : null,
+                ),
+              ),
+            ),
+          ),
+          // Tab buttons
+          Row(
+            children: tabs.asMap().entries.map((entry) {
+              final i = entry.key;
+              final tab = entry.value;
+              final isActive = i == activeIndex;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onTap(i),
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          tab.icon,
+                          size: 18,
+                          color: isActive ? accent : qt.textMuted,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          tab.label,
+                          style: TextStyle(
+                            color: isActive ? accent : qt.textMuted,
+                            fontSize: 14,
+                            fontWeight:
+                                isActive ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── TRANSLATION DROPDOWN ────────────────────────────────────────────────────
+
 class _TranslationDropdown extends StatelessWidget {
   final QuranSettings settings;
   final VoidCallback onTranslationChanged;
@@ -3008,7 +3400,7 @@ class _TranslationDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
     final isDark = qt.brightness == Brightness.dark;
-    final activeGreenColor = isDark ? qt.emeraldGlow : qt.emeraldDeep;
+    final accent = isDark ? qt.emeraldGlow : qt.emeraldDeep;
 
     final downloadService = TranslationDownloadService.instance;
     final allOptions = _buildOptions(downloadService);
@@ -3016,95 +3408,106 @@ class _TranslationDropdown extends StatelessWidget {
         ? 'custom_${settings.customTranslationId}'
         : 'builtin_${settings.translation.index}';
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withOpacity(0.03)
-            : Colors.white.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: qt.textMuted.withOpacity(0.12)),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: currentKey,
-          dropdownColor: qt.cardBg,
-          isExpanded: true,
-          style: TextStyle(
-              color: activeGreenColor,
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withOpacity(0.03)
+              : Colors.white.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: qt.textMuted.withOpacity(0.1)),
+        ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: currentKey,
+            dropdownColor: qt.cardBg,
+            isExpanded: true,
+            icon: Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: qt.textMuted,
+              size: 22,
+            ),
+            style: TextStyle(
+              color: accent,
               fontSize: 14.5,
-              fontWeight: FontWeight.w700),
-          items: allOptions.map((opt) {
-            final isCurrent = opt.key == currentKey;
-            final isDownloaded = opt.isDownloaded ?? false;
-            final isDownloading = opt.isDownloading ?? false;
+              fontWeight: FontWeight.w600,
+            ),
+            items: allOptions.map((opt) {
+              final isCurrent = opt.key == currentKey;
+              final isDownloaded = opt.isDownloaded ?? false;
+              final isDownloading = opt.isDownloading ?? false;
 
-            return DropdownMenuItem<String>(
-              value: opt.key,
-              enabled: opt.isBuiltin || isDownloaded || !isDownloading,
-              child: Row(children: [
-                Expanded(
-                  child: Text(
-                    opt.label,
-                    style: TextStyle(
-                      color: (!opt.isBuiltin && !isDownloaded)
-                          ? qt.textMuted
-                          : (isCurrent ? activeGreenColor : qt.textPrimary),
-                      fontWeight:
-                          isCurrent ? FontWeight.w700 : FontWeight.normal,
-                      fontSize: 14.5,
-                    ),
-                  ),
-                ),
-                if (!opt.isBuiltin && !isDownloaded && !isDownloading)
-                  GestureDetector(
-                    onTap: () =>
-                        _startDownload(context, opt.customId!, downloadService),
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: Icon(Icons.download_rounded,
-                          color: qt.textMuted, size: 18),
-                    ),
-                  ),
-                if (isDownloading && opt.downloadProgress != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        value: opt.downloadProgress,
-                        strokeWidth: 2,
-                        color: qt.emeraldLight,
+              return DropdownMenuItem<String>(
+                value: opt.key,
+                enabled: opt.isBuiltin || isDownloaded || !isDownloading,
+                child: Row(children: [
+                  Expanded(
+                    child: Text(
+                      opt.label,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: (!opt.isBuiltin && !isDownloaded)
+                            ? qt.textMuted
+                            : (isCurrent ? accent : qt.textPrimary),
+                        fontWeight:
+                            isCurrent ? FontWeight.w700 : FontWeight.normal,
+                        fontSize: 14.5,
                       ),
                     ),
                   ),
-                if (!opt.isBuiltin && isDownloaded)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: Icon(Icons.check_circle_rounded,
-                        color: qt.emeraldLight, size: 18),
-                  ),
-              ]),
-            );
-          }).toList(),
-          onChanged: (key) {
-            if (key == null) return;
-            if (key.startsWith('builtin_')) {
-              final idx = int.parse(key.split('_')[1]);
-              settings.setTranslation(TranslationId.values[idx]);
-              onTranslationChanged();
-            } else {
-              final id = key.split('_')[1];
-              final downloaded = downloadService.isDownloaded(id) ?? false;
-              if (downloaded) {
-                settings.setCustomTranslation(id);
+                  if (!opt.isBuiltin && !isDownloaded && !isDownloading)
+                    GestureDetector(
+                      onTap: () => _startDownload(
+                          context, opt.customId!, downloadService),
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: Icon(Icons.download_rounded,
+                            color: qt.textMuted, size: 18),
+                      ),
+                    ),
+                  if (isDownloading && opt.downloadProgress != null)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          value: opt.downloadProgress,
+                          strokeWidth: 2,
+                          color: qt.emeraldLight,
+                        ),
+                      ),
+                    ),
+                  if (!opt.isBuiltin && isDownloaded)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Icon(Icons.check_circle_rounded,
+                          color: qt.emeraldLight, size: 18),
+                    ),
+                ]),
+              );
+            }).toList(),
+            onChanged: (key) {
+              if (key == null) return;
+              HapticFeedback.selectionClick();
+              if (key.startsWith('builtin_')) {
+                final idx = int.parse(key.split('_')[1]);
+                settings.setTranslation(TranslationId.values[idx]);
                 onTranslationChanged();
-              } else if (!(downloadService.isDownloading(id) ?? false)) {
-                _startDownload(context, id, downloadService);
+              } else {
+                final id = key.split('_')[1];
+                final downloaded = downloadService.isDownloaded(id) ?? false;
+                if (downloaded) {
+                  settings.setCustomTranslation(id);
+                  onTranslationChanged();
+                } else if (!(downloadService.isDownloading(id) ?? false)) {
+                  _startDownload(context, id, downloadService);
+                }
               }
-            }
-          },
+            },
+          ),
         ),
       ),
     );
@@ -3166,22 +3569,41 @@ class _TranslationDropdown extends StatelessWidget {
                 backgroundColor: Colors.redAccent));
           }
         });
+        final isDark = qt.brightness == Brightness.dark;
+        final accent = isDark ? qt.emeraldGlow : qt.emeraldDeep;
         return AlertDialog(
           backgroundColor: qt.cardBg,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Row(children: [
-            Icon(Icons.download_for_offline_rounded,
-                color: qt.brightness == Brightness.dark
-                    ? qt.emeraldGlow
-                    : qt.emeraldDeep),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: accent.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.download_for_offline_rounded,
+                  color: accent, size: 22),
+            ),
             const SizedBox(width: 14),
             Expanded(
-                child: Text('Downloading\n${translation.displayName}',
-                    style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: qt.textPrimary))),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Downloading',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: qt.textMuted)),
+                  Text(translation.displayName,
+                      style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: qt.textPrimary)),
+                ],
+              ),
+            ),
           ]),
           content: SizedBox(
             width: double.infinity,
@@ -3192,19 +3614,23 @@ class _TranslationDropdown extends StatelessWidget {
               builder: (ctx, snap) {
                 final progress = snap.data ?? 0.0;
                 return Column(mainAxisSize: MainAxisSize.min, children: [
-                  LinearProgressIndicator(
-                      value: progress,
-                      backgroundColor: Colors.grey[200],
-                      color: qt.brightness == Brightness.dark
-                          ? qt.emeraldGlow
-                          : qt.emeraldDeep,
-                      minHeight: 5),
-                  const SizedBox(height: 14),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                        value: progress,
+                        backgroundColor: isDark
+                            ? Colors.white.withOpacity(0.06)
+                            : Colors.black.withOpacity(0.06),
+                        color: accent,
+                        minHeight: 6),
+                  ),
+                  const SizedBox(height: 12),
                   Text('${(progress * 100).toInt()}%',
                       style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: qt.textPrimary)),
+                          fontSize: 16,
+                          color: qt.textPrimary,
+                          fontFeatures: const [FontFeature.tabularFigures()])),
                 ]);
               },
             ),
