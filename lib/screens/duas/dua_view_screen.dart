@@ -91,7 +91,6 @@ class DuaViewScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // ── Added Settings Icon ──
                     Tooltip(
                       message: 'Reading settings',
                       child: SizedBox(
@@ -122,31 +121,33 @@ class DuaViewScreen extends StatelessWidget {
             ),
           ),
 
-          // ── Scrollable Content ──
+          // ── Scrollable Content (Optimized with RepaintBoundary) ──
           Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                  20, 16, 20, 32 + MediaQuery.of(context).padding.bottom),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: qt.cardBg,
-                  borderRadius: BorderRadius.circular(20),
-                  border:
-                      Border.all(color: qt.borderGlass.withValues(alpha: 0.3)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: qt.emeraldDeep.withValues(alpha: 0.04),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: _DuaViewContent(
-                  dua: dua,
-                  segmentName: segmentName,
-                  categoryName: categoryName,
-                  titleName: titleName,
-                  segmentColor: segmentColor,
+            child: RepaintBoundary(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                    20, 16, 20, 32 + MediaQuery.of(context).padding.bottom),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: qt.cardBg,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                        color: qt.borderGlass.withValues(alpha: 0.3)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: qt.emeraldDeep.withValues(alpha: 0.04),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: _DuaViewContent(
+                    dua: dua,
+                    segmentName: segmentName,
+                    categoryName: categoryName,
+                    titleName: titleName,
+                    segmentColor: segmentColor,
+                  ),
                 ),
               ),
             ),
@@ -220,14 +221,14 @@ class _DuaViewContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
+
+    // PERFORMANCE: Consolidated provider lookups (removed duplicate DuaSettingsProvider.of)
     final settings = DuaSettingsProvider.of(context, listen: true);
     final progress = DuaProgressProvider.of(context, listen: true);
     final isFav = progress.isFavorite(dua.id);
 
-    final showLatin = DuaSettingsProvider.of(context, listen: false)
-        .showTransliteration as bool;
-    final showTranslation =
-        DuaSettingsProvider.of(context, listen: false).showTranslation as bool;
+    final showLatin = settings.showTransliteration as bool;
+    final showTranslation = settings.showTranslation as bool;
 
     final hasArabic = dua.arabic != null && dua.arabic!.isNotEmpty;
     final hasLatin = showLatin && dua.latin != null && dua.latin!.isNotEmpty;
@@ -245,7 +246,6 @@ class _DuaViewContent extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(12, 12, 4, 0),
           child: Row(
             children: [
-              // Left side: Badges
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -266,10 +266,7 @@ class _DuaViewContent extends StatelessWidget {
                   ],
                 ],
               ),
-
               const Spacer(),
-
-              // Right side: Simple Icon Buttons with Tooltips
               Tooltip(
                 message: 'Share',
                 child: IconButton(
@@ -343,7 +340,6 @@ class _DuaViewContent extends StatelessWidget {
           ),
         ),
 
-        // ── Centered Title Row ──
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
           child: Text(
@@ -360,7 +356,6 @@ class _DuaViewContent extends StatelessWidget {
           ),
         ),
 
-        // ── Gradient Divider ──
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
           child: Container(
@@ -377,7 +372,6 @@ class _DuaViewContent extends StatelessWidget {
           ),
         ),
 
-        // ── Arabic Section ──
         if (hasArabic)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -391,29 +385,24 @@ class _DuaViewContent extends StatelessWidget {
                   color: qt.emeraldDeep.withValues(alpha: 0.08),
                 ),
               ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+              // PERFORMANCE: Removed empty Row() that was doing unnecessary layout passes
+              child: Padding(
+                padding: const EdgeInsets.only(top: 0),
+                child: Text(
+                  dua.arabic!,
+                  textAlign: TextAlign.right,
+                  textDirection: TextDirection.rtl,
+                  style: TextStyle(
+                    fontFamily: 'IndopakN',
+                    fontSize: settings.arabicFontSize,
+                    height: 1.8,
+                    color: qt.textPrimary,
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    dua.arabic!,
-                    textAlign: TextAlign.right,
-                    textDirection: TextDirection.rtl,
-                    style: TextStyle(
-                      fontFamily: 'IndopakN',
-                      fontSize: settings.arabicFontSize,
-                      height: 1.8,
-                      color: qt.textPrimary,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
 
-        // ── Transliteration Section ──
         if (hasLatin) ...[
           if (hasArabic) const SizedBox(height: 14),
           Padding(
@@ -462,7 +451,6 @@ class _DuaViewContent extends StatelessWidget {
           ),
         ],
 
-        // ── Translation Section ──
         if (hasTranslation) ...[
           if (hasArabic || hasLatin) const SizedBox(height: 14),
           Padding(
@@ -506,7 +494,6 @@ class _DuaViewContent extends StatelessWidget {
           ),
         ],
 
-        // ── Benefits Section ──
         if (hasBenefits) ...[
           const SizedBox(height: 18),
           Padding(
@@ -556,7 +543,6 @@ class _DuaViewContent extends StatelessWidget {
           ),
         ],
 
-        // ── Source Section ──
         if (hasSource) ...[
           const SizedBox(height: 12),
           Padding(
@@ -588,7 +574,6 @@ class _DuaViewContent extends StatelessWidget {
   }
 }
 
-/// Compact badge chip for ID and repeat count.
 class _Badge extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -630,7 +615,7 @@ class _Badge extends StatelessWidget {
   }
 }
 
-/// Font size adjustment bottom sheet (Ported from DuaTitleScreen)
+/// Font size adjustment bottom sheet
 class _FontSizeSheet extends StatefulWidget {
   final DuaSettings settings;
   const _FontSizeSheet({required this.settings});
@@ -692,8 +677,6 @@ class _FontSizeSheetState extends State<_FontSizeSheet> {
                   fontSize: 18,
                   fontWeight: FontWeight.w700)),
           const SizedBox(height: 16),
-
-          // Live preview
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -745,8 +728,6 @@ class _FontSizeSheetState extends State<_FontSizeSheet> {
               ],
             ),
           ),
-
-          // Arabic font size
           Text('Arabic Font Size',
               style: TextStyle(color: qt.textMuted, fontSize: 13)),
           const SizedBox(height: 6),
@@ -778,8 +759,6 @@ class _FontSizeSheetState extends State<_FontSizeSheet> {
             ],
           ),
           const SizedBox(height: 12),
-
-          // Translation font size
           Text('Translation Font Size',
               style: TextStyle(color: qt.textMuted, fontSize: 13)),
           const SizedBox(height: 6),
@@ -811,8 +790,6 @@ class _FontSizeSheetState extends State<_FontSizeSheet> {
             ],
           ),
           const SizedBox(height: 20),
-
-          // Toggle: Show Transliteration
           Row(
             children: [
               Expanded(
@@ -841,8 +818,6 @@ class _FontSizeSheetState extends State<_FontSizeSheet> {
             ],
           ),
           const SizedBox(height: 8),
-
-          // Toggle: Show Translation
           Row(
             children: [
               Expanded(
