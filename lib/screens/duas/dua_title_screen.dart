@@ -1,9 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../constants/quran_theme.dart';
 import '../../models/dua_models.dart';
 import '../../providers/dua_progress_provider.dart';
 import '../../providers/dua_settings_provider.dart';
+import 'dua_view_screen.dart';
 
 /// Shows titles as a clean list. Tapping a title expands to show duas below.
 class DuaTitleScreen extends StatefulWidget {
@@ -26,7 +28,6 @@ class DuaTitleScreen extends StatefulWidget {
 
 class _DuaTitleScreenState extends State<DuaTitleScreen> {
   final Set<String> _expandedTitles = {};
-  // Precomputed once — avoids re-iterating categories on every build
   late final List<_Entry> _titleEntries;
   late final String _screenTitle;
 
@@ -89,14 +90,13 @@ class _DuaTitleScreenState extends State<DuaTitleScreen> {
     final qt = QuranTheme.of(context);
     final titleEntries = _titleEntries;
     final showAllMode = widget.allCategories != null;
-
     final topPadding = MediaQuery.of(context).padding.top;
 
     return Scaffold(
       backgroundColor: qt.bg,
       body: Column(
         children: [
-          // ── Immersive Premium Header ──
+          // ── Immersive Premium Header (Untouched) ──
           Container(
             width: double.infinity,
             padding: EdgeInsets.fromLTRB(12, topPadding + 8, 16, 24),
@@ -116,7 +116,6 @@ class _DuaTitleScreenState extends State<DuaTitleScreen> {
             ),
             child: Column(
               children: [
-                // Top row: Back | Title (center) | Font settings
                 Row(
                   children: [
                     SizedBox(
@@ -141,7 +140,6 @@ class _DuaTitleScreenState extends State<DuaTitleScreen> {
                         ),
                       ),
                     ),
-                    // Font settings button
                     Tooltip(
                       message: 'Reading settings',
                       child: SizedBox(
@@ -164,26 +162,34 @@ class _DuaTitleScreenState extends State<DuaTitleScreen> {
           Expanded(
             child: titleEntries.isEmpty
                 ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: qt.textMuted.withValues(alpha: 0.05),
-                            shape: BoxShape.circle,
+                    child: Padding(
+                      padding: const EdgeInsets.all(40.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: qt.textMuted.withValues(alpha: 0.05),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.folder_off_rounded,
+                                size: 48,
+                                color: qt.textMuted.withValues(alpha: 0.4)),
                           ),
-                          child: Icon(Icons.folder_off_rounded,
-                              size: 48,
-                              color: qt.textMuted.withValues(alpha: 0.4)),
-                        ),
-                        const SizedBox(height: 16),
-                        Text('No titles found',
-                            style: TextStyle(
-                                color: qt.textMuted,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500)),
-                      ],
+                          const SizedBox(height: 20),
+                          Text('No titles found',
+                              style: TextStyle(
+                                  color: qt.textMuted,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500)),
+                          const SizedBox(height: 6),
+                          Text('Check back later for updates.',
+                              style: TextStyle(
+                                  color: qt.textMuted.withValues(alpha: 0.6),
+                                  fontSize: 12)),
+                        ],
+                      ),
                     ),
                   )
                 : ListView.builder(
@@ -208,7 +214,7 @@ class _DuaTitleScreenState extends State<DuaTitleScreen> {
                                         entry.categoryName))
                               Padding(
                                 padding: const EdgeInsets.only(
-                                    left: 4, top: 8, bottom: 8),
+                                    left: 4, top: 12, bottom: 8),
                                 child: Row(
                                   children: [
                                     Container(
@@ -239,22 +245,46 @@ class _DuaTitleScreenState extends State<DuaTitleScreen> {
                                     horizontal: 16, vertical: 14),
                                 decoration: BoxDecoration(
                                   color: qt.cardBg,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
                                     color: expanded
                                         ? qt.emeraldDeep.withValues(alpha: 0.25)
                                         : qt.borderGlass.withValues(alpha: 0.4),
                                   ),
+                                  boxShadow: expanded
+                                      ? [
+                                          BoxShadow(
+                                            color: qt.emeraldDeep
+                                                .withValues(alpha: 0.05),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 4),
+                                          )
+                                        ]
+                                      : null,
                                 ),
                                 child: Row(
                                   children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: qt.emeraldDeep
+                                            .withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                          Icons
+                                              .subdirectory_arrow_right_rounded,
+                                          size: 16,
+                                          color: qt.emeraldDeep),
+                                    ),
+                                    const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
                                         title.titleName,
                                         style: TextStyle(
                                           color: qt.textPrimary,
                                           fontSize: 15,
-                                          fontWeight: FontWeight.w500,
+                                          fontWeight: FontWeight.w600,
                                           height: 1.3,
                                         ),
                                       ),
@@ -274,18 +304,21 @@ class _DuaTitleScreenState extends State<DuaTitleScreen> {
                                               fontWeight: FontWeight.w600)),
                                     ),
                                     const SizedBox(width: 8),
-                                    Icon(
-                                        expanded
-                                            ? Icons.keyboard_arrow_up_rounded
-                                            : Icons.keyboard_arrow_down_rounded,
-                                        color: qt.textMuted,
-                                        size: 22),
+                                    AnimatedRotation(
+                                      turns: expanded ? 0.5 : 0.0,
+                                      duration:
+                                          const Duration(milliseconds: 200),
+                                      child: Icon(
+                                          Icons.keyboard_arrow_down_rounded,
+                                          color: qt.textMuted,
+                                          size: 22),
+                                    ),
                                   ],
                                 ),
                               ),
                             ),
 
-                            // Expanded duas — instant, no animation
+                            // Expanded duas
                             if (expanded)
                               Padding(
                                 padding: const EdgeInsets.only(top: 4),
@@ -356,6 +389,13 @@ class _FontSizeSheetState extends State<_FontSizeSheet> {
       decoration: BoxDecoration(
         color: qt.cardBg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, -10),
+          )
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -382,19 +422,12 @@ class _FontSizeSheetState extends State<_FontSizeSheet> {
           // Live preview
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.only(bottom: 20),
             decoration: BoxDecoration(
-              color: qt.cardBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: qt.borderGlass),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              color: qt.emeraldDeep.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: qt.emeraldDeep.withValues(alpha: 0.08)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -462,6 +495,7 @@ class _FontSizeSheetState extends State<_FontSizeSheet> {
               SizedBox(
                 width: 36,
                 child: Text('${_arabicSize.round()}',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                         color: qt.textPrimary,
                         fontSize: 13,
@@ -494,6 +528,7 @@ class _FontSizeSheetState extends State<_FontSizeSheet> {
               SizedBox(
                 width: 36,
                 child: Text('${_translationSize.round()}',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                         color: qt.textPrimary,
                         fontSize: 13,
@@ -526,7 +561,8 @@ class _FontSizeSheetState extends State<_FontSizeSheet> {
                   setState(() => _showTransliteration = v);
                   widget.settings.setShowTransliteration(v);
                 },
-                activeThumbColor: qt.emeraldDeep,
+                activeColor: qt.emeraldDeep,
+                activeTrackColor: qt.emeraldDeep.withValues(alpha: 0.3),
               ),
             ],
           ),
@@ -555,7 +591,8 @@ class _FontSizeSheetState extends State<_FontSizeSheet> {
                   setState(() => _showTranslation = v);
                   widget.settings.setShowTranslation(v);
                 },
-                activeThumbColor: qt.emeraldDeep,
+                activeColor: qt.emeraldDeep,
+                activeTrackColor: qt.emeraldDeep.withValues(alpha: 0.3),
               ),
             ],
           ),
@@ -565,8 +602,7 @@ class _FontSizeSheetState extends State<_FontSizeSheet> {
   }
 }
 
-/// Premium dua card — full width, source always visible, settings controlled.
-/// Separate StatelessWidget so only visible cards rebuild on settings change.
+/// Premium dua card
 class _DuaCard extends StatelessWidget {
   final DuaItem dua;
   final String segmentName;
@@ -580,7 +616,7 @@ class _DuaCard extends StatelessWidget {
     required this.titleName,
   });
 
-  void _copyDua(BuildContext context) {
+  String _getDuaText(BuildContext context) {
     final settings = DuaSettingsProvider.of(context, listen: false);
     final parts = <String>[dua.arabic ?? ''];
     if (settings.showTransliteration && dua.latin != null) {
@@ -589,68 +625,98 @@ class _DuaCard extends StatelessWidget {
     if (settings.showTranslation && dua.translation != null) {
       parts.add(dua.translation!);
     }
-    final text = parts.where((s) => s.isNotEmpty).join('\n\n');
+    if (dua.source != null && dua.source!.isNotEmpty) {
+      parts.add('Source: ${dua.source!}');
+    }
+    return parts.where((s) => s.isNotEmpty).join('\n\n');
+  }
 
+  void _copyDua(BuildContext context) {
+    final text = _getDuaText(context);
     Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Dua copied'),
+        content: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle_rounded,
+                color: Colors.white.withValues(alpha: 0.9), size: 18),
+            const SizedBox(width: 8),
+            const Text('Dua copied to clipboard'),
+          ],
+        ),
         backgroundColor: QuranTheme.of(context).emeraldDeep,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         duration: const Duration(seconds: 2),
+        elevation: 6,
       ),
     );
   }
 
+  void _shareDua(BuildContext context) {
+    final text = _getDuaText(context);
+    Share.share(text, subject: '$titleName – $segmentName');
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Only listen to settings for font/toggle changes
     final settings = DuaSettingsProvider.of(context, listen: true);
     final arabicSize = settings.arabicFontSize;
     final translationSize = settings.translationFontSize;
     final showTransliteration = settings.showTransliteration;
     final showTranslation = settings.showTranslation;
-    // Listen to progress for favorite state
+
     final progress = DuaProgressProvider.of(context, listen: true);
     final isFav = progress.isFavorite(dua.id);
     final qt = QuranTheme.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: Container(
-        decoration: BoxDecoration(
-          color: qt.cardBg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: qt.borderGlass.withValues(alpha: 0.4)),
+    final hasArabic = dua.arabic != null && dua.arabic!.isNotEmpty;
+    final hasLatin =
+        showTransliteration && dua.latin != null && dua.latin!.isNotEmpty;
+    final hasTranslation = showTranslation &&
+        dua.translation != null &&
+        dua.translation!.isNotEmpty;
+
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => DuaViewScreen(
+          dua: dua,
+          segmentName: segmentName,
+          categoryName: categoryName,
+          titleName: titleName,
+          segmentColor: const Color(0xFF5B7DB1),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Main content
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Header row
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: qt.emeraldDeep.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text('#${dua.id}',
-                            style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: qt.emeraldDeep)),
-                      ),
-                      if (dua.repeat > 1) ...[
-                        const SizedBox(width: 6),
+      )),
+      child: Padding(
+        padding: const EdgeInsets.only(top: 6),
+        child: Container(
+          decoration: BoxDecoration(
+            color: qt.cardBg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: qt.borderGlass.withValues(alpha: 0.4)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Main content
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 8, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Header row
+                    Row(
+                      children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
@@ -658,147 +724,221 @@ class _DuaCard extends StatelessWidget {
                             color: qt.emeraldDeep.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.replay_rounded,
-                                  size: 11, color: qt.emeraldDeep),
-                              const SizedBox(width: 3),
-                              Text('${dua.repeat}x',
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: qt.emeraldDeep)),
-                            ],
+                          child: Text('#${dua.id}',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: qt.emeraldDeep)),
+                        ),
+                        if (dua.repeat > 1) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: qt.emeraldDeep.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.replay_rounded,
+                                    size: 11, color: qt.emeraldDeep),
+                                const SizedBox(width: 3),
+                                Text('${dua.repeat}x',
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: qt.emeraldDeep)),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const Spacer(),
+
+                        // Action Icons
+                        // Listener is used to absorb the tap so it doesn't trigger the parent GestureDetector (navigation)
+                        Listener(
+                          behavior: HitTestBehavior.translucent,
+                          onPointerDown: (_) {},
+                          child: Tooltip(
+                            message: 'Share',
+                            child: IconButton(
+                              icon: Icon(Icons.share_rounded,
+                                  size: 18, color: qt.textMuted),
+                              onPressed: () => _shareDua(context),
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.all(6),
+                              constraints: const BoxConstraints(
+                                  minWidth: 32, minHeight: 32),
+                            ),
+                          ),
+                        ),
+                        Listener(
+                          behavior: HitTestBehavior.translucent,
+                          onPointerDown: (_) {},
+                          child: Tooltip(
+                            message: 'Copy',
+                            child: IconButton(
+                              icon: Icon(Icons.copy_rounded,
+                                  size: 17, color: qt.textMuted),
+                              onPressed: () => _copyDua(context),
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.all(6),
+                              constraints: const BoxConstraints(
+                                  minWidth: 32, minHeight: 32),
+                            ),
+                          ),
+                        ),
+                        Listener(
+                          behavior: HitTestBehavior.translucent,
+                          onPointerDown: (_) {},
+                          child: Tooltip(
+                            message: isFav
+                                ? 'Remove from favorites'
+                                : 'Add to favorites',
+                            child: IconButton(
+                              icon: Icon(
+                                isFav
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_outline_rounded,
+                                color: isFav
+                                    ? Colors.redAccent.shade400
+                                    : qt.textMuted,
+                                size: 19,
+                              ),
+                              onPressed: () =>
+                                  progress.toggleFavorite(DuaFavorite(
+                                duaId: dua.id,
+                                segmentName: segmentName,
+                                categoryName: categoryName,
+                                titleName: titleName,
+                                latin: dua.latin,
+                                translation: dua.translation,
+                              )),
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.all(6),
+                              constraints: const BoxConstraints(
+                                  minWidth: 32, minHeight: 32),
+                            ),
                           ),
                         ),
                       ],
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: () => progress.toggleFavorite(DuaFavorite(
-                          duaId: dua.id,
-                          segmentName: segmentName,
-                          categoryName: categoryName,
-                          titleName: titleName,
-                          latin: dua.latin,
-                          translation: dua.translation,
-                        )),
-                        child: Icon(
-                          isFav
-                              ? Icons.favorite
-                              : Icons.favorite_outline_rounded,
-                          color: isFav ? Colors.redAccent : qt.textMuted,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      GestureDetector(
-                        onTap: () => _copyDua(context),
-                        child: Icon(Icons.copy_rounded,
-                            size: 18, color: qt.textMuted),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Arabic — full width, right-aligned
-                  if (dua.arabic != null && dua.arabic!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Text(
-                        dua.arabic!,
-                        textAlign: TextAlign.right,
-                        textDirection: TextDirection.rtl,
-                        style: TextStyle(
-                          fontFamily: 'IndopakN',
-                          fontSize: arabicSize,
-                          height: 1.7,
-                          color: qt.textPrimary,
-                        ),
-                      ),
                     ),
+                    const SizedBox(height: 14),
 
-                  // Latin (conditional)
-                  if (showTransliteration &&
-                      dua.latin != null &&
-                      dua.latin!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        dua.latin!,
+                    // Arabic — full width, right-aligned
+                    if (hasArabic)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 12),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: qt.emeraldDeep.withValues(alpha: 0.03),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                              color: qt.emeraldDeep.withValues(alpha: 0.06)),
+                        ),
+                        child: Text(
+                          dua.arabic!,
+                          textAlign: TextAlign.right,
+                          textDirection: TextDirection.rtl,
+                          style: TextStyle(
+                            fontFamily: 'IndopakN',
+                            fontSize: arabicSize,
+                            height: 1.7,
+                            color: qt.textPrimary,
+                          ),
+                        ),
+                      ),
+
+                    // Latin (conditional)
+                    if (hasLatin)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          dua.latin!,
+                          style: TextStyle(
+                            fontSize: translationSize,
+                            fontStyle: FontStyle.italic,
+                            color: qt.brightness == Brightness.dark
+                                ? qt.emeraldGlow
+                                : qt.emeraldDeep.withValues(alpha: 0.85),
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+
+                    // Translation (conditional)
+                    if (hasTranslation)
+                      Text(
+                        dua.translation!,
                         style: TextStyle(
                           fontSize: translationSize,
-                          fontStyle: FontStyle.italic,
-                          color: qt.brightness == Brightness.dark
-                              ? qt.emeraldGlow
-                              : qt.emeraldDeep.withValues(alpha: 0.85),
+                          color: qt.textPrimary,
                           height: 1.5,
                         ),
-                      ),
-                    ),
-
-                  // Translation (conditional)
-                  if (showTranslation &&
-                      dua.translation != null &&
-                      dua.translation!.isNotEmpty)
-                    Text(
-                      dua.translation!,
-                      style: TextStyle(
-                        fontSize: translationSize,
-                        color: qt.textPrimary,
-                        height: 1.5,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            // Bottom section: benefits + source — always visible
-            if (dua.benefits != null || dua.source != null)
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (dua.benefits != null && dua.benefits!.isNotEmpty) ...[
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(Icons.auto_awesome_rounded,
-                              size: 12, color: qt.emeraldDeep),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(dua.benefits!,
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: qt.textMuted,
-                                    height: 1.4)),
-                          ),
-                        ],
-                      ),
-                      if (dua.source != null && dua.source!.isNotEmpty)
-                        const SizedBox(height: 6),
-                    ],
-                    if (dua.source != null && dua.source!.isNotEmpty)
-                      Row(
-                        children: [
-                          Icon(Icons.menu_book_rounded,
-                              size: 11,
-                              color: qt.textMuted.withValues(alpha: 0.5)),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(dua.source!,
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    color:
-                                        qt.textMuted.withValues(alpha: 0.5))),
-                          ),
-                        ],
                       ),
                   ],
                 ),
               ),
-          ],
+
+              // Bottom section: benefits + source — always visible
+              if (dua.benefits != null || dua.source != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (dua.benefits != null && dua.benefits!.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: qt.emeraldDeep.withValues(alpha: 0.04),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.auto_awesome_rounded,
+                                  size: 13, color: qt.emeraldDeep),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(dua.benefits!,
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: qt.textMuted,
+                                        height: 1.45)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (dua.source != null && dua.source!.isNotEmpty)
+                          const SizedBox(height: 8),
+                      ],
+                      if (dua.source != null && dua.source!.isNotEmpty)
+                        Row(
+                          children: [
+                            Icon(Icons.menu_book_rounded,
+                                size: 11,
+                                color: qt.textMuted.withValues(alpha: 0.5)),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(dua.source!,
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color:
+                                          qt.textMuted.withValues(alpha: 0.5),
+                                      fontStyle: FontStyle.italic)),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

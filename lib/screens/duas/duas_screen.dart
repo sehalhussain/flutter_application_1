@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../constants/quran_theme.dart';
 import '../../models/dua_models.dart';
@@ -7,6 +7,7 @@ import '../../services/data_service.dart';
 import '../../main.dart';
 import 'dua_segment_screen.dart';
 import 'dua_title_screen.dart';
+import 'dua_view_screen.dart';
 
 /// Segment colors matching the new categories
 const _segmentColors = [
@@ -110,15 +111,18 @@ class _SearchIndex {
             segment: seg,
             category: cat,
             title: title,
+            titleName: title.titleName,
             matchPreview: title.titleName,
             searchLower: titleSearch,
           ));
           for (final dua in title.duas) {
+            // SAFETY: Use ?.toString() ?? '' to prevent TypeErrors if JSON has nulls
             final searchable = [
-              dua.latin,
-              dua.translation,
-              dua.source,
-              dua.benefits,
+              dua.latin?.toString(),
+              dua.translation?.toString(),
+              dua.source?.toString(),
+              dua.benefits?.toString(),
+              title.titleName,
             ].whereType<String>().join(' ').toLowerCase();
 
             entries.add(_SearchEntry(
@@ -126,10 +130,15 @@ class _SearchIndex {
               category: cat,
               title: title,
               dua: dua,
-              matchPreview: dua.latin ?? dua.translation ?? 'Dua #${dua.id}',
+              titleName: title.titleName,
+              matchPreview: dua.latin?.toString() ??
+                  dua.translation?.toString() ??
+                  'Dua #${dua.id}',
+              benefitsText: dua.benefits?.toString() ?? '',
               searchLower: searchable,
-              hasArabic: dua.arabic != null && dua.arabic!.isNotEmpty,
-              arabicText: dua.arabic ?? '',
+              hasArabic:
+                  dua.arabic != null && dua.arabic!.toString().isNotEmpty,
+              arabicText: dua.arabic?.toString() ?? '',
             ));
           }
         }
@@ -154,7 +163,9 @@ class _SearchEntry {
   final DuaCategory category;
   final DuaTitle? title;
   final DuaItem? dua;
+  final String titleName;
   final String matchPreview;
+  final String benefitsText;
   final String searchLower;
   final bool hasArabic;
   final String arabicText;
@@ -164,7 +175,9 @@ class _SearchEntry {
     required this.category,
     this.title,
     this.dua,
+    this.titleName = '',
     required this.matchPreview,
+    this.benefitsText = '',
     required this.searchLower,
     this.hasArabic = false,
     this.arabicText = '',
@@ -184,11 +197,10 @@ class _DuasScreenState extends State<DuasScreen>
   Future<List<DuaSegment>>? _segmentsFuture;
   static const String _assetPath = 'assets/data/duas/duas.json';
 
-  // Cached state metrics
   _DuaStats? _stats;
   _SearchIndex? _searchIndex;
+  List<DuaSegment>? _loadedSegments;
 
-  // Layout View Mode (Defaulting to List View first)
   bool _isListView = true;
 
   @override
@@ -203,15 +215,7 @@ class _DuasScreenState extends State<DuasScreen>
     if (segments.isNotEmpty) {
       _stats = _DuaStats.fromSegments(segments);
       _searchIndex = _SearchIndex.build(segments);
-
-      // Dynamically locate Morning & Evening categories within the loaded segments
-      for (final seg in segments) {
-        for (final cat in seg.categories) {
-          final lowercaseName = cat.categoryName.toLowerCase();
-          if (lowercaseName.contains('morning')) {
-          } else if (lowercaseName.contains('evening')) {}
-        }
-      }
+      _loadedSegments = segments;
     }
     return segments;
   }
@@ -279,6 +283,20 @@ class _DuasScreenState extends State<DuasScreen>
       context: context,
       delegate: _DuaSearchDelegate(_searchIndex!),
     );
+  }
+
+  DuaItem? _findDuaById(int duaId) {
+    if (_loadedSegments == null) return null;
+    for (final seg in _loadedSegments!) {
+      for (final cat in seg.categories) {
+        for (final title in cat.titles) {
+          for (final dua in title.duas) {
+            if (dua.id == duaId) return dua;
+          }
+        }
+      }
+    }
+    return null;
   }
 
   void _showCustomizeModal(BuildContext context) async {
@@ -517,7 +535,6 @@ class _DuasScreenState extends State<DuasScreen>
                   ),
                 ),
                 const SizedBox(height: 20),
-                // ── Search Field ──
                 GestureDetector(
                   onTap: () => _openSearch(context),
                   child: Container(
@@ -536,7 +553,7 @@ class _DuasScreenState extends State<DuasScreen>
                               color: Colors.white70, size: 18),
                           const SizedBox(width: 10),
                           Text(
-                            'Search supplications...',
+                            'Search supplications, benefits, titles...',
                             style: TextStyle(
                                 color: Colors.white.withOpacity(0.6),
                                 fontSize: 13),
@@ -564,7 +581,6 @@ class _DuasScreenState extends State<DuasScreen>
             ),
           ),
 
-          // ── Tab Bar (Sleek integration) ──
           Container(
             color: qt.emeraldMid,
             child: TabBar(
@@ -585,7 +601,6 @@ class _DuasScreenState extends State<DuasScreen>
             ),
           ),
 
-          // ── Scrollable Body Tab Views ──
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -629,7 +644,6 @@ class _DuasScreenState extends State<DuasScreen>
           padding: EdgeInsets.fromLTRB(
               20, 20, 20, 24 + MediaQuery.of(context).padding.bottom),
           children: [
-            // ── Categories Header with List/Grid Layout Toggle ──
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -649,7 +663,6 @@ class _DuasScreenState extends State<DuasScreen>
                     ),
                   ],
                 ),
-                // Premium Toggle Controls
                 Row(
                   children: [
                     GestureDetector(
@@ -692,8 +705,6 @@ class _DuasScreenState extends State<DuasScreen>
               ],
             ),
             const SizedBox(height: 12),
-
-            // ── Integrated Categories & Continuation Pinned Cards Render ──
             if (_isListView)
               ListView.builder(
                 shrinkWrap: true,
@@ -831,76 +842,152 @@ class _DuasScreenState extends State<DuasScreen>
         final item = saved[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 10),
-          child: _SavedCard(item: item, qt: qt),
+          child: _SavedCard(
+            item: item,
+            qt: qt,
+            onTap: () {
+              final duaItem = _findDuaById(item.duaId);
+              if (duaItem != null) {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => DuaViewScreen(
+                    dua: duaItem,
+                    segmentName: item.segmentName,
+                    categoryName: item.categoryName,
+                    titleName: item.titleName,
+                    segmentColor: _segmentColors[0],
+                  ),
+                ));
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Could not load this dua'),
+                    backgroundColor: qt.emeraldDeep,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+          ),
         );
       },
     );
   }
 }
 
+// ── Enhanced Saved Card ──
 class _SavedCard extends StatelessWidget {
   final DuaFavorite item;
   final QuranTheme qt;
+  final VoidCallback? onTap;
 
-  const _SavedCard({required this.item, required this.qt});
+  const _SavedCard({
+    required this.item,
+    required this.qt,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final progress = DuaProgressProvider.of(context, listen: false);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: qt.cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: qt.cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Row: Title & Unsave Button
+            Row(
               children: [
-                if (item.latin != null)
-                  Text(item.latin!,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          color: qt.textPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14)),
-                const SizedBox(height: 4),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: qt.emeraldDeep.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
+                Expanded(
                   child: Text(
-                    '${item.segmentName} • ${item.categoryName}',
+                    item.titleName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                        color: qt.emeraldDeep,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold),
+                      color: qt.emeraldDeep,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Prevents tap from triggering card navigation
+                Listener(
+                  behavior: HitTestBehavior.translucent,
+                  onPointerDown: (_) {},
+                  child: Tooltip(
+                    message: 'Remove from saved',
+                    child: IconButton(
+                      icon: Icon(Icons.favorite_rounded,
+                          color: Colors.redAccent.shade400, size: 18),
+                      onPressed: () =>
+                          DuaProgressProvider.of(context, listen: false)
+                              .toggleFavorite(item),
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.all(4),
+                      constraints:
+                          const BoxConstraints(minWidth: 32, minHeight: 32),
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: () => progress.toggleFavorite(item),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.redAccent.withOpacity(0.08),
-                shape: BoxShape.circle,
+            const SizedBox(height: 10),
+
+            // Main Content Preview
+            if (item.latin != null)
+              Text(
+                item.latin!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: qt.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  height: 1.4,
+                ),
+              )
+            else if (item.translation != null)
+              Text(
+                item.translation!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: qt.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  height: 1.4,
+                ),
               ),
-              child:
-                  const Icon(Icons.favorite, color: Colors.redAccent, size: 16),
+
+            const SizedBox(height: 12),
+
+            // Path Badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: qt.emeraldDeep.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '${item.segmentName} • ${item.categoryName}',
+                style: TextStyle(
+                  color: qt.emeraldDeep,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1129,13 +1216,14 @@ class _PinnedSegmentCard extends StatelessWidget {
   }
 }
 
+// ── Super-Powered Search Delegate ──
 class _DuaSearchDelegate extends SearchDelegate<_SearchEntry?> {
   final _SearchIndex _index;
 
   _DuaSearchDelegate(this._index);
 
   @override
-  String get searchFieldLabel => 'Search supplications...';
+  String get searchFieldLabel => 'Search supplications, benefits...';
 
   @override
   ThemeData appBarTheme(BuildContext context) {
@@ -1173,6 +1261,12 @@ class _DuaSearchDelegate extends SearchDelegate<_SearchEntry?> {
   }
 
   Widget _buildResultRow(_SearchEntry r, QuranTheme qt) {
+    final isDua = r.dua != null;
+    // Check if the query specifically matched inside the benefits text
+    final isBenefitMatch = isDua &&
+        r.benefitsText.isNotEmpty &&
+        r.benefitsText.toLowerCase().contains(query.toLowerCase());
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       child: Container(
@@ -1180,39 +1274,123 @@ class _DuaSearchDelegate extends SearchDelegate<_SearchEntry?> {
         decoration: BoxDecoration(
           color: qt.cardBg,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
+          border: Border.all(
+            color: isBenefitMatch
+                ? qt.emeraldDeep.withOpacity(0.4)
+                : qt.borderGlass.withOpacity(0.4),
+            width: isBenefitMatch ? 1.5 : 1.0,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                if (r.dua != null)
-                  Icon(Icons.format_quote_rounded,
-                      size: 14, color: qt.emeraldDeep)
-                else if (r.title != null)
-                  Icon(Icons.title_rounded, size: 14, color: qt.emeraldDeep)
-                else
-                  Icon(Icons.folder_rounded,
-                      size: 14, color: const Color(0xFFE8B84B)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    r.matchPreview,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
+            if (isDua) ...[
+              // 1. Title Header
+              Text(
+                r.titleName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    color: qt.emeraldDeep,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              // 2. Dua Preview
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2.0),
+                    child: Icon(Icons.format_quote_rounded,
+                        size: 14, color: qt.textMuted.withOpacity(0.5)),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      r.matchPreview,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
                         color: qt.textPrimary,
                         fontSize: 14,
-                        fontWeight: FontWeight.bold),
+                        fontWeight: FontWeight.w500,
+                        height: 1.4,
+                      ),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
+                ],
+              ),
+              // 3. Benefit Recommendation Highlight
+              if (isBenefitMatch) ...[
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: qt.emeraldDeep.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.auto_awesome_rounded,
+                              size: 11, color: qt.emeraldDeep),
+                          const SizedBox(width: 4),
+                          Text('MATCHED IN BENEFITS',
+                              style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: qt.emeraldDeep.withOpacity(0.7),
+                                  letterSpacing: 0.8)),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        r.benefitsText,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: qt.textMuted,
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            height: 1.4),
+                      ),
+                    ],
+                  ),
+                )
+              ]
+            ] else ...[
+              // Category/Title Match UI
+              Row(
+                children: [
+                  if (r.title != null)
+                    Icon(Icons.title_rounded, size: 14, color: qt.emeraldDeep)
+                  else
+                    Icon(Icons.folder_rounded,
+                        size: 14, color: const Color(0xFFE8B84B)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      r.matchPreview,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: qt.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 8),
+            // 4. Breadcrumb Path
             Text(
               '${r.segment.segmentName} › ${r.category.categoryName}${r.title != null ? ' › ${r.title!.titleName}' : ''}',
-              style: TextStyle(color: qt.textMuted, fontSize: 12),
+              style: TextStyle(color: qt.textMuted, fontSize: 11),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1222,17 +1400,31 @@ class _DuaSearchDelegate extends SearchDelegate<_SearchEntry?> {
     );
   }
 
-  void _navigateToCategory(BuildContext context, _SearchEntry r) {
+  // Smart Navigation: Opens Dua directly if it's a Dua, otherwise opens Category
+  void _navigateToEntry(BuildContext context, _SearchEntry r) {
     close(context, null);
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => DuaTitleScreen(
-        category: r.category,
-        segmentName: r.segment.segmentName,
-        segmentColor: _segmentColors[r.segment.segmentId < _segmentColors.length
-            ? r.segment.segmentId
-            : 0],
-      ),
-    ));
+    final color = _segmentColors[
+        r.segment.segmentId < _segmentColors.length ? r.segment.segmentId : 0];
+
+    if (r.dua != null) {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => DuaViewScreen(
+          dua: r.dua!,
+          segmentName: r.segment.segmentName,
+          categoryName: r.category.categoryName,
+          titleName: r.titleName,
+          segmentColor: color,
+        ),
+      ));
+    } else {
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => DuaTitleScreen(
+          category: r.category,
+          segmentName: r.segment.segmentName,
+          segmentColor: color,
+        ),
+      ));
+    }
   }
 
   @override
@@ -1267,7 +1459,7 @@ class _DuaSearchDelegate extends SearchDelegate<_SearchEntry?> {
       padding: const EdgeInsets.only(top: 12, bottom: 24),
       itemCount: results.length,
       itemBuilder: (context, index) => GestureDetector(
-        onTap: () => _navigateToCategory(context, results[index]),
+        onTap: () => _navigateToEntry(context, results[index]),
         child: _buildResultRow(results[index], qt),
       ),
     );
@@ -1291,13 +1483,13 @@ class _DuaSearchDelegate extends SearchDelegate<_SearchEntry?> {
                   size: 48, color: qt.textMuted.withOpacity(0.4)),
             ),
             const SizedBox(height: 16),
-            Text('Search through chapters, titles, and duas',
+            Text('Search through chapters, titles, text & benefits',
                 style: TextStyle(
                     color: qt.textMuted,
                     fontSize: 13,
                     fontWeight: FontWeight.w500)),
             const SizedBox(height: 6),
-            Text('Try: "morning", "sleep", "protection", "bismillah"',
+            Text('Try: "morning", "sleep", "protection", "anxiety"',
                 style: TextStyle(color: qt.textMuted, fontSize: 11)),
           ],
         ),
@@ -1332,7 +1524,7 @@ class _DuaSearchDelegate extends SearchDelegate<_SearchEntry?> {
       padding: const EdgeInsets.only(top: 12, bottom: 24),
       itemCount: suggestions.length,
       itemBuilder: (context, index) => GestureDetector(
-        onTap: () => _navigateToCategory(context, suggestions[index]),
+        onTap: () => _navigateToEntry(context, suggestions[index]),
         child: _buildResultRow(suggestions[index], qt),
       ),
     );
