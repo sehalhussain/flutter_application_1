@@ -30,6 +30,8 @@ class _SegmentInfo {
 }
 
 const _allSegments = [
+  _SegmentInfo('Duas from Quran', Icons.menu_book_rounded,
+      Color.fromARGB(255, 38, 104, 79), 6),
   _SegmentInfo('Daily Life', Icons.home_rounded, Color(0xFFE8B84B), 0),
   _SegmentInfo('Prayer', Icons.mosque_rounded, Color(0xFF5B7DB1), 1),
   _SegmentInfo('Remembrance', Icons.auto_awesome_rounded, Color(0xFF6B8F6B), 2),
@@ -1002,7 +1004,7 @@ class _SegmentListTile extends StatelessWidget {
               fontWeight: FontWeight.bold, fontSize: 14, color: qt.textPrimary),
         ),
         subtitle: Text(
-          "$chapters chapters • $duaCount supps",
+          "$chapters chapters • $duaCount duas",
           style: TextStyle(color: qt.textMuted, fontSize: 12),
         ),
         trailing:

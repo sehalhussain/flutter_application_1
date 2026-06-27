@@ -1053,7 +1053,7 @@ class _MenuScreenState extends State<MenuScreen> {
                     fontSize: 14,
                     color: qt.textPrimary,
                     fontWeight: FontWeight.w500)),
-            trailing: const Text("1.1.8",
+            trailing: const Text("1.1.9",
                 style: TextStyle(
                     color: Colors.grey,
                     fontSize: 14,
