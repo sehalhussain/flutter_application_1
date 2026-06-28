@@ -691,56 +691,57 @@ class _PrayerScreenState extends State<PrayerScreen>
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 16),
-                              if (_selectedDay != null) ...[
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    _buildSectionTitle("Prayer Times", qt),
-                                    Row(
-                                      children: [
-                                        Icon(Icons.swipe_rounded,
-                                            size: 13,
-                                            color:
-                                                qt.textMuted.withOpacity(0.6)),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          "Swipe to change date",
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color:
-                                                qt.textMuted.withOpacity(0.6),
-                                            fontWeight: FontWeight.w500,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 16),
+                                if (_selectedDay != null) ...[
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      _buildSectionTitle("Prayer Times", qt),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.swipe_rounded,
+                                              size: 13,
+                                              color: qt.textMuted
+                                                  .withOpacity(0.6)),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            "Swipe to change date",
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color:
+                                                  qt.textMuted.withOpacity(0.6),
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 18),
-                                RepaintBoundary(
-                                  child: _buildPrayerTimesCard(qt, tracker),
-                                ),
-                                const SizedBox(height: 24),
-                                RepaintBoundary(
-                                  child: _buildDailyProgress(qt, tracker),
-                                ),
-                                const SizedBox(height: 24),
-                                RepaintBoundary(
-                                  child: _buildStatsSummaryCard(qt, tracker),
-                                ),
-                                const SizedBox(height: 24),
-                              ],
-                              _buildSectionTitle("Calendar Overview", qt),
-                              const SizedBox(height: 24),
-                              RepaintBoundary(
-                                child: _buildCalendarCard(qt, tracker),
-                              ),
-                            ],
-                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 18),
+                                  RepaintBoundary(
+                                    child: _buildPrayerTimesCard(qt, tracker),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  RepaintBoundary(
+                                    child: _buildDailyProgress(qt, tracker),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  _statsSectionHeader(qt, tracker),
+                                  const SizedBox(height: 18),
+                                  RepaintBoundary(
+                                    child: _buildStatsSummaryCard(qt, tracker),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  _buildSectionTitle("Calendar Overview", qt),
+                                  const SizedBox(height: 24),
+                                  RepaintBoundary(
+                                    child: _buildCalendarCard(qt, tracker),
+                                  ),
+                                ],
+                              ]),
                         ),
                       ],
                     ),
@@ -776,6 +777,27 @@ class _PrayerScreenState extends State<PrayerScreen>
         ],
       ),
     );
+  }
+  // ── Stats helpers (match PrayerStatsScreen) ──────────────────────────
+
+  DateTime? _firstLoggedDate(PrayerTracker t) {
+    final keys = t.sortedDateKeys;
+    return keys.isEmpty ? null : DateTime.parse(keys.last);
+  }
+
+  int _totalTrackingDays(PrayerTracker t) {
+    final first = _firstLoggedDate(t);
+    if (first == null) return 0;
+    final today =
+        DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final f = DateTime(first.year, first.month, first.day);
+    return today.difference(f).inDays + 1;
+  }
+
+  int _totalMissedFromFirstLog(PrayerTracker t) {
+    final totalDays = _totalTrackingDays(t);
+    if (totalDays == 0) return 0;
+    return (totalDays * 5) - t.totalPrayersLogged;
   }
 
   Widget _buildDailyProgress(QuranTheme qt, PrayerTracker tracker) {
@@ -1165,144 +1187,168 @@ class _PrayerScreenState extends State<PrayerScreen>
     });
   }
 
-  Widget _buildStatsSummaryCard(QuranTheme qt, PrayerTracker tracker) {
-    final currentStreak = tracker.currentStreak;
+  Widget _statsSectionHeader(QuranTheme qt, PrayerTracker tracker) {
+    final trackingDays = _totalTrackingDays(tracker);
     final totalPrayers = tracker.totalPrayersLogged;
-    final totalMissed = tracker.totalMissed;
+    final overallRate = trackingDays > 0
+        ? ((totalPrayers / (trackingDays * 5)) * 100).round()
+        : 0;
 
     return GestureDetector(
       onTap: () {
         MainNavigation.pushOnShell(context, const PrayerStatsScreen());
       },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: qt.cardBg,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.015),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildSectionTitle("Prayer Stats", qt),
+          Row(
+            children: [
+              if (trackingDays > 0)
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: qt.emeraldDeep.withOpacity(0.08),
-                    shape: BoxShape.circle,
+                    color: overallRate >= 80
+                        ? qt.emeraldLight.withOpacity(0.1)
+                        : overallRate >= 50
+                            ? Colors.amber.withOpacity(0.1)
+                            : const Color(0xFFEF6461).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(Icons.insights_rounded,
-                      color: qt.emeraldDeep, size: 18),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Prayer Streak & Insights",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: qt.textPrimary,
-                        ),
-                      ),
-                      Text(
-                        "Tap to view detailed analytics",
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: qt.textMuted,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    "$overallRate%",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: overallRate >= 80
+                          ? qt.emeraldLight
+                          : overallRate >= 50
+                              ? Colors.amber
+                              : const Color(0xFFEF6461),
+                    ),
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios_rounded,
-                    color: qt.textMuted.withOpacity(0.7), size: 14),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                _statTile(
-                  icon: Icons.local_fire_department_rounded,
-                  value: "$currentStreak",
-                  label: "Current Streak",
-                  color: Colors.orange,
-                  qt: qt,
-                ),
-                const SizedBox(width: 8),
-                _statTile(
-                  icon: Icons.mosque,
-                  value: "$totalPrayers",
-                  label: "Total Logged",
-                  color: qt.emeraldDeep,
-                  qt: qt,
-                ),
-                const SizedBox(width: 8),
-                _statTile(
-                  icon: Icons.hide_source_rounded,
-                  value: "$totalMissed",
-                  label: "Total Missed",
-                  color: Colors.redAccent,
-                  qt: qt,
-                ),
-              ],
-            ),
-          ],
-        ),
+              const SizedBox(width: 6),
+              Icon(
+                Icons.arrow_forward_rounded,
+                color: qt.textMuted.withOpacity(0.4),
+                size: 18,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _statTile({
-    required IconData icon,
+  Widget _buildStatsSummaryCard(QuranTheme qt, PrayerTracker tracker) {
+    final currentStreak = tracker.currentStreak;
+    final totalPrayers = tracker.totalPrayersLogged;
+    final totalMissed = _totalMissedFromFirstLog(tracker);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+      decoration: BoxDecoration(
+        color: qt.cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: qt.borderGlass.withOpacity(0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.015),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _summaryMetric(
+              value: totalPrayers.toString(),
+              label: "Prayed",
+              color: qt.emeraldLight,
+              qt: qt,
+            ),
+          ),
+          _summaryDivider(qt),
+          Expanded(
+            child: _summaryMetric(
+              value: totalMissed.toString(),
+              label: "Missed",
+              color: const Color(0xFFEF6461),
+              qt: qt,
+            ),
+          ),
+          _summaryDivider(qt),
+          Expanded(
+            child: _summaryMetric(
+              value: "$currentStreak",
+              label: "Day Streak",
+              color: Colors.amber,
+              qt: qt,
+              sub:
+                  tracker.bestStreak > 0 ? "Best: ${tracker.bestStreak}" : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryMetric({
     required String value,
     required String label,
     required Color color,
     required QuranTheme qt,
+    String? sub,
   }) {
-    final isDark = qt.brightness == Brightness.dark;
-    return Expanded(
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: color,
+            letterSpacing: -0.8,
+            height: 1.1,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: qt.textMuted,
+            letterSpacing: 0.2,
+          ),
+        ),
+        if (sub != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              sub,
+              style: TextStyle(
+                fontSize: 10,
+                color: qt.textMuted.withOpacity(0.55),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _summaryDivider(QuranTheme qt) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.white.withOpacity(0.02) : qt.bg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: qt.borderGlass.withOpacity(0.25)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-                color: qt.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 9,
-                color: qt.textMuted,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+        width: 1,
+        height: 40,
+        color: qt.borderGlass.withOpacity(0.3),
       ),
     );
   }

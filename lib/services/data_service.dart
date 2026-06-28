@@ -14,28 +14,35 @@ class DataService {
       final ByteData data =
           await rootBundle.load('assets/data/names/asmaulhusna.json');
 
-      final dynamic decoded = await compute((ByteData b) {
-        final String s = utf8.decode(b.buffer.asUint8List());
-        return json.decode(s);
-      }, data);
-
-      final List<dynamic> dataList;
-      if (decoded is List) {
-        dataList = decoded;
-      } else if (decoded is Map && decoded.containsKey('data')) {
-        dataList = decoded['data'] as List<dynamic>;
-      } else {
-        dataList = [];
-      }
-
-      _cacheNames = dataList
-          .map((item) => AsmaName.fromJson(item as Map<String, dynamic>))
-          .toList();
+      // Single compute call — JSON decode + model parsing,
+      // all off the main thread. No main-thread work at all.
+      _cacheNames = await compute(_parseNamesIsolate, data);
       return _cacheNames!;
     } catch (e) {
-      print("Error loading JSON: $e");
+      debugPrint("Error loading Names JSON: $e");
       return [];
     }
+  }
+
+  /// Everything here runs on a background isolate.
+  static List<AsmaName> _parseNamesIsolate(ByteData b) {
+    final String raw = utf8.decode(b.buffer.asUint8List());
+    final dynamic decoded = json.decode(raw);
+
+    final List<dynamic> dataList;
+    if (decoded is List) {
+      dataList = decoded;
+    } else if (decoded is Map && decoded.containsKey('data')) {
+      dataList = decoded['data'] as List<dynamic>;
+    } else {
+      dataList = [];
+    }
+
+    return List<AsmaName>.generate(
+      dataList.length,
+      (i) => AsmaName.fromJson(dataList[i] as Map<String, dynamic>),
+      growable: false,
+    );
   }
 
   /// Load the consolidated duas JSON and return the list of segments.
@@ -45,30 +52,9 @@ class DataService {
     try {
       final ByteData data = await rootBundle.load(assetPath);
 
-      // Decode + parse JSON on a background isolate
-      final List<Map<String, dynamic>> rawList = await compute(
-        (ByteData b) {
-          final String s = utf8.decode(b.buffer.asUint8List());
-          final dynamic decoded = json.decode(s);
-          final List<dynamic> dataList;
-          if (decoded is List) {
-            dataList = decoded;
-          } else if (decoded is Map && decoded.containsKey('segments')) {
-            dataList = decoded['segments'] as List<dynamic>;
-          } else {
-            dataList = [];
-          }
-          return dataList.cast<Map<String, dynamic>>();
-        },
-        data,
-      );
-
-      // Parse models on a background isolate too
-      _cacheDuas = await compute(
-        (List<Map<String, dynamic>> list) =>
-            list.map((m) => DuaSegment.fromJson(m)).toList(),
-        rawList,
-      );
+      // Merged into a single compute — decode + parse in one isolate spin
+      // instead of two separate compute calls.
+      _cacheDuas = await compute(_parseDuasIsolate, data);
       return _cacheDuas!;
     } catch (e) {
       debugPrint("Error loading Duas JSON from $assetPath: $e");
@@ -76,7 +62,32 @@ class DataService {
     }
   }
 
-  /// Clear dua cache (e.g. on language change or memory pressure)
+  /// Everything here runs on a background isolate.
+  static List<DuaSegment> _parseDuasIsolate(ByteData b) {
+    final String raw = utf8.decode(b.buffer.asUint8List());
+    final dynamic decoded = json.decode(raw);
+
+    final List<dynamic> dataList;
+    if (decoded is List) {
+      dataList = decoded;
+    } else if (decoded is Map && decoded.containsKey('segments')) {
+      dataList = decoded['segments'] as List<dynamic>;
+    } else {
+      dataList = [];
+    }
+
+    return List<DuaSegment>.generate(
+      dataList.length,
+      (i) => DuaSegment.fromJson(dataList[i] as Map<String, dynamic>),
+      growable: false,
+    );
+  }
+
+  /// Clear caches (e.g. on language change or memory pressure)
+  static void clearNameCache() {
+    _cacheNames = null;
+  }
+
   static void clearDuaCache() {
     _cacheDuas = null;
   }
