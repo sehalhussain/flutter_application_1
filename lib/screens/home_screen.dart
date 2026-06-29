@@ -16,7 +16,7 @@ import '../constants/quran_theme.dart';
 import '../services/prayer_service.dart';
 import '../main.dart';
 import 'package:flutter_compass/flutter_compass.dart';
-import 'asma_list_screen.dart';
+import 'asma_detail_modal.dart';
 import 'hadith/hadith_home_screen.dart';
 import 'hadith/hadith_chapter_screen.dart';
 import 'hadith/hadith_reader_screen.dart';
@@ -1553,46 +1553,18 @@ class _AsmaSliderState extends State<_AsmaSlider> {
 
     return Column(
       children: [
-        // Section Header
+        // ── Section Header (View All removed) ──
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Icon(Icons.auto_awesome_rounded,
-                    size: 14, color: qt.emeraldLight),
-                const SizedBox(width: 8),
-                Text(
-                  "ASMA UL HUSNA",
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: qt.textMuted,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ],
-            ),
-            GestureDetector(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                MainNavigation.pushOnShell(context, const AsmaListScreen());
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: qt.emeraldDeep.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Text(
-                  "View All",
-                  style: TextStyle(
-                    color: qt.emeraldDeep,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+            Icon(Icons.auto_awesome_rounded, size: 14, color: qt.emeraldLight),
+            const SizedBox(width: 8),
+            Text(
+              "ASMA UL HUSNA",
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: qt.textMuted,
+                letterSpacing: 1.2,
               ),
             ),
           ],
@@ -1617,89 +1589,103 @@ class _AsmaSliderState extends State<_AsmaSlider> {
                   final name = names[index];
                   return RepaintBoundary(
                     child: IntrinsicWidth(
-                      child: Container(
-                        height: double.infinity,
-                        constraints: const BoxConstraints(minWidth: 240),
-                        margin: const EdgeInsets.only(right: 16),
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: qt.cardBg,
-                                  borderRadius: BorderRadius.circular(24),
-                                  // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
-                                  border: Border.all(
-                                    color: qt.borderGlass.withOpacity(0.12),
-                                    width: 1.0,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(
-                                        qt.brightness == Brightness.dark
-                                            ? 0.15
-                                            : 0.04,
-                                      ),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 6),
+                      child: GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          // Pass the full list and the current index
+                          AsmaDetailModal.show(
+                            context,
+                            names: names, // This comes from snapshot.data!
+                            initialIndex: index,
+                          );
+                        },
+                        child: Container(
+                          height: double.infinity,
+                          constraints: const BoxConstraints(minWidth: 240),
+                          margin: const EdgeInsets.only(right: 16),
+                          child: Stack(
+                            children: [
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: qt.cardBg,
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(
+                                      color: qt.borderGlass.withOpacity(0.12),
+                                      width: 1.0,
                                     ),
-                                  ],
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(
+                                          qt.brightness == Brightness.dark
+                                              ? 0.15
+                                              : 0.04,
+                                        ),
+                                        blurRadius: 16,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                            Align(
-                              alignment: Alignment.center,
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 32),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Text(name.number.toString().padLeft(2, '0'),
+                              Align(
+                                alignment: Alignment.center,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 32),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                          name.number
+                                              .toString()
+                                              .padLeft(2, '0'),
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 8,
+                                            color: qt.textMuted,
+                                          )),
+                                      Text(
+                                        name.name,
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
-                                          fontSize: 8,
+                                          fontSize: 36,
+                                          color: qt.emeraldDeep,
+                                          fontFamily: 'QPC Hafs',
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        name.transliteration.toUpperCase(),
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: qt.textPrimary,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 0.8,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        name.meaning,
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 12,
                                           color: qt.textMuted,
-                                        )),
-                                    Text(
-                                      name.name,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 36,
-                                        color: qt.emeraldDeep,
-                                        fontFamily: 'QPC Hafs',
+                                          height: 1.3,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      name.transliteration.toUpperCase(),
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: qt.textPrimary,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 0.8,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      name.meaning,
-                                      textAlign: TextAlign.center,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: qt.textMuted,
-                                        height: 1.3,
-                                      ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
