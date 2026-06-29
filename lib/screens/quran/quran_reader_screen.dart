@@ -1818,47 +1818,48 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
     }
   }
 
-  /// Tapping the ayah number/chevron ALWAYS opens the action row.
-  /// If the ayah isn't selected yet, it selects it first.
+  /// Tapping the ayah number/chevron opens/closes the action row.
   void _handleNumberTap() {
     HapticFeedback.selectionClick();
 
-    final shouldOpen = !_isActionRowOpen;
-
-    if (!_isSelected) {
-      widget.onTap(); // Select the ayah via parent notifier
-    }
-
-    setState(() {
-      _isActionRowOpen = shouldOpen;
-      if (shouldOpen) {
-        _actionRowController.forward();
-      } else {
+    if (_isActionRowOpen) {
+      setState(() {
+        _isActionRowOpen = false;
         _actionRowController.reverse();
         if (_isTafsirOpen) {
           widget.onToggleTafsir();
         }
+      });
+    } else {
+      if (!_isSelected) {
+        widget.onTap();
       }
-    });
+      setState(() {
+        _isActionRowOpen = true;
+        _actionRowController.forward();
+      });
+    }
   }
 
-  /// Tapping the card body uses the two-step flow:
-  /// First tap selects, second tap toggles the action row.
+  /// Single tap now directly opens the action row.
+  /// If already open, it closes it.
   void _handleCardTap() {
-    if (_isSelected) {
+    if (_isActionRowOpen) {
       setState(() {
-        _isActionRowOpen = !_isActionRowOpen;
-        if (_isActionRowOpen) {
-          _actionRowController.forward();
-        } else {
-          _actionRowController.reverse();
-          if (_isTafsirOpen) {
-            widget.onToggleTafsir();
-          }
+        _isActionRowOpen = false;
+        _actionRowController.reverse();
+        if (_isTafsirOpen) {
+          widget.onToggleTafsir();
         }
       });
     } else {
-      widget.onTap();
+      if (!_isSelected) {
+        widget.onTap();
+      }
+      setState(() {
+        _isActionRowOpen = true;
+        _actionRowController.forward();
+      });
     }
   }
 
@@ -1959,9 +1960,6 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
                   ),
                 ],
 
-                // ─── TAP HINT (Bottom of card content) ─────────────────
-                if (_isSelected && !_isActionRowOpen) _buildTapHint(qt),
-
                 // ─── ANIMATED ACTION ROW ───────────────────────────────
                 SizeTransition(
                   sizeFactor: _actionRowHeight,
@@ -1975,12 +1973,12 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
                       ).animate(_actionRowSlide),
                       child: _isActionRowOpen
                           ? Padding(
-                              padding: const EdgeInsets.only(top: 8),
+                              padding: const EdgeInsets.only(top: 12),
                               child: Column(
                                 children: [
                                   _buildActionRow(qt, accent),
                                   if (_isTafsirOpen) ...[
-                                    const SizedBox(height: 12),
+                                    const SizedBox(height: 10),
                                     _buildTafsirAccordion(context, qt, accent),
                                   ],
                                 ],
@@ -2013,16 +2011,16 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
 
     return Row(
       children: [
-        // Ayah number + chevron → directly opens action row
+        // Ayah number + chevron
         GestureDetector(
           onTap: _handleNumberTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOutCubic,
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-            decoration: _isSelected
+            decoration: _isActionRowOpen
                 ? BoxDecoration(
-                    color: accent.withOpacity(0.12),
+                    color: accent.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(6),
                   )
                 : null,
@@ -2032,9 +2030,12 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
                 Text(
                   ayahRef,
                   style: TextStyle(
-                    color: _isSelected ? accent : qt.textMuted.withOpacity(0.7),
+                    color: _isActionRowOpen
+                        ? accent
+                        : qt.textMuted.withOpacity(0.7),
                     fontSize: 13,
-                    fontWeight: _isSelected ? FontWeight.w700 : FontWeight.w600,
+                    fontWeight:
+                        _isActionRowOpen ? FontWeight.w700 : FontWeight.w600,
                     fontFeatures: const [FontFeature.tabularFigures()],
                     letterSpacing: 0.5,
                   ),
@@ -2047,7 +2048,9 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
                   child: Icon(
                     Icons.expand_more_rounded,
                     size: 16,
-                    color: _isSelected ? accent : qt.textMuted.withOpacity(0.5),
+                    color: _isActionRowOpen
+                        ? accent
+                        : qt.textMuted.withOpacity(0.5),
                   ),
                 ),
               ],
@@ -2061,34 +2064,6 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
         ],
         if (widget.isLastRead) _buildLastReadBadge(accent),
       ],
-    );
-  }
-
-  // ─── TAP HINT ─────────────────────────────────────────────────────────────
-
-  Widget _buildTapHint(QuranTheme qt) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 4),
-      child: Align(
-        alignment: Alignment.center,
-        child: Opacity(
-          opacity: 0.35,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Tap for tafsir, audio & more',
-                style: TextStyle(
-                  color: qt.textMuted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -2141,12 +2116,12 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
 
   Widget _buildActionRow(QuranTheme qt, Color accent) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
       decoration: BoxDecoration(
         color: qt.brightness == Brightness.dark
-            ? Colors.white.withOpacity(0.02)
-            : Colors.black.withOpacity(0.015),
-        borderRadius: BorderRadius.circular(14),
+            ? Colors.white.withOpacity(0.015)
+            : Colors.black.withOpacity(0.012),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -2156,7 +2131,9 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
                 ? Icons.bookmark_rounded
                 : Icons.bookmark_border_rounded,
             label: widget.isBookmarked ? 'Saved' : 'Bookmark',
-            color: widget.isBookmarked ? accent : qt.textSecondary,
+            color: widget.isBookmarked
+                ? accent.withOpacity(0.9)
+                : qt.textMuted.withOpacity(0.6),
             isActive: widget.isBookmarked,
             onTap: () {
               HapticFeedback.selectionClick();
@@ -2168,7 +2145,9 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
                 ? Icons.check_circle_rounded
                 : Icons.check_circle_outline_rounded,
             label: widget.isRecentRead ? 'Marked' : 'Last Read',
-            color: widget.isRecentRead ? accent : qt.textSecondary,
+            color: widget.isRecentRead
+                ? accent.withOpacity(0.9)
+                : qt.textMuted.withOpacity(0.6),
             isActive: widget.isRecentRead,
             onTap: () {
               HapticFeedback.selectionClick();
@@ -2178,7 +2157,7 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
           _actionItem(
             icon: Icons.copy_rounded,
             label: 'Copy',
-            color: qt.textSecondary,
+            color: qt.textMuted.withOpacity(0.6),
             onTap: () {
               HapticFeedback.selectionClick();
               widget.onCopy();
@@ -2187,7 +2166,7 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
           _actionItem(
             icon: Icons.share_rounded,
             label: 'Share',
-            color: qt.textSecondary,
+            color: qt.textMuted.withOpacity(0.6),
             onTap: () {
               HapticFeedback.selectionClick();
               final text =
@@ -2200,7 +2179,9 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
                 ? Icons.pause_circle_filled_rounded
                 : Icons.play_circle_filled_rounded,
             label: _isPlaying ? 'Pause' : 'Play',
-            color: _isPlaying ? accent : qt.textSecondary,
+            color: _isPlaying
+                ? accent.withOpacity(0.9)
+                : qt.textMuted.withOpacity(0.6),
             isActive: _isPlaying,
             onTap: () {
               HapticFeedback.selectionClick();
@@ -2210,7 +2191,9 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
           _actionItem(
             icon: Icons.auto_stories_rounded,
             label: _isTafsirOpen ? 'Hide' : 'Tafsir',
-            color: _isTafsirOpen ? accent : qt.textSecondary,
+            color: _isTafsirOpen
+                ? accent.withOpacity(0.9)
+                : qt.textMuted.withOpacity(0.6),
             isActive: _isTafsirOpen,
             onTap: () {
               HapticFeedback.selectionClick();
@@ -2234,25 +2217,25 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
         decoration: isActive
             ? BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
+                color: color.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
               )
             : null,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(height: 4),
+            Icon(icon, color: color, size: 17),
+            const SizedBox(height: 3),
             Text(
               label,
               style: TextStyle(
                 color: color,
-                fontSize: 9.5,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                letterSpacing: 0.2,
+                fontSize: 8.5,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                letterSpacing: 0.1,
               ),
             ),
           ],
@@ -2274,20 +2257,20 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
       child: Container(
         decoration: BoxDecoration(
           color: qt.brightness == Brightness.dark
-              ? Colors.white.withOpacity(0.02)
-              : Colors.black.withOpacity(0.015),
-          borderRadius: BorderRadius.circular(14),
+              ? Colors.white.withOpacity(0.015)
+              : Colors.black.withOpacity(0.012),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
               child: Text(
                 'TAFSIR SOURCES',
                 style: TextStyle(
-                  color: qt.textMuted.withOpacity(0.6),
-                  fontSize: 10,
+                  color: qt.textMuted.withOpacity(0.5),
+                  fontSize: 9,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.0,
                 ),
@@ -2297,7 +2280,7 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
               return Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => TafsirScreen(
@@ -2310,20 +2293,20 @@ class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 14),
+                        horizontal: 16, vertical: 11),
                     child: Row(
                       children: [
                         Text(
                           author,
                           style: TextStyle(
-                            color: qt.textPrimary,
-                            fontSize: 14,
+                            color: qt.textPrimary.withOpacity(0.85),
+                            fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         const Spacer(),
                         Icon(Icons.arrow_forward_ios_rounded,
-                            color: qt.textMuted, size: 12),
+                            color: qt.textMuted.withOpacity(0.5), size: 11),
                       ],
                     ),
                   ),
