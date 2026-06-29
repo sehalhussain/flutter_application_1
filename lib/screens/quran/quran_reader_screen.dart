@@ -1679,10 +1679,19 @@ class _AyahCard extends StatefulWidget {
   State<_AyahCard> createState() => _AyahCardState();
 }
 
-class _AyahCardState extends State<_AyahCard> {
+class _AyahCardState extends State<_AyahCard> with TickerProviderStateMixin {
   bool _isPlaying = false;
   bool _isSelected = false;
   bool _isTafsirOpen = false;
+  bool _isActionRowOpen = false;
+
+  // ── Animation controllers ──────────────────────────────────────────────
+  late final AnimationController _actionRowController;
+  late final Animation<double> _actionRowFade;
+  late final Animation<double> _actionRowSlide;
+  late final Animation<double> _actionRowHeight;
+
+  late final AnimationController _highlightController;
 
   bool get _isUrdu =>
       !widget.settings.isCustomTranslation &&
@@ -1692,11 +1701,48 @@ class _AyahCardState extends State<_AyahCard> {
   @override
   void initState() {
     super.initState();
+
+    // Action row animation
+    _actionRowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _actionRowFade = CurvedAnimation(
+      parent: _actionRowController,
+      curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+    );
+    _actionRowSlide = CurvedAnimation(
+      parent: _actionRowController,
+      curve: const Interval(0.1, 0.7, curve: Curves.easeOutCubic),
+    );
+    _actionRowHeight = CurvedAnimation(
+      parent: _actionRowController,
+      curve: Curves.easeOutCubic,
+    );
+
+    // Highlight pulse animation
+    _highlightController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    );
+    _highlightController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _highlightController.repeat();
+      }
+    });
+    _highlightController.addListener(_onHighlightTick);
+
+    // ── NOW safe to call — all late fields are initialized ──
     _updateStateFlags();
+
     widget.playingAyahNotifier.addListener(_onStateChanged);
     widget.selectedAyahNotifier.addListener(_onStateChanged);
     widget.openTafsirAyahNotifier.addListener(_onStateChanged);
     widget.isAyahAudioPlayingNotifier.addListener(_onStateChanged);
+  }
+
+  void _onHighlightTick() {
+    if (mounted && widget.isHighlighted) setState(() {});
   }
 
   @override
@@ -1707,6 +1753,9 @@ class _AyahCardState extends State<_AyahCard> {
 
   @override
   void dispose() {
+    _highlightController.removeListener(_onHighlightTick);
+    _actionRowController.dispose();
+    _highlightController.dispose();
     widget.playingAyahNotifier.removeListener(_onStateChanged);
     widget.selectedAyahNotifier.removeListener(_onStateChanged);
     widget.openTafsirAyahNotifier.removeListener(_onStateChanged);
@@ -1715,11 +1764,23 @@ class _AyahCardState extends State<_AyahCard> {
   }
 
   void _updateStateFlags() {
+    final wasSelected = _isSelected;
     _isPlaying = widget.playingAyahNotifier.value == widget.ayah.ayahNumber &&
         widget.isAyahAudioPlayingNotifier.value;
     _isSelected = widget.selectedAyahNotifier.value == widget.ayah.ayahNumber;
     _isTafsirOpen =
         widget.openTafsirAyahNotifier.value == widget.ayah.ayahNumber;
+
+    if (wasSelected && !_isSelected) {
+      _isActionRowOpen = false;
+    }
+
+    if (widget.isHighlighted && !_highlightController.isAnimating) {
+      _highlightController.forward();
+    } else if (!widget.isHighlighted && _highlightController.isAnimating) {
+      _highlightController.stop();
+      _highlightController.reset();
+    }
   }
 
   void _onStateChanged() {
@@ -1736,73 +1797,112 @@ class _AyahCardState extends State<_AyahCard> {
         _isTafsirOpen != newIsTafsirOpen) {
       if (mounted) {
         setState(() {
+          final wasSelected = _isSelected;
           _isPlaying = newIsPlaying;
           _isSelected = newIsSelected;
           _isTafsirOpen = newIsTafsirOpen;
+
+          if (wasSelected && !_isSelected) {
+            _isActionRowOpen = false;
+            _actionRowController.reverse();
+          }
+
+          if (widget.isHighlighted && !_highlightController.isAnimating) {
+            _highlightController.forward();
+          } else if (!widget.isHighlighted) {
+            _highlightController.stop();
+            _highlightController.reset();
+          }
         });
       }
+    }
+  }
+
+  /// Tapping the ayah number/chevron ALWAYS opens the action row.
+  /// If the ayah isn't selected yet, it selects it first.
+  void _handleNumberTap() {
+    HapticFeedback.selectionClick();
+
+    final shouldOpen = !_isActionRowOpen;
+
+    if (!_isSelected) {
+      widget.onTap(); // Select the ayah via parent notifier
+    }
+
+    setState(() {
+      _isActionRowOpen = shouldOpen;
+      if (shouldOpen) {
+        _actionRowController.forward();
+      } else {
+        _actionRowController.reverse();
+        if (_isTafsirOpen) {
+          widget.onToggleTafsir();
+        }
+      }
+    });
+  }
+
+  /// Tapping the card body uses the two-step flow:
+  /// First tap selects, second tap toggles the action row.
+  void _handleCardTap() {
+    if (_isSelected) {
+      setState(() {
+        _isActionRowOpen = !_isActionRowOpen;
+        if (_isActionRowOpen) {
+          _actionRowController.forward();
+        } else {
+          _actionRowController.reverse();
+          if (_isTafsirOpen) {
+            widget.onToggleTafsir();
+          }
+        }
+      });
+    } else {
+      widget.onTap();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
+    final isDark = qt.brightness == Brightness.dark;
+    final accent = isDark ? qt.emeraldGlow : qt.emeraldDeep;
     final arabic = widget.ayah.arabicFor(widget.settings.script);
     final isIndoPak = widget.settings.script == ArabicScript.indoPak;
+    final isHighlighted = widget.isHighlighted;
+
+    // Subtle breathing glow for highlighted ayahs
+    final pulseVal = _highlightController.value;
+    final highlightOpacity = isHighlighted ? 0.02 + (pulseVal * 0.025) : 0.0;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: widget.isHighlighted
-            ? qt.emeraldLight.withOpacity(0.12)
-            : (widget.isLastRead
-                ? qt.emeraldDeep.withOpacity(0.08)
-                : qt.cardBg),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: widget.isHighlighted
-              ? qt.emeraldGlow
-              : (widget.isLastRead
-                  ? qt.emeraldLight.withOpacity(0.3)
-                  : qt.borderGlass),
-          width: widget.isHighlighted ? 2.0 : 1.0,
-        ),
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      decoration: isHighlighted
+          ? BoxDecoration(
+              color: accent.withOpacity(highlightOpacity),
+              borderRadius: BorderRadius.circular(16),
+              border: Border(
+                left: BorderSide(
+                  color: accent.withOpacity(0.2 + pulseVal * 0.15),
+                  width: 2.5,
+                ),
+              ),
+            )
+          : null,
       child: InkWell(
-        onTap: widget.onTap,
-        borderRadius: BorderRadius.circular(20),
-        splashColor: qt.emeraldLight.withOpacity(0.05),
+        onTap: _handleCardTap,
+        splashColor: accent.withOpacity(0.04),
         child: RepaintBoundary(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+            padding: const EdgeInsets.fromLTRB(8, 12, 4, 4),
             child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(children: [
-                    _numberChip(widget.ayah.ayahNumber, _isSelected, qt),
-                    const Spacer(),
-                    if (widget.sajdah != null) ...[
-                      _sajdahBadge(qt),
-                      const SizedBox(width: 8)
-                    ],
-                    if (widget.isLastRead)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: qt.emeraldDeep.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text('LAST READ',
-                            style: TextStyle(
-                                color: qt.emeraldDeep,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0)),
-                      ),
-                  ]),
-                  const SizedBox(height: 16),
-                  Text(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHeader(qt, accent),
+
+                const SizedBox(height: 14),
+                RepaintBoundary(
+                  child: Text(
                     arabic,
                     textAlign: TextAlign.right,
                     textDirection: TextDirection.rtl,
@@ -1816,253 +1916,422 @@ class _AyahCardState extends State<_AyahCard> {
                           : null,
                       fontSize: widget.settings.arabicFontSize,
                       color: qt.textPrimary,
-                      height: 2.0,
+                      height: 2.2,
                     ),
                   ),
-                  if (widget.settings.showTransliteration &&
-                      widget.ayah.transliteration.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Text(widget.ayah.transliteration,
-                        style: TextStyle(
-                            color: qt.brightness == Brightness.dark
-                                ? qt.emeraldGlow
-                                : qt.emeraldDeep,
-                            fontSize: widget.settings.translationFontSize,
-                            fontStyle: FontStyle.italic,
-                            height: 1.6)),
-                  ],
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Container(height: 1, color: qt.borderGlass),
-                  ),
-                  if (widget.settings.showTranslation)
-                    Text(
-                      widget.ayah.translation,
-                      textDirection:
-                          _isUrdu ? TextDirection.rtl : TextDirection.ltr,
-                      style: TextStyle(
-                        fontFamily: _isUrdu ? 'Urdu' : 'QPC Hafs',
-                        fontFeatures: _isUrdu
-                            ? const [
-                                FontFeature.enable('liga'),
-                                FontFeature.enable('ccmp')
-                              ]
-                            : null,
-                        fontSize: _isUrdu
-                            ? widget.settings.translationFontSize + 3
-                            : widget.settings.translationFontSize,
-                        color: qt.textSecondary,
-                        height: _isUrdu ? 2.0 : 1.65,
-                      ),
+                ),
+
+                if (widget.settings.showTransliteration &&
+                    widget.ayah.transliteration.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  Text(
+                    widget.ayah.transliteration,
+                    textAlign: TextAlign.left,
+                    style: TextStyle(
+                      color: accent.withOpacity(0.8),
+                      fontSize: widget.settings.translationFontSize,
+                      fontStyle: FontStyle.italic,
+                      height: 1.6,
                     ),
+                  ),
+                ],
+
+                if (widget.settings.showTranslation) ...[
                   const SizedBox(height: 14),
-                  _actionRow(context, qt, _isPlaying, _isTafsirOpen),
-                  if (_isTafsirOpen) ...[
-                    const SizedBox(height: 16),
-                    _tafsirAccordion(context, qt),
-                  ],
-                ]),
+                  Text(
+                    widget.ayah.translation,
+                    textDirection:
+                        _isUrdu ? TextDirection.rtl : TextDirection.ltr,
+                    style: TextStyle(
+                      fontFamily: _isUrdu ? 'Urdu' : 'QPC Hafs',
+                      fontFeatures: _isUrdu
+                          ? const [
+                              FontFeature.enable('liga'),
+                              FontFeature.enable('ccmp')
+                            ]
+                          : null,
+                      fontSize: _isUrdu
+                          ? widget.settings.translationFontSize + 3
+                          : widget.settings.translationFontSize,
+                      color: qt.textSecondary,
+                      height: _isUrdu ? 2.0 : 1.7,
+                    ),
+                  ),
+                ],
+
+                // ─── TAP HINT (Bottom of card content) ─────────────────
+                if (_isSelected && !_isActionRowOpen) _buildTapHint(qt),
+
+                // ─── ANIMATED ACTION ROW ───────────────────────────────
+                SizeTransition(
+                  sizeFactor: _actionRowHeight,
+                  axisAlignment: -1.0,
+                  child: FadeTransition(
+                    opacity: _actionRowFade,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.15),
+                        end: Offset.zero,
+                      ).animate(_actionRowSlide),
+                      child: _isActionRowOpen
+                          ? Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Column(
+                                children: [
+                                  _buildActionRow(qt, accent),
+                                  if (_isTafsirOpen) ...[
+                                    const SizedBox(height: 12),
+                                    _buildTafsirAccordion(context, qt, accent),
+                                  ],
+                                ],
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+                Container(
+                  height: 0.5,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  color: qt.textMuted.withOpacity(0.25),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _numberChip(int n, bool selected, QuranTheme qt) {
-    if (selected) {
-      return Container(
-        width: 34,
-        height: 34,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [qt.emeraldDeep, qt.emeraldMid]),
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: [
-            BoxShadow(color: qt.emeraldDeep.withOpacity(0.3), blurRadius: 8)
-          ],
-        ),
-        child: Center(
-            child: Text('$n',
-                style: TextStyle(
-                    color: qt.brightness == Brightness.dark
-                        ? qt.emeraldGlow
-                        : Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12))),
-      );
-    }
-    return Container(
-      width: 34,
-      height: 34,
-      decoration: BoxDecoration(
-        color: qt.glassWhite,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: qt.borderGlass),
-      ),
-      child: Center(
-          child: Text('$n',
-              style: TextStyle(
-                  color: qt.textMuted,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12))),
-    );
-  }
+  // ─── HEADER ───────────────────────────────────────────────────────────────
 
-  Widget _sajdahBadge(QuranTheme qt) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: qt.emeraldDeep.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: qt.emeraldDeep.withOpacity(0.25)),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.auto_awesome_rounded, size: 10, color: qt.emeraldDeep),
-          const SizedBox(width: 4),
-          Text('Sajdah',
-              style: TextStyle(
-                  color: qt.emeraldDeep,
-                  fontSize: 8,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8)),
-        ]),
-      );
+  Widget _buildHeader(QuranTheme qt, Color accent) {
+    final String ayahRef =
+        '${widget.ayah.surahNumber}:${widget.ayah.ayahNumber.toString().padLeft(2, '0')}';
 
-  Widget _actionRow(
-      BuildContext context, QuranTheme qt, bool isPlaying, bool isTafsirOpen) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Row(children: [
-        Text('${widget.ayah.surahNumber}:${widget.ayah.ayahNumber}',
-            style: TextStyle(
-                color: qt.textMuted,
-                fontSize: 10,
-                fontWeight: FontWeight.w700)),
-        const Spacer(),
-        _iconBtn(
-          widget.isBookmarked
-              ? Icons.bookmark_rounded
-              : Icons.bookmark_border_rounded,
-          widget.isBookmarked ? qt.emeraldLight : qt.textMuted,
-          widget.onBookmark,
-          tooltip: widget.isBookmarked ? 'Remove bookmark' : 'Bookmark',
-        ),
-        const SizedBox(width: 14),
-        _iconBtn(
-          widget.isRecentRead
-              ? Icons.check_circle_rounded
-              : Icons.check_circle_outline_rounded,
-          widget.isRecentRead ? qt.emeraldLight : qt.textMuted,
-          widget.onLastRead,
-          tooltip:
-              widget.isRecentRead ? 'Marked as Last Read' : 'Mark as Last Read',
-        ),
-        const SizedBox(width: 14),
-        _iconBtn(Icons.copy_rounded, qt.textMuted, widget.onCopy,
-            tooltip: 'Copy'),
-        const SizedBox(width: 14),
-        _iconBtn(Icons.share_rounded, qt.textMuted, () {
-          final text =
-              '${widget.ayah.arabicFor(widget.settings.script)}\n\n${widget.ayah.translation}\n\n— Quran ${widget.ayah.surahNumber}:${widget.ayah.ayahNumber}';
-          Share.share(text);
-        }, tooltip: 'Share'),
-        const SizedBox(width: 14),
-        _iconBtn(
-          isPlaying
-              ? Icons.pause_circle_rounded
-              : Icons.play_circle_outline_rounded,
-          isPlaying ? qt.emeraldGlow : qt.textMuted,
-          widget.onPlay,
-          tooltip: isPlaying ? 'Pause' : 'Play audio',
-          size: 18,
-        ),
-      ]),
-      const SizedBox(height: 12),
-      GestureDetector(
-        onTap: widget.onToggleTafsir,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.menu_book_rounded,
-              size: 16,
-              color: isTafsirOpen ? qt.emeraldLight : qt.emeraldDeep,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              isTafsirOpen ? 'Hide Tafsir' : 'Read Tafsir',
-              style: TextStyle(
-                color: isTafsirOpen ? qt.emeraldLight : qt.emeraldDeep,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ]);
-  }
-
-  Widget _tafsirAccordion(BuildContext context, QuranTheme qt) {
-    const authors = ["Ibn Kathir", "Ma'ariful Quran", "Tazkirul Quran"];
-    return Container(
-      decoration: BoxDecoration(
-        color: qt.glassWhite,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: qt.borderGlass),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-          child: Text('READ TAFSIR',
-              style: TextStyle(
-                  color: qt.emeraldLight,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2)),
-        ),
-        ...authors.map((author) {
-          final isLast = author == authors.last;
-          return Column(children: [
-            InkWell(
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => TafsirScreen(
-                  surahNumber: widget.ayah.surahNumber,
-                  ayahNumber: widget.ayah.ayahNumber,
-                  initialAuthor: author,
-                  surahList: widget.surahList,
+    return Row(
+      children: [
+        // Ayah number + chevron → directly opens action row
+        GestureDetector(
+          onTap: _handleNumberTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            decoration: _isSelected
+                ? BoxDecoration(
+                    color: accent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  )
+                : null,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  ayahRef,
+                  style: TextStyle(
+                    color: _isSelected ? accent : qt.textMuted.withOpacity(0.7),
+                    fontSize: 13,
+                    fontWeight: _isSelected ? FontWeight.w700 : FontWeight.w600,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                    letterSpacing: 0.5,
+                  ),
                 ),
-              )),
-              borderRadius: isLast
-                  ? const BorderRadius.vertical(bottom: Radius.circular(16))
-                  : BorderRadius.zero,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(children: [
-                  Text(author,
-                      style: TextStyle(
-                          color: qt.textPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600)),
-                  const Spacer(),
-                  Icon(Icons.arrow_forward_ios_rounded,
-                      color: qt.textMuted, size: 12),
-                ]),
-              ),
+                const SizedBox(width: 2),
+                AnimatedRotation(
+                  turns: _isActionRowOpen ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  child: Icon(
+                    Icons.expand_more_rounded,
+                    size: 16,
+                    color: _isSelected ? accent : qt.textMuted.withOpacity(0.5),
+                  ),
+                ),
+              ],
             ),
-            if (!isLast) Divider(height: 1, color: qt.borderGlass, indent: 16),
-          ]);
-        }).toList(),
-      ]),
+          ),
+        ),
+        const Spacer(),
+        if (widget.sajdah != null) ...[
+          _buildSajdahBadge(accent),
+          const SizedBox(width: 8),
+        ],
+        if (widget.isLastRead) _buildLastReadBadge(accent),
+      ],
     );
   }
 
-  Widget _iconBtn(IconData icon, Color color, VoidCallback onTap,
-      {double size = 18, String tooltip = ''}) {
-    return Tooltip(
-      message: tooltip,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Icon(icon, color: color, size: size),
+  // ─── TAP HINT ─────────────────────────────────────────────────────────────
+
+  Widget _buildTapHint(QuranTheme qt) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 4),
+      child: Align(
+        alignment: Alignment.center,
+        child: Opacity(
+          opacity: 0.35,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Tap for tafsir, audio & more',
+                style: TextStyle(
+                  color: qt.textMuted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSajdahBadge(Color accent) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: accent.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.auto_awesome_rounded, size: 10, color: accent),
+          const SizedBox(width: 4),
+          Text(
+            'Sajdah',
+            style: TextStyle(
+              color: accent,
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLastReadBadge(Color accent) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: accent.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        'LAST READ',
+        style: TextStyle(
+          color: accent,
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+
+  // ─── INLINE ACTION ROW ────────────────────────────────────────────────────
+
+  Widget _buildActionRow(QuranTheme qt, Color accent) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      decoration: BoxDecoration(
+        color: qt.brightness == Brightness.dark
+            ? Colors.white.withOpacity(0.02)
+            : Colors.black.withOpacity(0.015),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _actionItem(
+            icon: widget.isBookmarked
+                ? Icons.bookmark_rounded
+                : Icons.bookmark_border_rounded,
+            label: widget.isBookmarked ? 'Saved' : 'Bookmark',
+            color: widget.isBookmarked ? accent : qt.textSecondary,
+            isActive: widget.isBookmarked,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              widget.onBookmark();
+            },
+          ),
+          _actionItem(
+            icon: widget.isRecentRead
+                ? Icons.check_circle_rounded
+                : Icons.check_circle_outline_rounded,
+            label: widget.isRecentRead ? 'Marked' : 'Last Read',
+            color: widget.isRecentRead ? accent : qt.textSecondary,
+            isActive: widget.isRecentRead,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              widget.onLastRead();
+            },
+          ),
+          _actionItem(
+            icon: Icons.copy_rounded,
+            label: 'Copy',
+            color: qt.textSecondary,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              widget.onCopy();
+            },
+          ),
+          _actionItem(
+            icon: Icons.share_rounded,
+            label: 'Share',
+            color: qt.textSecondary,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              final text =
+                  '${widget.ayah.arabicFor(widget.settings.script)}\n\n${widget.ayah.translation}\n\n— Quran ${widget.ayah.surahNumber}:${widget.ayah.ayahNumber}';
+              Share.share(text);
+            },
+          ),
+          _actionItem(
+            icon: _isPlaying
+                ? Icons.pause_circle_filled_rounded
+                : Icons.play_circle_filled_rounded,
+            label: _isPlaying ? 'Pause' : 'Play',
+            color: _isPlaying ? accent : qt.textSecondary,
+            isActive: _isPlaying,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              widget.onPlay();
+            },
+          ),
+          _actionItem(
+            icon: Icons.auto_stories_rounded,
+            label: _isTafsirOpen ? 'Hide' : 'Tafsir',
+            color: _isTafsirOpen ? accent : qt.textSecondary,
+            isActive: _isTafsirOpen,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              widget.onToggleTafsir();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionItem({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+    bool isActive = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: isActive
+            ? BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              )
+            : null,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 9.5,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── TAFSIR ACCORDION ─────────────────────────────────────────────────────
+
+  Widget _buildTafsirAccordion(
+      BuildContext context, QuranTheme qt, Color accent) {
+    const authors = ["Ibn Kathir", "Ma'ariful Quran", "Tazkirul Quran"];
+
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: Container(
+        decoration: BoxDecoration(
+          color: qt.brightness == Brightness.dark
+              ? Colors.white.withOpacity(0.02)
+              : Colors.black.withOpacity(0.015),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+              child: Text(
+                'TAFSIR SOURCES',
+                style: TextStyle(
+                  color: qt.textMuted.withOpacity(0.6),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+            ...authors.map((author) {
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => TafsirScreen(
+                        surahNumber: widget.ayah.surahNumber,
+                        ayahNumber: widget.ayah.ayahNumber,
+                        initialAuthor: author,
+                        surahList: widget.surahList,
+                      ),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                    child: Row(
+                      children: [
+                        Text(
+                          author,
+                          style: TextStyle(
+                            color: qt.textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(Icons.arrow_forward_ios_rounded,
+                            color: qt.textMuted, size: 12),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ],
+        ),
       ),
     );
   }
