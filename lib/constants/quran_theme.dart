@@ -33,7 +33,7 @@ class QuranTheme {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (isDark) {
       return QuranTheme(
-        bg: const Color(0xFF0F1711), // Very deep charcoal-green
+        bg: const Color(0xFF0C0C0E), // Very deep charcoal-green
         cardBg: const Color(0xFF1A241E), // Slightly lighter surface
         emeraldDeep: const Color(0xFF26A69A),
         emeraldMid: const Color(0xFF00897B),
@@ -48,7 +48,7 @@ class QuranTheme {
       );
     } else {
       return QuranTheme(
-        bg: const Color(0xFFFBFDFA), // Clean off-white
+        bg: const Color(0xFFF2F2F7), // Clean off-white
         cardBg: Colors.white,
         emeraldDeep: const Color(0xFF00695C),
         emeraldMid: const Color(0xFF00897B),

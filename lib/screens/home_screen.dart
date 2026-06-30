@@ -27,6 +27,7 @@ import 'hijri_calendar_screen.dart';
 import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
 import 'prayer_stats_screen.dart';
 import '../providers/prayer_tracker_provider.dart';
+import 'asma_list_screen.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ISOLATE-FRIENDLY PARSERS
@@ -1553,18 +1554,46 @@ class _AsmaSliderState extends State<_AsmaSlider> {
 
     return Column(
       children: [
-        // ── Section Header (View All removed) ──
+        // ── Section Header (View All Added Back) ──
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(Icons.auto_awesome_rounded, size: 14, color: qt.emeraldLight),
-            const SizedBox(width: 8),
-            Text(
-              "ASMA UL HUSNA",
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: qt.textMuted,
-                letterSpacing: 1.2,
+            Row(
+              children: [
+                Icon(Icons.auto_awesome_rounded,
+                    size: 14, color: qt.emeraldLight),
+                const SizedBox(width: 8),
+                Text(
+                  "ASMA UL HUSNA",
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: qt.textMuted,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                MainNavigation.pushOnShell(context, const AsmaListScreen());
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: qt.emeraldDeep.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Text(
+                  "View All",
+                  style: TextStyle(
+                    color: qt.emeraldDeep,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ),
             ),
           ],
@@ -1576,7 +1605,11 @@ class _AsmaSliderState extends State<_AsmaSlider> {
             if (!snapshot.hasData) {
               return const SizedBox(height: 120);
             }
-            final names = snapshot.data!.take(_limit).toList();
+
+            // THE FIX: Keep the full list separate for the modal!
+            final allNames = snapshot.data!;
+            // Use the limit ONLY for rendering the horizontal cards
+            final visibleNames = allNames.take(_limit).toList();
 
             return SizedBox(
               height: 220,
@@ -1584,18 +1617,18 @@ class _AsmaSliderState extends State<_AsmaSlider> {
                 controller: _scrollController,
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: names.length,
+                itemCount: visibleNames.length,
                 itemBuilder: (context, index) {
-                  final name = names[index];
+                  final name = visibleNames[index];
                   return RepaintBoundary(
                     child: IntrinsicWidth(
                       child: GestureDetector(
                         onTap: () {
                           HapticFeedback.selectionClick();
-                          // Pass the full list and the current index
+                          // Pass ALL 99 names to the modal, not just the 20 visible ones!
                           AsmaDetailModal.show(
                             context,
-                            names: names, // This comes from snapshot.data!
+                            names: allNames,
                             initialIndex: index,
                           );
                         },
@@ -1640,14 +1673,11 @@ class _AsmaSliderState extends State<_AsmaSlider> {
                                         CrossAxisAlignment.center,
                                     children: [
                                       Text(
-                                          name.number
-                                              .toString()
-                                              .padLeft(2, '0'),
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontSize: 8,
-                                            color: qt.textMuted,
-                                          )),
+                                        name.number.toString().padLeft(2, '0'),
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                            fontSize: 8, color: qt.textMuted),
+                                      ),
                                       Text(
                                         name.name,
                                         textAlign: TextAlign.center,

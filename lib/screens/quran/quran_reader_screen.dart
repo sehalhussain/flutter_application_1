@@ -606,15 +606,21 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     final progress = QuranProgressProvider.of(context);
     final qt = QuranTheme.of(context);
 
+    final isDark = qt.brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: qt.bg,
+      backgroundColor:
+          isDark ? const Color(0xFF0C0C0E) : const Color(0xFFF2F2F7),
       body: QuranReaderTips(
         key: _tipsKey,
         showOnlyTranslationTip: settings.hasSeenQuranReaderTips &&
             (!settings.hasSeenTranslationReciterTip ||
                 settings.tipsContentVersion < kCurrentTipsVersion),
         child: Stack(children: [
-          Positioned.fill(child: Container(color: qt.bg)),
+          Positioned.fill(
+              child: Container(
+                  color: isDark
+                      ? const Color(0xFF0C0C0E)
+                      : const Color(0xFFF2F2F7))),
           SafeArea(
             bottom: false,
             child: Column(children: [
@@ -713,7 +719,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: qt.bg,
+        color: isDark ? const Color(0xFF0C0C0E) : const Color(0xFFF2F2F7),
         border: Border(bottom: BorderSide(color: qt.borderGlass, width: 0.5)),
       ),
       child: Row(
@@ -2423,53 +2429,59 @@ class _SettingsSheetState extends State<_SettingsSheet> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
 
-            // Sliding Tab Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _SlidingTabBar(
-                tabs: const [
-                  _TabItem(label: 'Display', icon: Icons.text_fields_rounded),
-                  _TabItem(label: 'Audio', icon: Icons.headphones_rounded),
-                ],
-                activeIndex: _activeTabIndex,
-                onTap: _switchTab,
-                qt: qt,
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Content with fade transition
+            // Everything below header scrolls together
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 280),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  transitionBuilder: (child, animation) {
-                    return FadeTransition(
-                      opacity: CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeOutCubic,
-                      ),
-                      child: child,
-                    );
-                  },
-                  layoutBuilder: (currentChild, previousChildren) {
-                    return Stack(
-                      alignment: Alignment.topCenter,
-                      children: <Widget>[
-                        ...previousChildren,
-                        if (currentChild != null) currentChild,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 20),
+
+                    // Sliding Tab Bar (now scrolls with content)
+                    _SlidingTabBar(
+                      tabs: const [
+                        _TabItem(
+                            label: 'Display', icon: Icons.text_fields_rounded),
+                        _TabItem(
+                            label: 'Audio', icon: Icons.headphones_rounded),
                       ],
-                    );
-                  },
-                  child: _activeTabIndex == 0
-                      ? _buildDisplayTab(settings, qt)
-                      : _buildAudioTab(settings, qt),
+                      activeIndex: _activeTabIndex,
+                      onTap: _switchTab,
+                      qt: qt,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Content with fade transition
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 280),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(
+                          opacity: CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutCubic,
+                          ),
+                          child: child,
+                        );
+                      },
+                      layoutBuilder: (currentChild, previousChildren) {
+                        return Stack(
+                          alignment: Alignment.topCenter,
+                          children: <Widget>[
+                            ...previousChildren,
+                            if (currentChild != null) currentChild,
+                          ],
+                        );
+                      },
+                      child: _activeTabIndex == 0
+                          ? _buildDisplayTab(settings, qt)
+                          : _buildAudioTab(settings, qt),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -3254,7 +3266,7 @@ class _SettingsSheetState extends State<_SettingsSheet> {
 // EXTRACTED REUSABLE WIDGETS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// ─── SECTION HEADER (fixed: no more clipping) ───────────────────────────────
+// ─── SECTION HEADER ──────────────────────────────────────────────────────────
 
 class _SectionHeader extends StatelessWidget {
   final String title;
@@ -3532,7 +3544,7 @@ class _ToggleRow extends StatelessWidget {
   }
 }
 
-// ─── SLIDING TAB BAR (layout-safe: no LayoutBuilder) ────────────────────────
+// ─── SLIDING TAB BAR ─────────────────────────────────────────────────────────
 
 class _TabItem {
   final String label;
@@ -3568,8 +3580,6 @@ class _SlidingTabBar extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Indicator uses AnimatedSlide: offset is relative to its own size,
-          // so offset (1,0) shifts right by exactly one tab-width.
           AnimatedSlide(
             offset: Offset(activeIndex.toDouble(), 0),
             duration: const Duration(milliseconds: 250),
@@ -3594,7 +3604,6 @@ class _SlidingTabBar extends StatelessWidget {
               ),
             ),
           ),
-          // Tab buttons
           Row(
             children: tabs.asMap().entries.map((entry) {
               final i = entry.key;
@@ -3754,8 +3763,6 @@ class _TranslationDropdown extends StatelessWidget {
                 if (downloaded) {
                   settings.setCustomTranslation(id);
                   onTranslationChanged();
-                } else if (!(downloadService.isDownloading(id) ?? false)) {
-                  _startDownload(context, id, downloadService);
                 }
               }
             },
@@ -3765,6 +3772,7 @@ class _TranslationDropdown extends StatelessWidget {
     );
   }
 
+  // ... (keep _buildOptions and _startDownload methods exactly as they were)
   List<_TranslationOption> _buildOptions(TranslationDownloadService svc) {
     final displayOrder = [
       TranslationId.enSahih,
