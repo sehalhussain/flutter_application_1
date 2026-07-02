@@ -229,7 +229,7 @@ class _AsmaDetailModalState extends State<AsmaDetailModal>
     return Container(
       height: sheetHeight,
       decoration: BoxDecoration(
-        color: qt.bg,
+        color: qt.cardBg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
@@ -259,7 +259,7 @@ class _AsmaDetailModalState extends State<AsmaDetailModal>
                   child: RepaintBoundary(
                     key: _imageCaptureKey,
                     child: ColoredBox(
-                      color: qt.bg,
+                      color: qt.cardBg,
                       child: AnimatedBuilder(
                         animation: _animController,
                         builder: (context, child) {
