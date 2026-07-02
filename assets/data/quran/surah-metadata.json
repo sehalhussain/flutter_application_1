@@ -7,7 +7,8 @@
         "revelation_order": 5,
         "revelation_place": "makkah",
         "verses_count": 7,
-        "bismillah_pre": false
+        "bismillah_pre": false,
+        "name_meaning": "The Opening"
     },
     "2": {
         "id": 2,
@@ -17,7 +18,8 @@
         "revelation_order": 87,
         "revelation_place": "madinah",
         "verses_count": 286,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Cow"
     },
     "3": {
         "id": 3,
@@ -27,7 +29,8 @@
         "revelation_order": 89,
         "revelation_place": "madinah",
         "verses_count": 200,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Family of Imran"
     },
     "4": {
         "id": 4,
@@ -37,7 +40,8 @@
         "revelation_order": 92,
         "revelation_place": "madinah",
         "verses_count": 176,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Women"
     },
     "5": {
         "id": 5,
@@ -47,7 +51,8 @@
         "revelation_order": 112,
         "revelation_place": "madinah",
         "verses_count": 120,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Table Spread"
     },
     "6": {
         "id": 6,
@@ -57,7 +62,8 @@
         "revelation_order": 55,
         "revelation_place": "makkah",
         "verses_count": 165,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Cattle"
     },
     "7": {
         "id": 7,
@@ -67,7 +73,8 @@
         "revelation_order": 39,
         "revelation_place": "makkah",
         "verses_count": 206,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Heights"
     },
     "8": {
         "id": 8,
@@ -77,7 +84,8 @@
         "revelation_order": 88,
         "revelation_place": "madinah",
         "verses_count": 75,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Spoils of War"
     },
     "9": {
         "id": 9,
@@ -87,7 +95,8 @@
         "revelation_order": 113,
         "revelation_place": "madinah",
         "verses_count": 129,
-        "bismillah_pre": false
+        "bismillah_pre": false,
+        "name_meaning": "The Repentance"
     },
     "10": {
         "id": 10,
@@ -97,7 +106,8 @@
         "revelation_order": 51,
         "revelation_place": "makkah",
         "verses_count": 109,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Jonah"
     },
     "11": {
         "id": 11,
@@ -107,7 +117,8 @@
         "revelation_order": 52,
         "revelation_place": "makkah",
         "verses_count": 123,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Hud"
     },
     "12": {
         "id": 12,
@@ -117,7 +128,8 @@
         "revelation_order": 53,
         "revelation_place": "makkah",
         "verses_count": 111,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Joseph"
     },
     "13": {
         "id": 13,
@@ -127,7 +139,8 @@
         "revelation_order": 96,
         "revelation_place": "madinah",
         "verses_count": 43,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Thunder"
     },
     "14": {
         "id": 14,
@@ -137,7 +150,8 @@
         "revelation_order": 72,
         "revelation_place": "makkah",
         "verses_count": 52,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Abraham"
     },
     "15": {
         "id": 15,
@@ -147,7 +161,8 @@
         "revelation_order": 54,
         "revelation_place": "makkah",
         "verses_count": 99,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Rocky Tract"
     },
     "16": {
         "id": 16,
@@ -157,7 +172,8 @@
         "revelation_order": 70,
         "revelation_place": "makkah",
         "verses_count": 128,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Bee"
     },
     "17": {
         "id": 17,
@@ -167,7 +183,8 @@
         "revelation_order": 50,
         "revelation_place": "makkah",
         "verses_count": 111,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Night Journey"
     },
     "18": {
         "id": 18,
@@ -177,7 +194,8 @@
         "revelation_order": 69,
         "revelation_place": "makkah",
         "verses_count": 110,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Cave"
     },
     "19": {
         "id": 19,
@@ -187,7 +205,8 @@
         "revelation_order": 44,
         "revelation_place": "makkah",
         "verses_count": 98,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Mary"
     },
     "20": {
         "id": 20,
@@ -197,7 +216,8 @@
         "revelation_order": 45,
         "revelation_place": "makkah",
         "verses_count": 135,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Ta-Ha"
     },
     "21": {
         "id": 21,
@@ -207,7 +227,8 @@
         "revelation_order": 73,
         "revelation_place": "makkah",
         "verses_count": 112,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Prophets"
     },
     "22": {
         "id": 22,
@@ -217,7 +238,8 @@
         "revelation_order": 103,
         "revelation_place": "madinah",
         "verses_count": 78,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Pilgrimage"
     },
     "23": {
         "id": 23,
@@ -227,7 +249,8 @@
         "revelation_order": 74,
         "revelation_place": "makkah",
         "verses_count": 118,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Believers"
     },
     "24": {
         "id": 24,
@@ -237,7 +260,8 @@
         "revelation_order": 102,
         "revelation_place": "madinah",
         "verses_count": 64,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Light"
     },
     "25": {
         "id": 25,
@@ -247,7 +271,8 @@
         "revelation_order": 42,
         "revelation_place": "makkah",
         "verses_count": 77,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Criterion"
     },
     "26": {
         "id": 26,
@@ -257,7 +282,8 @@
         "revelation_order": 47,
         "revelation_place": "makkah",
         "verses_count": 227,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Poets"
     },
     "27": {
         "id": 27,
@@ -267,7 +293,8 @@
         "revelation_order": 48,
         "revelation_place": "makkah",
         "verses_count": 93,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Ant"
     },
     "28": {
         "id": 28,
@@ -277,7 +304,8 @@
         "revelation_order": 49,
         "revelation_place": "makkah",
         "verses_count": 88,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Stories"
     },
     "29": {
         "id": 29,
@@ -287,7 +315,8 @@
         "revelation_order": 85,
         "revelation_place": "makkah",
         "verses_count": 69,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Spider"
     },
     "30": {
         "id": 30,
@@ -297,7 +326,8 @@
         "revelation_order": 84,
         "revelation_place": "makkah",
         "verses_count": 60,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Romans"
     },
     "31": {
         "id": 31,
@@ -307,7 +337,8 @@
         "revelation_order": 57,
         "revelation_place": "makkah",
         "verses_count": 34,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Luqman"
     },
     "32": {
         "id": 32,
@@ -317,7 +348,8 @@
         "revelation_order": 75,
         "revelation_place": "makkah",
         "verses_count": 30,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Prostration"
     },
     "33": {
         "id": 33,
@@ -327,7 +359,8 @@
         "revelation_order": 90,
         "revelation_place": "madinah",
         "verses_count": 73,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Confederates"
     },
     "34": {
         "id": 34,
@@ -337,7 +370,8 @@
         "revelation_order": 58,
         "revelation_place": "makkah",
         "verses_count": 54,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Sheba"
     },
     "35": {
         "id": 35,
@@ -347,7 +381,8 @@
         "revelation_order": 43,
         "revelation_place": "makkah",
         "verses_count": 45,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Originator"
     },
     "36": {
         "id": 36,
@@ -357,7 +392,8 @@
         "revelation_order": 41,
         "revelation_place": "makkah",
         "verses_count": 83,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Ya-Sin"
     },
     "37": {
         "id": 37,
@@ -367,7 +403,8 @@
         "revelation_order": 56,
         "revelation_place": "makkah",
         "verses_count": 182,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Those Who Set the Ranks"
     },
     "38": {
         "id": 38,
@@ -377,7 +414,8 @@
         "revelation_order": 38,
         "revelation_place": "makkah",
         "verses_count": 88,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Sad"
     },
     "39": {
         "id": 39,
@@ -387,7 +425,8 @@
         "revelation_order": 59,
         "revelation_place": "makkah",
         "verses_count": 75,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Groups"
     },
     "40": {
         "id": 40,
@@ -397,7 +436,8 @@
         "revelation_order": 60,
         "revelation_place": "makkah",
         "verses_count": 85,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Forgiver"
     },
     "41": {
         "id": 41,
@@ -407,7 +447,8 @@
         "revelation_order": 61,
         "revelation_place": "makkah",
         "verses_count": 54,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Explained in Detail"
     },
     "42": {
         "id": 42,
@@ -417,7 +458,8 @@
         "revelation_order": 62,
         "revelation_place": "makkah",
         "verses_count": 53,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Consultation"
     },
     "43": {
         "id": 43,
@@ -427,7 +469,8 @@
         "revelation_order": 63,
         "revelation_place": "makkah",
         "verses_count": 89,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Gold Adornments"
     },
     "44": {
         "id": 44,
@@ -437,7 +480,8 @@
         "revelation_order": 64,
         "revelation_place": "makkah",
         "verses_count": 59,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Smoke"
     },
     "45": {
         "id": 45,
@@ -447,7 +491,8 @@
         "revelation_order": 65,
         "revelation_place": "makkah",
         "verses_count": 37,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Kneeling"
     },
     "46": {
         "id": 46,
@@ -457,7 +502,8 @@
         "revelation_order": 66,
         "revelation_place": "makkah",
         "verses_count": 35,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Wind-Curved Sandhills"
     },
     "47": {
         "id": 47,
@@ -467,7 +513,8 @@
         "revelation_order": 95,
         "revelation_place": "madinah",
         "verses_count": 38,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Muhammad"
     },
     "48": {
         "id": 48,
@@ -477,7 +524,8 @@
         "revelation_order": 111,
         "revelation_place": "madinah",
         "verses_count": 29,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Victory"
     },
     "49": {
         "id": 49,
@@ -487,7 +535,8 @@
         "revelation_order": 106,
         "revelation_place": "madinah",
         "verses_count": 18,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Rooms"
     },
     "50": {
         "id": 50,
@@ -497,7 +546,8 @@
         "revelation_order": 34,
         "revelation_place": "makkah",
         "verses_count": 45,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Qaf"
     },
     "51": {
         "id": 51,
@@ -507,7 +557,8 @@
         "revelation_order": 67,
         "revelation_place": "makkah",
         "verses_count": 60,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Winnowing Winds"
     },
     "52": {
         "id": 52,
@@ -517,7 +568,8 @@
         "revelation_order": 76,
         "revelation_place": "makkah",
         "verses_count": 49,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Mount"
     },
     "53": {
         "id": 53,
@@ -527,7 +579,8 @@
         "revelation_order": 23,
         "revelation_place": "makkah",
         "verses_count": 62,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Star"
     },
     "54": {
         "id": 54,
@@ -537,7 +590,8 @@
         "revelation_order": 37,
         "revelation_place": "makkah",
         "verses_count": 55,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Moon"
     },
     "55": {
         "id": 55,
@@ -547,7 +601,8 @@
         "revelation_order": 97,
         "revelation_place": "madinah",
         "verses_count": 78,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Most Merciful"
     },
     "56": {
         "id": 56,
@@ -557,7 +612,8 @@
         "revelation_order": 46,
         "revelation_place": "makkah",
         "verses_count": 96,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Inevitable"
     },
     "57": {
         "id": 57,
@@ -567,7 +623,8 @@
         "revelation_order": 94,
         "revelation_place": "madinah",
         "verses_count": 29,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Iron"
     },
     "58": {
         "id": 58,
@@ -577,7 +634,8 @@
         "revelation_order": 105,
         "revelation_place": "madinah",
         "verses_count": 22,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Pleading Woman"
     },
     "59": {
         "id": 59,
@@ -587,7 +645,8 @@
         "revelation_order": 101,
         "revelation_place": "madinah",
         "verses_count": 24,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Exile"
     },
     "60": {
         "id": 60,
@@ -597,7 +656,8 @@
         "revelation_order": 91,
         "revelation_place": "madinah",
         "verses_count": 13,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "She Who Is To Be Examined"
     },
     "61": {
         "id": 61,
@@ -607,7 +667,8 @@
         "revelation_order": 109,
         "revelation_place": "madinah",
         "verses_count": 14,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Ranks"
     },
     "62": {
         "id": 62,
@@ -617,7 +678,8 @@
         "revelation_order": 110,
         "revelation_place": "madinah",
         "verses_count": 11,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Congregation"
     },
     "63": {
         "id": 63,
@@ -627,7 +689,8 @@
         "revelation_order": 104,
         "revelation_place": "madinah",
         "verses_count": 11,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Hypocrites"
     },
     "64": {
         "id": 64,
@@ -637,7 +700,8 @@
         "revelation_order": 108,
         "revelation_place": "madinah",
         "verses_count": 18,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Mutual Loss and Gain"
     },
     "65": {
         "id": 65,
@@ -647,7 +711,8 @@
         "revelation_order": 99,
         "revelation_place": "madinah",
         "verses_count": 12,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Divorce"
     },
     "66": {
         "id": 66,
@@ -657,7 +722,8 @@
         "revelation_order": 107,
         "revelation_place": "madinah",
         "verses_count": 12,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Prohibition"
     },
     "67": {
         "id": 67,
@@ -667,7 +733,8 @@
         "revelation_order": 77,
         "revelation_place": "makkah",
         "verses_count": 30,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Sovereignty"
     },
     "68": {
         "id": 68,
@@ -677,7 +744,8 @@
         "revelation_order": 2,
         "revelation_place": "makkah",
         "verses_count": 52,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Pen"
     },
     "69": {
         "id": 69,
@@ -687,7 +755,8 @@
         "revelation_order": 78,
         "revelation_place": "makkah",
         "verses_count": 52,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Reality"
     },
     "70": {
         "id": 70,
@@ -697,7 +766,8 @@
         "revelation_order": 79,
         "revelation_place": "makkah",
         "verses_count": 44,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Ascending Stairways"
     },
     "71": {
         "id": 71,
@@ -707,7 +777,8 @@
         "revelation_order": 71,
         "revelation_place": "makkah",
         "verses_count": 28,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Noah"
     },
     "72": {
         "id": 72,
@@ -717,7 +788,8 @@
         "revelation_order": 40,
         "revelation_place": "makkah",
         "verses_count": 28,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Jinn"
     },
     "73": {
         "id": 73,
@@ -727,7 +799,8 @@
         "revelation_order": 3,
         "revelation_place": "makkah",
         "verses_count": 20,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Enshrouded One"
     },
     "74": {
         "id": 74,
@@ -737,7 +810,8 @@
         "revelation_order": 4,
         "revelation_place": "makkah",
         "verses_count": 56,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Cloaked One"
     },
     "75": {
         "id": 75,
@@ -747,7 +821,8 @@
         "revelation_order": 31,
         "revelation_place": "makkah",
         "verses_count": 40,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Resurrection"
     },
     "76": {
         "id": 76,
@@ -757,7 +832,8 @@
         "revelation_order": 98,
         "revelation_place": "madinah",
         "verses_count": 31,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Man"
     },
     "77": {
         "id": 77,
@@ -767,7 +843,8 @@
         "revelation_order": 33,
         "revelation_place": "makkah",
         "verses_count": 50,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Those Sent Forth"
     },
     "78": {
         "id": 78,
@@ -777,7 +854,8 @@
         "revelation_order": 80,
         "revelation_place": "makkah",
         "verses_count": 40,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Great News"
     },
     "79": {
         "id": 79,
@@ -787,7 +865,8 @@
         "revelation_order": 81,
         "revelation_place": "makkah",
         "verses_count": 46,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Those Who Drag Forth"
     },
     "80": {
         "id": 80,
@@ -797,7 +876,8 @@
         "revelation_order": 24,
         "revelation_place": "makkah",
         "verses_count": 42,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "He Frowned"
     },
     "81": {
         "id": 81,
@@ -807,7 +887,8 @@
         "revelation_order": 7,
         "revelation_place": "makkah",
         "verses_count": 29,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Overthrowing"
     },
     "82": {
         "id": 82,
@@ -817,7 +898,8 @@
         "revelation_order": 82,
         "revelation_place": "makkah",
         "verses_count": 19,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Cleaving"
     },
     "83": {
         "id": 83,
@@ -827,7 +909,8 @@
         "revelation_order": 86,
         "revelation_place": "makkah",
         "verses_count": 36,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Those Who Give Less"
     },
     "84": {
         "id": 84,
@@ -837,7 +920,8 @@
         "revelation_order": 83,
         "revelation_place": "makkah",
         "verses_count": 25,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Splitting Open"
     },
     "85": {
         "id": 85,
@@ -847,7 +931,8 @@
         "revelation_order": 27,
         "revelation_place": "makkah",
         "verses_count": 22,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Constellations"
     },
     "86": {
         "id": 86,
@@ -857,7 +942,8 @@
         "revelation_order": 36,
         "revelation_place": "makkah",
         "verses_count": 17,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Morning Star"
     },
     "87": {
         "id": 87,
@@ -867,7 +953,8 @@
         "revelation_order": 8,
         "revelation_place": "makkah",
         "verses_count": 19,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Most High"
     },
     "88": {
         "id": 88,
@@ -877,7 +964,8 @@
         "revelation_order": 68,
         "revelation_place": "makkah",
         "verses_count": 26,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Overwhelming"
     },
     "89": {
         "id": 89,
@@ -887,7 +975,8 @@
         "revelation_order": 10,
         "revelation_place": "makkah",
         "verses_count": 30,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Dawn"
     },
     "90": {
         "id": 90,
@@ -897,7 +986,8 @@
         "revelation_order": 35,
         "revelation_place": "makkah",
         "verses_count": 20,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The City"
     },
     "91": {
         "id": 91,
@@ -907,7 +997,8 @@
         "revelation_order": 26,
         "revelation_place": "makkah",
         "verses_count": 15,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Sun"
     },
     "92": {
         "id": 92,
@@ -917,7 +1008,8 @@
         "revelation_order": 9,
         "revelation_place": "makkah",
         "verses_count": 21,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Night"
     },
     "93": {
         "id": 93,
@@ -927,7 +1019,8 @@
         "revelation_order": 11,
         "revelation_place": "makkah",
         "verses_count": 11,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Morning Brightness"
     },
     "94": {
         "id": 94,
@@ -937,7 +1030,8 @@
         "revelation_order": 12,
         "revelation_place": "makkah",
         "verses_count": 8,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Relief"
     },
     "95": {
         "id": 95,
@@ -947,7 +1041,8 @@
         "revelation_order": 28,
         "revelation_place": "makkah",
         "verses_count": 8,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Fig"
     },
     "96": {
         "id": 96,
@@ -957,7 +1052,8 @@
         "revelation_order": 1,
         "revelation_place": "makkah",
         "verses_count": 19,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Clot"
     },
     "97": {
         "id": 97,
@@ -967,7 +1063,8 @@
         "revelation_order": 25,
         "revelation_place": "makkah",
         "verses_count": 5,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Night of Decree"
     },
     "98": {
         "id": 98,
@@ -977,7 +1074,8 @@
         "revelation_order": 100,
         "revelation_place": "madinah",
         "verses_count": 8,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Clear Evidence"
     },
     "99": {
         "id": 99,
@@ -987,7 +1085,8 @@
         "revelation_order": 93,
         "revelation_place": "madinah",
         "verses_count": 8,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Earthquake"
     },
     "100": {
         "id": 100,
@@ -997,7 +1096,8 @@
         "revelation_order": 14,
         "revelation_place": "makkah",
         "verses_count": 11,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Charging Horses"
     },
     "101": {
         "id": 101,
@@ -1007,7 +1107,8 @@
         "revelation_order": 30,
         "revelation_place": "makkah",
         "verses_count": 11,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Calamity"
     },
     "102": {
         "id": 102,
@@ -1017,7 +1118,8 @@
         "revelation_order": 16,
         "revelation_place": "makkah",
         "verses_count": 8,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Competition in Worldly Increase"
     },
     "103": {
         "id": 103,
@@ -1027,7 +1129,8 @@
         "revelation_order": 13,
         "revelation_place": "makkah",
         "verses_count": 3,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Declining Day"
     },
     "104": {
         "id": 104,
@@ -1037,7 +1140,8 @@
         "revelation_order": 32,
         "revelation_place": "makkah",
         "verses_count": 9,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Slanderer"
     },
     "105": {
         "id": 105,
@@ -1047,7 +1151,8 @@
         "revelation_order": 19,
         "revelation_place": "makkah",
         "verses_count": 5,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Elephant"
     },
     "106": {
         "id": 106,
@@ -1057,7 +1162,8 @@
         "revelation_order": 29,
         "revelation_place": "makkah",
         "verses_count": 4,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Quraysh"
     },
     "107": {
         "id": 107,
@@ -1067,7 +1173,8 @@
         "revelation_order": 17,
         "revelation_place": "makkah",
         "verses_count": 7,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Small Kindnesses"
     },
     "108": {
         "id": 108,
@@ -1077,7 +1184,8 @@
         "revelation_order": 15,
         "revelation_place": "makkah",
         "verses_count": 3,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Abundance"
     },
     "109": {
         "id": 109,
@@ -1087,7 +1195,8 @@
         "revelation_order": 18,
         "revelation_place": "makkah",
         "verses_count": 6,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Disbelievers"
     },
     "110": {
         "id": 110,
@@ -1097,7 +1206,8 @@
         "revelation_order": 114,
         "revelation_place": "madinah",
         "verses_count": 3,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Divine Support"
     },
     "111": {
         "id": 111,
@@ -1107,7 +1217,8 @@
         "revelation_order": 6,
         "revelation_place": "makkah",
         "verses_count": 5,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Palm Fiber"
     },
     "112": {
         "id": 112,
@@ -1117,7 +1228,8 @@
         "revelation_order": 22,
         "revelation_place": "makkah",
         "verses_count": 4,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Sincerity"
     },
     "113": {
         "id": 113,
@@ -1127,7 +1239,8 @@
         "revelation_order": 20,
         "revelation_place": "makkah",
         "verses_count": 5,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "The Daybreak"
     },
     "114": {
         "id": 114,
@@ -1137,6 +1250,7 @@
         "revelation_order": 21,
         "revelation_place": "makkah",
         "verses_count": 6,
-        "bismillah_pre": true
+        "bismillah_pre": true,
+        "name_meaning": "Mankind"
     }
 }

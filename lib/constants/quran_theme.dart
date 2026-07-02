@@ -33,8 +33,9 @@ class QuranTheme {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (isDark) {
       return QuranTheme(
-        bg: const Color(0xFF0C0C0E), // Very deep charcoal-green
-        cardBg: const Color(0xFF1A241E), // Slightly lighter surface
+        bg: const Color(0xFF0C0C0E), // Very deep charcoal
+        cardBg:
+            const Color.fromARGB(255, 28, 29, 28), // Slightly lighter surface
         emeraldDeep: const Color(0xFF26A69A),
         emeraldMid: const Color(0xFF00897B),
         emeraldLight: const Color(0xFF4DB6AC),

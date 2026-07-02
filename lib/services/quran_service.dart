@@ -126,7 +126,7 @@ class QuranService {
           number: surahNum,
           nameArabic: data['name_arabic'] as String? ?? '',
           nameEnglish: data['name_simple'] as String? ?? '',
-          nameMeaning: '', // Not in metadata
+          nameMeaning: data['name_meaning'] as String? ?? '',
           revelationType: data['revelation_place'] as String? ?? '',
           totalAyahs: data['verses_count'] as int? ?? 0,
           juzNumber: juzNum,

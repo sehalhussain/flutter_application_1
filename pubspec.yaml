@@ -93,3 +93,6 @@ flutter:
     - family: IndopakN
       fonts:
         - asset: assets/fonts/indopak-nastaleeq.ttf
+    - family: SurahName
+      fonts:
+        - asset: assets/fonts/surah-name-v4.ttf

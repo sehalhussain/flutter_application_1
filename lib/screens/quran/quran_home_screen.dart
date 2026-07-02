@@ -197,13 +197,6 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
                 color: isDark ? qt.emeraldGlow : qt.emeraldDeep,
                 height: 1.2)),
         const SizedBox(height: 8),
-        Text('The Noble Quran',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                fontSize: 15,
-                color: qt.textMuted,
-                letterSpacing: 0.8,
-                fontWeight: FontWeight.w400)),
       ]),
     );
   }
@@ -752,7 +745,7 @@ class _SurahTile extends StatelessWidget {
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           decoration: BoxDecoration(
             color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
             borderRadius: BorderRadius.circular(18),
@@ -786,20 +779,46 @@ class _SurahTile extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(surah.nameEnglish,
-                        style: TextStyle(
-                            color: qt.emeraldDeep,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                            height: 1.3)),
-                    const SizedBox(height: 4),
+                    // Primary
                     Text(
-                      '${surah.totalAyahs} ayahs · ${surah.revelationType} ',
+                      surah.nameEnglish,
                       style: TextStyle(
-                        color: qt.textMuted,
-                        fontSize: 12.5,
-                        height: 1.4,
+                        color: qt.emeraldDeep,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        height: 1.15,
+                      ),
+                    ),
+
+                    const SizedBox(height: 7),
+
+                    // Secondary
+                    Text(
+                      surah.nameMeaning,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: qt.textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        fontStyle: FontStyle.italic,
+                        height: 1.35,
+                      ),
+                    ),
+
+                    const SizedBox(height: 5),
+
+                    // Tertiary
+                    Text(
+                      '${surah.totalAyahs} Ayahs • ${surah.revelationType}',
+                      style: TextStyle(
+                        color: qt.textMuted.withValues(alpha: 0.8),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: 0.15,
+                        height: 1.2,
                       ),
                     ),
                   ],
@@ -808,10 +827,10 @@ class _SurahTile extends StatelessWidget {
               const SizedBox(width: 12),
               // Hero: Arabic name — large and prominent
               Text(
-                surah.nameArabic,
+                'surah${surah.number.toString().padLeft(3, '0')}',
                 style: TextStyle(
-                  fontFamily: 'IndopakN',
-                  fontSize: 24,
+                  fontFamily: 'surahName',
+                  fontSize: 44,
                   color: isDark ? qt.emeraldGlow : qt.emeraldDeep,
                   height: 1.2,
                 ),
