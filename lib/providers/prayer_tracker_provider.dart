@@ -62,37 +62,72 @@ class PrayerTracker extends ChangeNotifier {
     await _persist();
   }
 
-  /// Get the current streak of consecutive days where all 5 prayers were prayed.
+  /// Grace period logic for current streak:
+  /// If today is incomplete, it ignores today without breaking the streak.
+  /// It checks backwards from yesterday. If yesterday is complete, streak continues.
+  /// If the day ends and yesterday is incomplete, streak becomes 0.
+  /// If the user backfills yesterday to 5/5, the streak resumes automatically.
   int get currentStreak {
-    var date = DateTime.now();
+    final totalPrayers = _prayerNames.length;
+    if (totalPrayers == 0) return 0;
+
+    var date =
+        DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
     int streak = 0;
+    bool skippedToday = false;
 
     while (true) {
       final key = _dateKey(date);
-      final prayed = prayedCountForDate(key);
-      if (prayed < 5) break;
-      streak++;
-      date = date.subtract(const Duration(days: 1));
+      final count = prayedCountForDate(key);
+
+      if (count == totalPrayers) {
+        streak++;
+        date = date.subtract(const Duration(days: 1));
+      } else {
+        if (!skippedToday) {
+          // If it's today and it's not 5/5, skip it.
+          // The day isn't over yet, so don't break the streak.
+          skippedToday = true;
+          date = date.subtract(const Duration(days: 1));
+          continue; // Re-evaluate the loop starting from yesterday
+        }
+        // We hit a day in the past that isn't 5/5. Streak breaks.
+        break;
+      }
     }
     return streak;
   }
 
-  /// Get the best streak ever recorded.
+  /// Best streak ever recorded.
+  /// Does not break the current active run prematurely if today is unfinished.
   int get bestStreak {
     if (_prayerLog.isEmpty) return 0;
+    final totalPrayers = _prayerNames.length;
+
     final keys = sortedDateKeys;
+    final oldestDate = DateTime.parse(keys.last);
+    final today =
+        DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    var start = DateTime(oldestDate.year, oldestDate.month, oldestDate.day);
+
     int best = 0;
     int current = 0;
 
-    // Iterate from oldest to newest
-    final sortedAsc = keys.reversed.toList();
-    for (final key in sortedAsc) {
-      if (prayedCountForDate(key) == 5) {
+    while (!start.isAfter(today)) {
+      final key = _dateKey(start);
+      final count = prayedCountForDate(key);
+      if (count == totalPrayers) {
         current++;
         if (current > best) best = current;
       } else {
-        current = 0;
+        if (start.isAtSameMomentAs(today)) {
+          // Do not break current active run prematurely on unfinished today
+        } else {
+          // Strict reset for any past day that isn't 5/5
+          current = 0;
+        }
       }
+      start = start.add(const Duration(days: 1));
     }
     return best;
   }
@@ -178,17 +213,20 @@ class PrayerTracker extends ChangeNotifier {
         .fold<int>(0, (sum, day) => sum + day.values.where((v) => v).length);
   }
 
-  /// Total missed prayers across all logged days (from first logged date onward).
-  /// Each logged day counts 5 - (prayers done) as missed.
+  /// Total missed prayers across all days from the first log until today.
   int get totalMissed {
     if (_prayerLog.isEmpty) return 0;
-    int missed = 0;
-    for (final day in _prayerLog.values) {
-      if (day.isNotEmpty) {
-        missed += (5 - day.values.where((v) => v == true).length);
-      }
-    }
-    return missed;
+    final totalPrayers = _prayerNames.length;
+
+    final keys = sortedDateKeys;
+    final oldestDate = DateTime.parse(keys.last);
+    final today =
+        DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final start = DateTime(oldestDate.year, oldestDate.month, oldestDate.day);
+
+    int totalDays = today.difference(start).inDays + 1;
+    int missed = (totalDays * totalPrayers) - totalPrayersLogged;
+    return missed < 0 ? 0 : missed;
   }
 
   /// Check if a milestone is achieved.

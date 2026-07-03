@@ -911,28 +911,75 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     );
   }
 
-  // ── Bismillah ───────────────────────────────────────────────────────────
   Widget _buildBismillah(QuranTheme qt) {
     if (widget.surahNumber == 9 || widget.surahNumber == 1) {
       return const SizedBox(height: 16);
     }
 
     final bool isDark = qt.brightness == Brightness.dark;
+    final primaryColor = isDark ? qt.emeraldLight : qt.emeraldDeep;
+    final secondaryColor = isDark
+        ? qt.emeraldLight.withOpacity(0.6)
+        : qt.emeraldDeep.withOpacity(0.6);
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      decoration: BoxDecoration(color: isDark ? qt.bg : qt.bg),
-      child: Text(
-        'بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontFamily: 'QPC Hafs',
-          fontSize: 32,
-          color: isDark ? qt.emeraldLight : qt.emeraldDeep,
-          height: 1.5,
-        ),
+      margin: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+      padding: const EdgeInsets.only(top: 10, bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.transparent, // Relies on the page background
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          // Bismillah Text
+          Text(
+            'بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'QPC Hafs',
+              fontSize: 28,
+              color: primaryColor,
+              height: 1.8,
+              letterSpacing:
+                  1.5, // Slight spacing helps Arabic calligraphy breathe
+              shadows: [
+                Shadow(
+                  blurRadius: 10,
+                  color: primaryColor.withOpacity(isDark ? 0.5 : 0.15),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Bottom Ornate Divider (Diamond shape)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Left line
+              Container(height: 1, width: 60, color: secondaryColor),
+              // Center diamond
+              Transform.rotate(
+                angle: 3.141592653589793 / 4, // 45 degrees
+                child: Container(
+                  height: 8,
+                  width: 8,
+                  decoration: BoxDecoration(
+                    color: primaryColor,
+                    boxShadow: [
+                      BoxShadow(
+                          color: primaryColor.withOpacity(0.4), blurRadius: 4),
+                    ],
+                  ),
+                ),
+              ),
+              // Right line
+              Container(height: 1, width: 60, color: secondaryColor),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1282,9 +1329,9 @@ class _GoToAyahPanelState extends State<_GoToAyahPanel> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Floating Audio Pill
+// Floating Audio Pill — Enhanced v2
 // ─────────────────────────────────────────────────────────────────────────────
-class _FloatingAudioPill extends StatelessWidget {
+class _FloatingAudioPill extends StatefulWidget {
   final QuranSettings settings;
   final QuranTheme qt;
   final bool isAnyPlaying;
@@ -1320,309 +1367,777 @@ class _FloatingAudioPill extends StatelessWidget {
   });
 
   @override
+  State<_FloatingAudioPill> createState() => _FloatingAudioPillState();
+}
+
+class _FloatingAudioPillState extends State<_FloatingAudioPill> {
+  bool _isHovering = false;
+
+  bool get _isPlaying => widget.settings.playMode == PlayMode.ayah
+      ? widget.isAyahPlaying
+      : widget.isPlayingSurah;
+
+  bool get _showStop =>
+      (widget.settings.playMode == PlayMode.ayah &&
+          widget.playingAyah != null) ||
+      (widget.settings.playMode == PlayMode.surah && widget.isAnyPlaying);
+
+  @override
   Widget build(BuildContext context) {
-    final showStop =
-        (settings.playMode == PlayMode.ayah && playingAyah != null) ||
-            (settings.playMode == PlayMode.surah && isAnyPlaying);
+    final isDark = widget.qt.brightness == Brightness.dark;
+    final isActive = widget.isAnyPlaying;
 
     return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: isAnyPlaying
-              ? qt.emeraldDeep.withOpacity(0.98)
-              : qt.cardBg.withOpacity(0.95),
-          borderRadius: BorderRadius.circular(40),
-          border: Border.all(
-            color: isAnyPlaying
-                ? qt.emeraldLight.withOpacity(0.4)
-                : qt.borderGlass,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovering = true),
+        onExit: (_) => setState(() => _isHovering = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOutCubic,
+          padding: EdgeInsets.symmetric(
+            horizontal: _isHovering ? 14 : 10,
+            vertical: _isHovering ? 8 : 6,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: isAnyPlaying
-                  ? qt.emeraldDeep.withOpacity(0.4)
-                  : Colors.black26,
-              blurRadius: 15,
+          decoration: BoxDecoration(
+            color: isActive
+                ? widget.qt.emeraldDeep.withOpacity(0.97)
+                : isDark
+                    ? widget.qt.cardBg.withOpacity(0.92)
+                    : Colors.white.withOpacity(0.95),
+            borderRadius: BorderRadius.circular(50),
+            border: Border.all(
+              color: isActive
+                  ? widget.qt.emeraldLight.withOpacity(_isHovering ? 0.6 : 0.35)
+                  : isDark
+                      ? Colors.white.withOpacity(0.08)
+                      : Colors.black.withOpacity(0.06),
+              width: 1,
             ),
-          ],
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          _ModeDropdown(
-            currentMode: settings.playMode,
-            onChanged: onModeChanged,
-            qt: qt,
-            isActive: isAnyPlaying,
-          ),
-          const SizedBox(width: 8),
-          _verticalDivider(),
-          const SizedBox(width: 8),
-          Tooltip(
-            message: (settings.playMode == PlayMode.ayah
-                    ? isAyahPlaying
-                    : isPlayingSurah)
-                ? 'Pause'
-                : 'Play',
-            child: GestureDetector(
-              onTap: () => onPlayPause(settings.playMode),
-              child: Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  gradient:
-                      LinearGradient(colors: [qt.emeraldDeep, qt.emeraldMid]),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  (settings.playMode == PlayMode.ayah
-                          ? isAyahPlaying
-                          : isPlayingSurah)
-                      ? Icons.pause_rounded
-                      : Icons.play_arrow_rounded,
-                  color: Colors.white,
-                  size: 26,
-                ),
+            boxShadow: [
+              BoxShadow(
+                color: isActive
+                    ? widget.qt.emeraldDeep.withOpacity(0.35)
+                    : Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
-            ),
+              if (isActive)
+                BoxShadow(
+                  color: widget.qt.emeraldLight.withOpacity(0.2),
+                  blurRadius: 35,
+                  spreadRadius: 2,
+                ),
+              BoxShadow(
+                color: Colors.white.withOpacity(isDark ? 0.03 : 0.7),
+                blurRadius: 0,
+                offset: const Offset(0, -1),
+              ),
+            ],
           ),
-          if (showStop) ...[
-            const SizedBox(width: 8),
-            Tooltip(
-              message: 'Stop',
-              child: GestureDetector(
-                onTap: onStop,
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: isAnyPlaying
-                        ? Colors.white.withOpacity(0.2)
-                        : Colors.redAccent.withOpacity(0.1),
-                    shape: BoxShape.circle,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Mode Selector ──
+              _EnhancedModeSelector(
+                currentMode: widget.settings.playMode,
+                onChanged: widget.onModeChanged,
+                qt: widget.qt,
+                isActive: isActive,
+                isDark: isDark,
+              ),
+
+              _GlowingDivider(isActive: isActive, isDark: isDark),
+
+              // ── Play/Pause Button (no pulse) ──
+              _PlayButton(
+                isPlaying: _isPlaying,
+                isActive: isActive,
+                qt: widget.qt,
+                onTap: () => widget.onPlayPause(widget.settings.playMode),
+              ),
+
+              // ── Stop Button ──
+              if (_showStop)
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.centerLeft,
+                  child: AnimatedOpacity(
+                    opacity: _showStop ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: _StopButton(
+                      isActive: isActive,
+                      isDark: isDark,
+                      onTap: widget.onStop,
+                    ),
                   ),
-                  child: Icon(Icons.stop_rounded,
-                      color: isAnyPlaying ? Colors.white : Colors.redAccent,
-                      size: 20),
+                ),
+
+              _GlowingDivider(isActive: isActive, isDark: isDark),
+
+              // ── Ayah Counter (uniform styling) ──
+              if (widget.settings.playMode == PlayMode.ayah &&
+                  (widget.playingAyah != null || widget.selectedAyah != null))
+                _AyahIndicator(
+                  surahNumber: widget.surahNumber,
+                  ayahNumber: widget.playingAyah ?? widget.selectedAyah!,
+                  isActive: isActive,
+                  isDark: isDark,
+                  isPlaying: _isPlaying,
+                  qt: widget.qt,
+                ),
+
+              // ── Prominent Surah Info Button ──
+              _SurahInfoButton(
+                isActive: isActive,
+                isDark: isDark,
+                qt: widget.qt,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => SurahInfoScreen(
+                      surahNumber: widget.surahNumber,
+                      surahList: widget.surahList,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ],
-          const SizedBox(width: 8),
-          _verticalDivider(),
-          const SizedBox(width: 8),
-          _PillBtn(
-            icon: Icons.info_outline_rounded,
-            label: 'Info',
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => SurahInfoScreen(
-                surahNumber: surahNumber,
-                surahList: surahList,
-              ),
-            )),
-            qt: qt,
-            isActive: false,
-            isPillActive: isAnyPlaying,
+
+              // ── Download Section (Surah Mode) ──
+              if (widget.settings.playMode == PlayMode.surah) ...[
+                _GlowingDivider(isActive: isActive, isDark: isDark),
+                if (widget.downloadProgress != null)
+                  _DownloadProgress(
+                    progress: widget.downloadProgress!,
+                    qt: widget.qt,
+                    isActive: isActive,
+                  )
+                else
+                  _CompactPillButton(
+                    icon: widget.isSurahDownloaded
+                        ? Icons.cloud_done_rounded
+                        : Icons.download_for_offline_rounded,
+                    tooltip: widget.isSurahDownloaded
+                        ? 'Downloaded'
+                        : 'Download Surah',
+                    isActive: widget.isSurahDownloaded,
+                    isPillActive: isActive,
+                    isDark: isDark,
+                    qt: widget.qt,
+                    customIconColor: widget.isSurahDownloaded
+                        ? (isActive
+                            ? Colors.white.withOpacity(0.9)
+                            : widget.qt.emeraldLight)
+                        : null,
+                    onTap: widget.isSurahDownloaded
+                        ? () {}
+                        : widget.onDownloadSurah,
+                  ),
+              ],
+            ],
           ),
-          if (settings.playMode == PlayMode.surah) ...[
-            const SizedBox(width: 4),
-            _verticalDivider(),
-            const SizedBox(width: 4),
-            if (downloadProgress != null)
-              SizedBox(
-                width: 30,
-                height: 30,
-                child: CircularProgressIndicator(
-                    value: downloadProgress,
-                    strokeWidth: 2,
-                    color: qt.emeraldLight),
-              )
-            else
-              _PillBtn(
-                icon: isSurahDownloaded
-                    ? Icons.download_done
-                    : Icons.download_for_offline_rounded,
-                label: isSurahDownloaded ? 'Saved' : 'Download',
-                onTap: isSurahDownloaded ? () {} : onDownloadSurah,
-                qt: qt,
-                isActive: false,
-                isPillActive: isAnyPlaying,
-                iconColor: isSurahDownloaded
-                    ? (isAnyPlaying ? Colors.white : qt.emeraldLight)
-                    : null,
-              ),
-          ],
-          if (settings.playMode == PlayMode.ayah &&
-              (playingAyah != null || selectedAyah != null)) ...[
-            const SizedBox(width: 4),
-            _verticalDivider(),
-            const SizedBox(width: 12),
-            Text(
-              '$surahNumber:${playingAyah ?? selectedAyah}',
-              style: TextStyle(
-                color: isAnyPlaying ? Colors.white : qt.emeraldDeep,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-        ]),
+        ),
       ),
     );
   }
-
-  Widget _verticalDivider() => Container(
-      width: 1,
-      height: 28,
-      color: isAnyPlaying ? Colors.white24 : qt.borderGlass);
 }
 
-class _ModeDropdown extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────────────────────
+// Play Button — static size, glow shadow when playing
+// ─────────────────────────────────────────────────────────────────────────────
+class _PlayButton extends StatelessWidget {
+  final bool isPlaying;
+  final bool isActive;
+  final QuranTheme qt;
+  final VoidCallback onTap;
+
+  const _PlayButton({
+    required this.isPlaying,
+    required this.isActive,
+    required this.qt,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          gradient: isActive
+              ? const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFFFFFFFF),
+                    Color(0xFFF0F0F0),
+                  ],
+                )
+              : LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [qt.emeraldDeep, qt.emeraldMid],
+                ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            if (isPlaying)
+              BoxShadow(
+                color: isActive
+                    ? Colors.white.withOpacity(0.35)
+                    : qt.emeraldDeep.withOpacity(0.4),
+                blurRadius: 18,
+                spreadRadius: 1,
+              )
+            else
+              BoxShadow(
+                color: qt.emeraldDeep.withOpacity(0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+          ],
+        ),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Icon(
+            isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            key: ValueKey(isPlaying),
+            color: isActive ? qt.emeraldDeep : Colors.white,
+            size: 24,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ayah Indicator — uniform number styling
+// ─────────────────────────────────────────────────────────────────────────────
+class _AyahIndicator extends StatelessWidget {
+  final int surahNumber;
+  final int ayahNumber;
+  final bool isActive;
+  final bool isDark;
+  final bool isPlaying;
+  final QuranTheme qt;
+
+  const _AyahIndicator({
+    required this.surahNumber,
+    required this.ayahNumber,
+    required this.isActive,
+    required this.isDark,
+    required this.isPlaying,
+    required this.qt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final baseColor = isActive ? Colors.white : qt.emeraldDeep;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isActive
+              ? Colors.white.withOpacity(0.1)
+              : isDark
+                  ? Colors.white.withOpacity(0.04)
+                  : qt.emeraldDeep.withOpacity(0.04),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isActive
+                ? Colors.white.withOpacity(0.08)
+                : qt.emeraldDeep.withOpacity(0.1),
+            width: 0.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isPlaying) ...[
+              _PlayingDot(color: baseColor),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              '$surahNumber:$ayahNumber',
+              style: TextStyle(
+                color: baseColor,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                letterSpacing: 0.3,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PlayingDot extends StatelessWidget {
+  final Color color;
+
+  const _PlayingDot({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 6,
+      height: 6,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(color: color.withOpacity(0.5), blurRadius: 4),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Surah Info Button — Minimal Label
+// ─────────────────────────────────────────────────────────────────────────────
+class _SurahInfoButton extends StatelessWidget {
+  final bool isActive;
+  final bool isDark;
+  final QuranTheme qt;
+  final VoidCallback onTap;
+
+  const _SurahInfoButton({
+    required this.isActive,
+    required this.isDark,
+    required this.qt,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive
+        ? Colors.white.withOpacity(0.9)
+        : qt.emeraldDeep.withOpacity(0.85);
+
+    return Tooltip(
+      message: 'Surah Info',
+      preferBelow: false,
+      child: GestureDetector(
+        // Ensures the empty spaces between icon/text are tappable
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          // Minimal padding keeps the pill from growing too tall
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.info_outlined,
+                size: 18,
+                color: color,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Surah',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 8, // Tiny size keeps it compact
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
+                  height: 1.2, // Tight line height
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Stop Button
+// ─────────────────────────────────────────────────────────────────────────────
+class _StopButton extends StatelessWidget {
+  final bool isActive;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _StopButton({
+    required this.isActive,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: isActive
+                ? Colors.white.withOpacity(0.15)
+                : isDark
+                    ? Colors.red.withOpacity(0.1)
+                    : Colors.red.withOpacity(0.06),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isActive
+                  ? Colors.white.withOpacity(0.1)
+                  : Colors.red.withOpacity(0.15),
+              width: 0.5,
+            ),
+          ),
+          child: Icon(
+            Icons.stop_rounded,
+            color: isActive ? Colors.white : Colors.redAccent,
+            size: 18,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Glowing Divider
+// ─────────────────────────────────────────────────────────────────────────────
+class _GlowingDivider extends StatelessWidget {
+  final bool isActive;
+  final bool isDark;
+
+  const _GlowingDivider({
+    required this.isActive,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Container(
+        width: 1,
+        height: 24,
+        decoration: BoxDecoration(
+          color: isActive
+              ? Colors.white.withOpacity(0.15)
+              : isDark
+                  ? Colors.white.withOpacity(0.08)
+                  : Colors.black.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(1),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Compact Pill Button (for secondary actions like download)
+// ─────────────────────────────────────────────────────────────────────────────
+class _CompactPillButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+  final QuranTheme qt;
+  final bool isActive;
+  final bool isPillActive;
+  final bool isDark;
+  final Color? customIconColor;
+
+  const _CompactPillButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    required this.qt,
+    required this.isActive,
+    required this.isPillActive,
+    required this.isDark,
+    this.customIconColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final iconColor = customIconColor ??
+        (isActive
+            ? qt.emeraldGlow
+            : (isPillActive
+                ? Colors.white.withOpacity(0.85)
+                : (isDark ? Colors.white.withOpacity(0.6) : qt.textMuted)));
+
+    return Tooltip(
+      message: tooltip,
+      preferBelow: false,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: isActive
+                ? qt.emeraldDeep.withOpacity(0.05)
+                : (isPillActive
+                    ? Colors.white.withOpacity(0.0)
+                    : Colors.transparent),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: iconColor, size: 18),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Download Progress
+// ─────────────────────────────────────────────────────────────────────────────
+class _DownloadProgress extends StatelessWidget {
+  final double progress;
+  final QuranTheme qt;
+  final bool isActive;
+
+  const _DownloadProgress({
+    required this.progress,
+    required this.qt,
+    required this.isActive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 34,
+      height: 34,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: 30,
+            height: 30,
+            child: CircularProgressIndicator(
+              value: progress,
+              strokeWidth: 2.5,
+              backgroundColor: isActive
+                  ? Colors.white.withOpacity(0.1)
+                  : qt.emeraldDeep.withOpacity(0.08),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isActive ? Colors.white : qt.emeraldDeep,
+              ),
+              strokeCap: StrokeCap.round,
+            ),
+          ),
+          Text(
+            '${(progress * 100).toInt()}',
+            style: TextStyle(
+              fontSize: 8,
+              fontWeight: FontWeight.bold,
+              color: isActive ? Colors.white : qt.emeraldDeep,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enhanced Mode Selector (unchanged from v1)
+// ─────────────────────────────────────────────────────────────────────────────
+class _EnhancedModeSelector extends StatelessWidget {
   final PlayMode currentMode;
   final ValueChanged<PlayMode> onChanged;
   final QuranTheme qt;
   final bool isActive;
+  final bool isDark;
 
-  const _ModeDropdown({
+  const _EnhancedModeSelector({
     required this.currentMode,
     required this.onChanged,
     required this.qt,
     required this.isActive,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
     return Theme(
       data: Theme.of(context).copyWith(
-        cardColor: qt.cardBg,
-        hoverColor: qt.emeraldLight.withOpacity(0.1),
+        cardColor: isDark ? const Color(0xFF1E1E2E) : Colors.white,
+        hoverColor: qt.emeraldLight.withOpacity(0.08),
       ),
       child: PopupMenuButton<PlayMode>(
         initialValue: currentMode,
-        tooltip: 'Select Playback Mode',
+        tooltip: 'Playback Mode',
         onSelected: onChanged,
-        offset: const Offset(0, -110),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        offset: const Offset(0, -120),
+        elevation: 12,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
+        shadowColor: Colors.black.withOpacity(0.15),
         itemBuilder: (ctx) => [
-          PopupMenuItem(
+          _buildMenuItem(
+            ctx,
+            icon: Icons.format_list_numbered_rtl_rounded,
+            title: 'Single Ayah',
+            subtitle: 'Play selected ayah only',
             value: PlayMode.ayah,
-            child: _buildItem(Icons.format_list_numbered_rounded,
-                'Play Single Ayah', currentMode == PlayMode.ayah),
+            selected: currentMode == PlayMode.ayah,
           ),
-          PopupMenuItem(
+          const PopupMenuDivider(height: 8),
+          _buildMenuItem(
+            ctx,
+            icon: Icons.headphones_rounded,
+            title: 'Full Surah',
+            subtitle: 'Continuous surah playback',
             value: PlayMode.surah,
-            child: _buildItem(Icons.queue_music_rounded, 'Play Full Surah',
-                currentMode == PlayMode.surah),
+            selected: currentMode == PlayMode.surah,
           ),
         ],
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: isActive
-                ? Colors.white.withOpacity(0.1)
-                : Colors.black.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(20),
+                ? Colors.white.withOpacity(0.12)
+                : isDark
+                    ? Colors.white.withOpacity(0.05)
+                    : Colors.black.withOpacity(0.04),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color:
+                  isActive ? Colors.white.withOpacity(0.1) : Colors.transparent,
+              width: 0.5,
+            ),
           ),
-          child: Row(children: [
-            Icon(
-              currentMode == PlayMode.ayah
-                  ? Icons.format_list_numbered_rounded
-                  : Icons.queue_music_rounded,
-              size: 18,
-              color: isActive ? Colors.white : qt.emeraldDeep,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              currentMode == PlayMode.ayah ? 'Ayah' : 'Surah',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: isActive ? Colors.white : qt.emeraldDeep,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                switchInCurve: Curves.easeOutCubic,
+                child: Icon(
+                  currentMode == PlayMode.ayah
+                      ? Icons.format_list_numbered_rtl_rounded
+                      : Icons.headphones_rounded,
+                  key: ValueKey(currentMode),
+                  size: 16,
+                  color: isActive ? Colors.white : qt.emeraldDeep,
+                ),
               ),
-            ),
-            Icon(Icons.arrow_drop_up_rounded,
+              const SizedBox(width: 8),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                switchInCurve: Curves.easeOutCubic,
+                child: Text(
+                  currentMode == PlayMode.ayah ? 'Ayah' : 'Surah',
+                  key: ValueKey(currentMode),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
+                    color: isActive ? Colors.white : qt.emeraldDeep,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 2),
+              Icon(
+                Icons.unfold_more_rounded,
+                size: 14,
                 color: isActive
-                    ? Colors.white70
-                    : qt.emeraldDeep.withOpacity(0.5)),
-          ]),
+                    ? Colors.white.withOpacity(0.5)
+                    : qt.emeraldDeep.withOpacity(0.4),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildItem(IconData icon, String label, bool selected) {
-    return Row(children: [
-      Icon(icon, size: 20, color: selected ? qt.emeraldDeep : Colors.grey),
-      const SizedBox(width: 12),
-      Text(label,
-          style: TextStyle(
-            color: selected
-                ? qt.emeraldDeep
-                : (qt.brightness == Brightness.dark
-                    ? Colors.white
-                    : Colors.black87),
-            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-          )),
-      if (selected) ...[
-        const Spacer(),
-        Icon(Icons.check_circle, size: 16, color: qt.emeraldDeep),
-      ],
-    ]);
-  }
-}
-
-class _PillBtn extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final QuranTheme qt;
-  final bool isActive;
-  final bool isPillActive;
-  final Color? iconColor;
-
-  const _PillBtn({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    required this.qt,
-    required this.isActive,
-    this.isPillActive = false,
-    this.iconColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isDark = qt.brightness == Brightness.dark;
-    final effectiveIconColor = iconColor ??
-        (isActive
-            ? (isDark ? qt.emeraldGlow : Colors.white)
-            : (isPillActive
-                ? Colors.white.withOpacity(0.9)
-                : (isDark ? Colors.white.withOpacity(0.8) : qt.textMuted)));
-    final effectiveTextColor = isActive
-        ? (isDark ? qt.emeraldGlow : Colors.white)
-        : (isPillActive
-            ? Colors.white.withOpacity(0.7)
-            : (isDark ? Colors.white.withOpacity(0.7) : qt.textMuted));
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color:
-              isActive ? qt.emeraldDeep.withOpacity(0.5) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, color: effectiveIconColor, size: 18),
-          const SizedBox(height: 2),
-          Text(label,
-              style: TextStyle(
-                  color: effectiveTextColor,
-                  fontSize: 8,
-                  fontWeight: FontWeight.w600)),
-        ]),
+  PopupMenuItem<PlayMode> _buildMenuItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required PlayMode value,
+    required bool selected,
+  }) {
+    final isDark = qt.brightness == Brightness.dark;
+    return PopupMenuItem<PlayMode>(
+      value: value,
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: selected
+                  ? qt.emeraldDeep.withOpacity(0.12)
+                  : (isDark
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.black.withOpacity(0.04)),
+              borderRadius: BorderRadius.circular(10),
+              border: selected
+                  ? Border.all(color: qt.emeraldDeep.withOpacity(0.3), width: 1)
+                  : null,
+            ),
+            child: Icon(
+              icon,
+              size: 18,
+              color: selected
+                  ? qt.emeraldDeep
+                  : (isDark ? Colors.white54 : Colors.black45),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                    fontSize: 13.5,
+                    color: selected
+                        ? qt.emeraldDeep
+                        : (isDark ? Colors.white : Colors.black87),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    color: isDark ? Colors.white38 : Colors.black38,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (selected)
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: qt.emeraldDeep,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_rounded,
+                  size: 12, color: Colors.white),
+            ),
+        ],
       ),
     );
   }

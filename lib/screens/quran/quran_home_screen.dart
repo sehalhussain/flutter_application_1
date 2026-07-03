@@ -774,7 +774,7 @@ class _SurahTile extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 6),
               // Name + metadata
               Expanded(
                 child: Column(

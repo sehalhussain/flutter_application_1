@@ -245,7 +245,6 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tracking period
           if (first != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
@@ -265,11 +264,10 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
               ),
             ),
 
-          // Hero metrics
+          // Passes the Provider directly to the Hero Card
           _heroCard(qt, totalPrayed, totalMissed, t),
           const SizedBox(height: 28),
 
-          // Prayer consistency with missed detail
           _sectionTitle("Prayer Consistency", qt),
           const SizedBox(height: 4),
           Padding(
@@ -282,7 +280,6 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
           _consistencyCard(qt, stats),
           const SizedBox(height: 28),
 
-          // Weekly chart
           _sectionTitle("This Week", qt),
           const SizedBox(height: 12),
           _weekChart(qt, week),
@@ -345,12 +342,13 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
     );
   }
 
-  Widget _metricCol(
-          {required String value,
-          required String label,
-          required Color color,
-          required QuranTheme qt,
-          String? sub}) =>
+  Widget _metricCol({
+    required String value,
+    required String label,
+    required Color color,
+    required QuranTheme qt,
+    String? sub,
+  }) =>
       Column(
         children: [
           Text(
@@ -766,7 +764,6 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
       ),
       child: Column(
         children: [
-          // Day headers
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
@@ -783,7 +780,6 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
                 .toList(),
           ),
           const SizedBox(height: 8),
-          // Grid rows
           ...List.generate((items.length / 7).ceil(), (r) {
             final row = <Widget>[];
             for (int c = 0; c < 7; c++) {
@@ -797,7 +793,6 @@ class _PrayerStatsScreenState extends State<PrayerStatsScreen>
                     date.month == now.month &&
                     date.day == now.day;
 
-                // Don't mark days before tracking started as missed
                 final isBeforeTracking = firstLogged != null &&
                     date.isBefore(DateTime(
                         firstLogged.year, firstLogged.month, firstLogged.day));
