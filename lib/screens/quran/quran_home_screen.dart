@@ -322,7 +322,7 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
 
   Widget _buildRecentReadsStrip(QuranTheme qt, bool isDark) {
     final progress = QuranProgressProvider.of(context);
-    final sessions = progress.recentReads;
+    final sessions = progress.displayRecentReads;
     if (sessions.isEmpty) return const SizedBox(height: 12);
 
     return Column(
@@ -330,12 +330,34 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
-          child: Text('Continue Reading',
-              style: TextStyle(
-                  color: qt.textSecondary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.2)),
+          child: Row(
+            children: [
+              Text('Continue Reading',
+                  style: TextStyle(
+                      color: qt.textSecondary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2)),
+              if (sessions.first.isAutoTracked == true) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    'Auto-detected',
+                    style: TextStyle(
+                      color: Color(0xFF10B981),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
         SizedBox(
           height: 88,
@@ -470,15 +492,42 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
                 },
               ),
               Divider(height: 0.5, color: qt.borderGlass, indent: 20),
+              if (session.isAutoTracked) ...[
+                ListTile(
+                  leading: const Icon(Icons.pin_rounded, color: Color(0xFF10B981)),
+                  title: Text('Pin to Recent Reads',
+                      style: TextStyle(
+                          color: qt.textPrimary, fontWeight: FontWeight.w500)),
+                  subtitle: Text('Save this position permanently',
+                      style: TextStyle(color: qt.textMuted, fontSize: 12)),
+                  onTap: () {
+                    QuranProgressProvider.of(context, listen: false)
+                        .addRecentRead(session.surah, session.ayah, session.surahName);
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: const Text('Pinned to recent reads'),
+                      backgroundColor: qt.emeraldDeep,
+                      behavior: SnackBarBehavior.floating,
+                    ));
+                  },
+                ),
+                Divider(height: 0.5, color: qt.borderGlass, indent: 20),
+              ],
               ListTile(
                 leading:
                     const Icon(Icons.delete_outline, color: Colors.redAccent),
-                title: Text('Remove from Recent',
+                title: Text(
+                    session.isAutoTracked ? 'Clear Reading Position' : 'Remove from Recent',
                     style: TextStyle(
                         color: qt.textPrimary, fontWeight: FontWeight.w500)),
                 onTap: () {
-                  QuranProgressProvider.of(context, listen: false)
-                      .removeRecentRead(session.surah, session.ayah);
+                  if (session.isAutoTracked) {
+                    QuranProgressProvider.of(context, listen: false)
+                        .clearAutoTracked();
+                  } else {
+                    QuranProgressProvider.of(context, listen: false)
+                        .removeRecentRead(session.surah, session.ayah);
+                  }
                   Navigator.pop(context);
                 },
               ),

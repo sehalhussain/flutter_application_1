@@ -1,5 +1,6 @@
 // lib/providers/quran_progress_provider.dart
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
@@ -11,16 +12,48 @@ class QuranProgress extends ChangeNotifier {
   LastReadPosition? _lastRead;
   List<ReadingSession> _recentReads = [];
 
+  // ── Auto-tracking fields ──────────────────────────────────────────────
+  LastReadPosition? _autoTrackedPosition;
+  DateTime? _autoTrackedTimestamp;
+  Timer? _autoTrackDebounce;
+  static const Duration _autoTrackDebounceDuration = Duration(seconds: 2);
+  String? _lastTrackedAyahKey; // To avoid unnecessary updates
+
   static const int _maxRecentReads = 5;
   static const String _bookmarksKey = 'quran_bookmarks';
   static const String _lastReadKey = 'quran_last_read';
   static const String _recentReadsKey = 'quran_recent_reads_v2';
+  static const String _autoTrackedKey = 'quran_auto_tracked_v1';
 
   List<QuranBookmark> get bookmarks => List.unmodifiable(_bookmarks);
   LastReadPosition? get lastRead => _lastRead;
   List<ReadingSession> get recentReads => List.unmodifiable(_recentReads);
 
-  // ── Init ──────────────────────────────────────────────────────────────────
+  /// Returns recent reads for display.
+  /// Falls back to auto-tracked position if no manual reads exist.
+  List<ReadingSession> get displayRecentReads {
+    if (_recentReads.isNotEmpty) return _recentReads;
+
+    if (_autoTrackedPosition != null) {
+      return [
+        ReadingSession(
+          surah: _autoTrackedPosition!.surah,
+          ayah: _autoTrackedPosition!.ayah,
+          surahName: _autoTrackedPosition!.surahName,
+          timestamp: _autoTrackedTimestamp ?? DateTime.now(),
+          isAutoTracked: true,
+        ),
+      ];
+    }
+
+    return [];
+  }
+
+  /// Check if there's any reading position to show
+  bool get hasAnyReadPosition =>
+      _recentReads.isNotEmpty || _autoTrackedPosition != null;
+
+  // ── Init ──────────────────────────────────────────────────────────────
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -32,17 +65,15 @@ class QuranProgress extends ChangeNotifier {
     // Legacy last read (migrate to recent reads if present)
     final lrRaw = prefs.getString(_lastReadKey);
     if (lrRaw != null) {
-      _lastRead = LastReadPosition.fromJson(
-          json.decode(lrRaw)); // ← FIXED: lrRaw not lr
-      // Migrate to new system
+      _lastRead = LastReadPosition.fromJson(json.decode(lrRaw));
       final migrated = ReadingSession(
         surah: _lastRead!.surah,
         ayah: _lastRead!.ayah,
         surahName: _lastRead!.surahName,
-        timestamp: DateTime.now().subtract(const Duration(days: 30)), // old
+        timestamp: DateTime.now().subtract(const Duration(days: 30)),
       );
       _recentReads.add(migrated);
-      prefs.remove(_lastReadKey); // clear legacy
+      prefs.remove(_lastReadKey);
     }
 
     // New recent reads
@@ -52,13 +83,85 @@ class QuranProgress extends ChangeNotifier {
     );
     _recentReads.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
-    // Deduplicate and cap
-    _deduplicateAndCap();
+    // Load auto-tracked position
+    final atRaw = prefs.getString(_autoTrackedKey);
+    if (atRaw != null) {
+      final decoded = json.decode(atRaw) as Map<String, dynamic>;
+      _autoTrackedPosition = LastReadPosition(
+        surah: decoded['surah'] as int,
+        ayah: decoded['ayah'] as int,
+        surahName: decoded['surahName'] as String,
+      );
+      _autoTrackedTimestamp =
+          DateTime.tryParse(decoded['timestamp'] as String? ?? '');
+      _lastTrackedAyahKey = '${decoded['surah']}:${decoded['ayah']}';
+    }
 
+    _deduplicateAndCap();
     notifyListeners();
   }
 
-  // ── Bookmarks (unchanged) ─────────────────────────────────────────────────
+  // ── Auto-Tracking (NEW) ───────────────────────────────────────────────
+
+  /// Call this when an ayah becomes visible during reading.
+  /// Uses debouncing to avoid excessive updates.
+  void trackViewingAyah(int surah, int ayah, String surahName) {
+    final key = '$surah:$ayah';
+
+    // Skip if we're already tracking this exact ayah
+    if (_lastTrackedAyahKey == key) return;
+
+    _autoTrackDebounce?.cancel();
+    _autoTrackDebounce = Timer(_autoTrackDebounceDuration, () {
+      _updateAutoTrackedPosition(surah, ayah, surahName);
+    });
+  }
+
+  /// Immediately update the tracked position (e.g., when leaving reader)
+  void finalizeTracking(int surah, int ayah, String surahName) {
+    _autoTrackDebounce?.cancel();
+    _updateAutoTrackedPosition(surah, ayah, surahName);
+  }
+
+  void _updateAutoTrackedPosition(int surah, int ayah, String surahName) {
+    _autoTrackedPosition = LastReadPosition(
+      surah: surah,
+      ayah: ayah,
+      surahName: surahName,
+    );
+    _autoTrackedTimestamp = DateTime.now();
+    _lastTrackedAyahKey = '$surah:$ayah';
+    _persistAutoTracked();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        notifyListeners();
+      } catch (_) {}
+    });
+  }
+
+  Future<void> _persistAutoTracked() async {
+    if (_autoTrackedPosition == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        _autoTrackedKey,
+        json.encode({
+          'surah': _autoTrackedPosition!.surah,
+          'ayah': _autoTrackedPosition!.ayah,
+          'surahName': _autoTrackedPosition!.surahName,
+          'timestamp': _autoTrackedTimestamp?.toIso8601String(),
+        }));
+  }
+
+  Future<void> clearAutoTracked() async {
+    _autoTrackedPosition = null;
+    _autoTrackedTimestamp = null;
+    _lastTrackedAyahKey = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_autoTrackedKey);
+    notifyListeners();
+  }
+
+  // ── Bookmarks (unchanged) ─────────────────────────────────────────────
   bool isBookmarked(int surah, int ayah) =>
       _bookmarks.any((b) => b.surah == surah && b.ayah == ayah);
 
@@ -87,12 +190,11 @@ class QuranProgress extends ChangeNotifier {
     );
   }
 
-  // ── Recent Reads (NEW) ────────────────────────────────────────────────────
+  // ── Recent Reads ──────────────────────────────────────────────────────
   bool isRecentRead(int surah, int ayah) =>
       _recentReads.any((r) => r.surah == surah && r.ayah == ayah);
 
   Future<void> addRecentRead(int surah, int ayah, String surahName) async {
-    // Remove if exists (move to top)
     _recentReads.removeWhere((r) => r.surah == surah && r.ayah == ayah);
 
     _recentReads.insert(
@@ -134,7 +236,6 @@ class QuranProgress extends ChangeNotifier {
   }
 
   void _deduplicateAndCap() {
-    // Keep only newest per surah:ayah combo
     final seen = <String>{};
     _recentReads = _recentReads.where((r) {
       final key = '${r.surah}:${r.ayah}';
@@ -155,9 +256,15 @@ class QuranProgress extends ChangeNotifier {
       _recentReads.map((r) => json.encode(r.toJson())).toList(),
     );
   }
+
+  @override
+  void dispose() {
+    _autoTrackDebounce?.cancel();
+    super.dispose();
+  }
 }
 
-// ── Provider widget ─────────────────────────────────────────────────────────
+// ── Provider widget ─────────────────────────────────────────────────────
 class QuranProgressProvider {
   static QuranProgress of(BuildContext context, {bool listen = true}) {
     return Provider.of<QuranProgress>(context, listen: listen);

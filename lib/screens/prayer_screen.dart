@@ -64,7 +64,7 @@ class _PrayerScreenState extends State<PrayerScreen>
   DateTime _displayDate = DateTime.now();
   List<dynamic>? _calendarData;
 
-  // Cache parsed calendar days to completely avoid runtime string splitting inside grid cells
+  // Pre-cached parsed monthly data to run rendering at 60/120 FPS
   List<_ParsedDay>? _parsedCalendarDays;
   Map<String, dynamic>? _selectedDay;
   bool _isLoading = true;
@@ -102,7 +102,7 @@ class _PrayerScreenState extends State<PrayerScreen>
     super.dispose();
   }
 
-  /// Safe empty listener needed for listeners to bind successfully
+  /// Safe listener for bound controllers pointing to scroll updates
   void _onScroll() {}
 
   void _onPrayerServiceChanged() => _fetchCalendar();
@@ -365,7 +365,7 @@ class _PrayerScreenState extends State<PrayerScreen>
     final qt = QuranTheme.of(context);
     final isDark = qt.brightness == Brightness.dark;
 
-    // Strict color rules from design guidelines
+    // Rigid background overrides from UI system specs
     final Color appBg =
         isDark ? const Color(0xFF0C0C0E) : const Color(0xFFF2F2F7);
     final Color cardBg =
@@ -393,7 +393,7 @@ class _PrayerScreenState extends State<PrayerScreen>
       backgroundColor: appBg,
       body: Stack(
         children: [
-          // Main Body Horizontal Drag Detector
+          // Main Body Horizontal Drag Detector for fluid day transitions
           GestureDetector(
             onHorizontalDragEnd: (details) {
               if (details.primaryVelocity == null) return;
@@ -422,7 +422,7 @@ class _PrayerScreenState extends State<PrayerScreen>
                     24, statusBarHeight + appBarHeight + 12, 24, 32),
                 children: [
                   if (_selectedDay != null) ...[
-                    // Scroll-linked Morphing Typography Header Block
+                    // Scroll-linked Morphing Typography Header Block (Cascades under the same line actions)
                     AnimatedBuilder(
                       animation: _mainScrollController,
                       builder: (context, child) {
@@ -1415,6 +1415,7 @@ class _PrayerScreenState extends State<PrayerScreen>
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
+                      // Dates displayed cleanly in center of cell
                       Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -1437,20 +1438,23 @@ class _PrayerScreenState extends State<PrayerScreen>
                                   : qt.textMuted.withOpacity(0.6),
                             ),
                           ),
-                          const SizedBox(height: 3),
-                          if (statusColor != null)
-                            Container(
-                              width: 4,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: statusColor,
-                                shape: BoxShape.circle,
-                              ),
-                            )
-                          else
-                            const SizedBox(height: 4),
                         ],
                       ),
+                      // Elegantly placed indicator dots at the top right of cell to prevent visual clutter
+                      if (statusColor != null)
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: Container(
+                            width: 5,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: statusColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      // High-end minimalist line underline for current active day
                       if (isToday)
                         Positioned(
                           bottom: 3,

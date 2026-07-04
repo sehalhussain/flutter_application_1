@@ -50,6 +50,8 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   List<AyahData> _ayahs = [];
   late List<Object> _displayItems;
   bool _loading = true;
+  int _currentVisibleAyah = 0;
+  late QuranProgress _quranProgress;
 
   // ── ValueNotifiers for High-Performance Localized Rebuilds ──────────────
   // Using ValueNotifier eliminates full screen UI freezes on low-end devices.
@@ -99,6 +101,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
   @override
   void initState() {
     super.initState();
+    _currentVisibleAyah = widget.initialAyah ?? 0;
 
     _ayahAudio = QuranAudioHandler.instance.ayahPlayer;
     _surahAudio = QuranAudioHandler.instance.surahPlayer;
@@ -129,6 +132,13 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         if (mounted) _isPlayingSurahNotifier.value = false;
       }
     });
+    _itemPositionsListener.itemPositions.addListener(_onVisibleAyahChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _quranProgress = QuranProgressProvider.of(context, listen: false);
   }
 
   @override
@@ -142,6 +152,11 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
     _isAyahAudioPlayingNotifier.dispose();
     _downloadProgressNotifier.dispose();
     _isSurahDownloadedNotifier.dispose();
+    _itemPositionsListener.itemPositions.removeListener(_onVisibleAyahChanged);
+    if (_currentVisibleAyah > 0) {
+      _quranProgress.finalizeTracking(
+          widget.surahNumber, _currentVisibleAyah, _surahInfo?.nameEnglish ?? '');
+    }
     _isSurahSourceArmedNotifier.dispose(); // ← ADD THIS
     super.dispose();
   }
@@ -323,6 +338,36 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
         curve: Curves.easeOutCubic,
         alignment: 0.0,
       );
+    }
+  }
+
+  void _onVisibleAyahChanged() {
+    final positions = _itemPositionsListener.itemPositions.value;
+    if (positions.isEmpty || !_itemScrollController.isAttached) return;
+
+    ItemPosition? closest;
+    double closestDistance = double.infinity;
+
+    for (final pos in positions) {
+      final itemCenter = (pos.itemLeadingEdge + pos.itemTrailingEdge) / 2;
+      final distance = (itemCenter - 0.5).abs();
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closest = pos;
+      }
+    }
+
+    if (closest == null) return;
+    if (closest.index == 0 || closest.index >= _displayItems.length + 1) return; // Skip bismillah/footer
+
+    final item = _displayItems[closest.index - 1];
+    if (item is! int) return; // Skip juz dividers
+
+    final ayah = _ayahs[item];
+    if (ayah.ayahNumber != _currentVisibleAyah) {
+      _currentVisibleAyah = ayah.ayahNumber;
+      QuranProgressProvider.of(context, listen: false)
+          .trackViewingAyah(widget.surahNumber, ayah.ayahNumber, _surahInfo?.nameEnglish ?? '');
     }
   }
 

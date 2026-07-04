@@ -258,27 +258,33 @@ class ReadingSession {
   final int ayah;
   final String surahName;
   final DateTime timestamp;
+  final bool isAutoTracked; // Add this
 
-  const ReadingSession({
+  ReadingSession({
     required this.surah,
     required this.ayah,
     required this.surahName,
     required this.timestamp,
+    this.isAutoTracked = false, // Default false for backward compatibility
   });
+
+  factory ReadingSession.fromJson(Map<String, dynamic> json) {
+    return ReadingSession(
+      surah: json['surah'] as int,
+      ayah: json['ayah'] as int,
+      surahName: json['surahName'] as String,
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      isAutoTracked: json['isAutoTracked'] as bool? ?? false,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'surah': surah,
         'ayah': ayah,
         'surahName': surahName,
         'timestamp': timestamp.toIso8601String(),
+        'isAutoTracked': isAutoTracked,
       };
-
-  factory ReadingSession.fromJson(Map<String, dynamic> json) => ReadingSession(
-        surah: json['surah'] as int,
-        ayah: json['ayah'] as int,
-        surahName: json['surahName'] as String? ?? '',
-        timestamp: DateTime.parse(json['timestamp'] as String),
-      );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
