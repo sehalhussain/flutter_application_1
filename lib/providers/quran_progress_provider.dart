@@ -32,21 +32,23 @@ class QuranProgress extends ChangeNotifier {
   /// Returns recent reads for display.
   /// Falls back to auto-tracked position if no manual reads exist.
   List<ReadingSession> get displayRecentReads {
-    if (_recentReads.isNotEmpty) return _recentReads;
-
+    final list = List<ReadingSession>.from(_recentReads);
     if (_autoTrackedPosition != null) {
-      return [
-        ReadingSession(
-          surah: _autoTrackedPosition!.surah,
-          ayah: _autoTrackedPosition!.ayah,
-          surahName: _autoTrackedPosition!.surahName,
-          timestamp: _autoTrackedTimestamp ?? DateTime.now(),
-          isAutoTracked: true,
-        ),
-      ];
+      final exists = _recentReads.any((r) => r.surah == _autoTrackedPosition!.surah && r.ayah == _autoTrackedPosition!.ayah);
+      if (!exists) {
+        list.add(
+          ReadingSession(
+            surah: _autoTrackedPosition!.surah,
+            ayah: _autoTrackedPosition!.ayah,
+            surahName: _autoTrackedPosition!.surahName,
+            timestamp: _autoTrackedTimestamp ?? DateTime.now(),
+            isAutoTracked: true,
+          ),
+        );
+      }
     }
-
-    return [];
+    list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return list;
   }
 
   /// Check if there's any reading position to show

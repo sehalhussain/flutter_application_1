@@ -330,34 +330,12 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
-          child: Row(
-            children: [
-              Text('Continue Reading',
-                  style: TextStyle(
-                      color: qt.textSecondary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2)),
-              if (sessions.first.isAutoTracked == true) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    'Auto-detected',
-                    style: TextStyle(
-                      color: Color(0xFF10B981),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
+          child: Text('Continue Reading',
+              style: TextStyle(
+                  color: qt.textSecondary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2)),
         ),
         SizedBox(
           height: 88,
@@ -400,14 +378,38 @@ class _QuranHomeScreenState extends State<QuranHomeScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(session.surahName,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            style: TextStyle(
-                              color: qt.textPrimary,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            )),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(session.surahName,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                  style: TextStyle(
+                                    color: qt.textPrimary,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  )),
+                            ),
+                            if (session.isAutoTracked) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'Auto',
+                                  style: TextStyle(
+                                    color: Color(0xFF10B981),
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                         const SizedBox(height: 6),
                         Row(
                           children: [
