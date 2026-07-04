@@ -343,7 +343,7 @@ class _QuranReaderScreenState extends State<QuranReaderScreen> {
 
   void _onVisibleAyahChanged() {
     final positions = _itemPositionsListener.itemPositions.value;
-    if (positions.isEmpty || !_itemScrollController.isAttached) return;
+    if (positions.isEmpty) return;
 
     ItemPosition? closest;
     double closestDistance = double.infinity;
