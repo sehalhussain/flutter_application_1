@@ -28,6 +28,8 @@ import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
 import 'prayer_stats_screen.dart';
 import '../providers/prayer_tracker_provider.dart';
 import 'asma_list_screen.dart';
+import 'quran_virtues_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ISOLATE-FRIENDLY PARSERS
@@ -1281,6 +1283,35 @@ class _PrayerCardState extends State<_PrayerCard>
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// NEW BADGE PERSISTENCE HELPER
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _NewBadgeManager {
+  static bool _appOpenCounted = false;
+
+  static Future<void> markAppOpen() async {
+    if (_appOpenCounted) return;
+    _appOpenCounted = true;
+    final prefs = await SharedPreferences.getInstance();
+    final count = prefs.getInt('nb_app_opens') ?? 0;
+    await prefs.setInt('nb_app_opens', count + 1);
+  }
+
+  static Future<void> markVirtuesOpen() async {
+    final prefs = await SharedPreferences.getInstance();
+    final count = prefs.getInt('nb_virtues_opens') ?? 0;
+    await prefs.setInt('nb_virtues_opens', count + 1);
+  }
+
+  static Future<bool> shouldShow() async {
+    final prefs = await SharedPreferences.getInstance();
+    final appOpens = prefs.getInt('nb_app_opens') ?? 0;
+    final virtuesOpens = prefs.getInt('nb_virtues_opens') ?? 0;
+    return appOpens < 3 && virtuesOpens < 2;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // ESSENTIALS SECTION
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -1301,80 +1332,127 @@ class _EssentialsSection extends StatefulWidget {
 
 class _EssentialsSectionState extends State<_EssentialsSection> {
   bool _isExpanded = false;
+  bool _showNewBadge = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _NewBadgeManager.markAppOpen();
+    _loadBadgeState();
+  }
+
+  Future<void> _loadBadgeState() async {
+    final show = await _NewBadgeManager.shouldShow();
+    if (mounted) setState(() => _showNewBadge = show);
+  }
 
   @override
   Widget build(BuildContext context) {
     final qt = widget.qt;
+    final isDark = qt.brightness == Brightness.dark;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Header (uppercase, letter-spaced)
+        // ── Section Header ──
         Row(
           children: [
-            Icon(Icons.grid_view_rounded, size: 14, color: qt.emeraldLight),
-            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: qt.emeraldLight.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(7),
+                border: Border.all(
+                  color: qt.emeraldLight.withOpacity(0.1),
+                  width: 0.5,
+                ),
+              ),
+              child: Icon(
+                Icons.grid_view_rounded,
+                size: 11,
+                color: qt.emeraldLight,
+              ),
+            ),
+            const SizedBox(width: 10),
             Text(
               "ESSENTIALS",
               style: TextStyle(
                 fontSize: 11,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
                 color: qt.textMuted,
-                letterSpacing: 1.2,
+                letterSpacing: 1.6,
+              ),
+            ),
+            const Spacer(),
+            Expanded(
+              flex: 3,
+              child: Container(
+                height: 0.5,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      qt.textMuted.withOpacity(0.12),
+                      qt.textMuted.withOpacity(0),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
 
-        // Row 1: Quran (left) + Daily Duas (right)
+        // ── Row: Holy Quran + Authentic Duas ──
         Row(
           children: [
-            _EssentialCard(
-              title: "Holy Quran",
-              subtitle: "Read, Listen & Reflect",
-              color: qt.emeraldDeep.withOpacity(0.12),
-              icon: Icons.book_rounded,
-              iconColor: qt.brightness == Brightness.dark
-                  ? const Color.fromARGB(255, 155, 255, 213)
-                  : qt.emeraldDeep,
-              onTap: () async {
-                await QuranService.instance.loadSurahList();
-                if (!context.mounted) return;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const QuranHomeScreen()),
-                ).then((_) => widget.onRefreshAyah());
-              },
-              qt: qt,
-            ),
-            const SizedBox(width: 16),
-            _EssentialCard(
-              title: "Authentic Duas",
-              subtitle: "Dua for Every Moment",
-              color: const Color.fromARGB(255, 252, 245, 233).withOpacity(
-                qt.brightness == Brightness.dark ? 0.15 : 1.0,
+            Expanded(
+              child: _EssentialCard(
+                title: "Holy Quran",
+                subtitle: "Read, Listen & Reflect",
+                color: qt.emeraldDeep.withOpacity(isDark ? 0.12 : 0.07),
+                icon: Icons.book_rounded,
+                iconColor: isDark
+                    ? const Color.fromARGB(255, 155, 255, 213)
+                    : qt.emeraldDeep,
+                onTap: () async {
+                  await QuranService.instance.loadSurahList();
+                  if (!context.mounted) return;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const QuranHomeScreen()),
+                  ).then((_) => widget.onRefreshAyah());
+                },
+                qt: qt,
               ),
-              icon: FlutterIslamicIcons.solidPrayingPerson,
-              iconColor: qt.brightness == Brightness.dark
-                  ? const Color.fromARGB(255, 155, 255, 213)
-                  : const Color(0xFFFFB74D),
-              onTap: () {
-                MainNavigation.pushOnShell(context, const DuasScreen());
-              },
-              qt: qt,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _EssentialCard(
+                title: "Authentic Duas",
+                subtitle: "Dua for Every Moment",
+                color: isDark
+                    ? const Color(0xFFFFB74D).withOpacity(0.08)
+                    : const Color.fromARGB(255, 252, 245, 233),
+                icon: FlutterIslamicIcons.solidPrayingPerson,
+                iconColor: isDark
+                    ? const Color.fromARGB(255, 155, 255, 213)
+                    : const Color(0xFFFFB74D),
+                onTap: () {
+                  MainNavigation.pushOnShell(context, const DuasScreen());
+                },
+                qt: qt,
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
 
-        // Row 2: Hadith Library — premium list tile style
+        // ── Hadith Library ──
         _PremiumEssentialTile(
           icon: FlutterIslamicIcons.solidMohammad,
-          iconColor: qt.brightness == Brightness.dark
-              ? const Color(0xFFFFB74D)
-              : Colors.blue.shade600,
-          iconBg: qt.brightness == Brightness.dark
-              ? const Color(0xFFFFB74D).withOpacity(0.12)
+          iconColor: isDark ? const Color(0xFFFFB74D) : Colors.blue.shade600,
+          iconBg: isDark
+              ? const Color(0xFFFFB74D).withOpacity(0.1)
               : const Color(0xFFE3F2FD),
           title: "Hadith Library",
           subtitle: "Browse authentic narrations",
@@ -1383,37 +1461,72 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
           },
           qt: qt,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
 
-        // Row 3: Hijri Calendar
-        _PremiumEssentialTile(
-          icon: Icons.calendar_month_rounded,
-          iconColor: qt.brightness == Brightness.dark
-              ? const Color(0xFFFFB74D)
-              : Colors.blue.shade600,
-          iconBg: qt.brightness == Brightness.dark
-              ? const Color(0xFFFFB74D).withOpacity(0.12)
-              : const Color(0xFFE3F2FD),
-          title: "Hijri Calendar",
-          subtitle: "View Islamic events and dates",
-          onTap: () {
-            MainNavigation.pushOnShell(context, const HijriCalendarScreen());
-          },
-          qt: qt,
+        // ── Virtues of the Quran + NEW Badge ──
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            _PremiumEssentialTile(
+              icon: FlutterIslamicIcons.solidQuran,
+              iconColor:
+                  isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00695C),
+              iconBg: isDark
+                  ? const Color(0xFF4DB6AC).withOpacity(0.1)
+                  : const Color(0xFFE0F2F1),
+              title: "Fadāʾil al-Qurʾān",
+              subtitle: "Virtues of Quranic Sūrahs & Āyāt",
+              onTap: () async {
+                await _NewBadgeManager.markVirtuesOpen();
+                if (!context.mounted) return;
+                MainNavigation.pushOnShell(context, const QuranVirtuesScreen());
+                _loadBadgeState(); // Updates badge state without needing .then()
+              },
+              qt: qt,
+            ),
+            if (_showNewBadge)
+              Positioned(
+                top: -5,
+                right: 14,
+                child: _NewBadge(),
+              ),
+          ],
         ),
-        const SizedBox(height: 16),
 
-        // ─── Expandable: Qibla + Prayer Stats ───
+        // ── Expandable: Hijri Calendar + Qibla + Prayer Stats ──
         AnimatedCrossFade(
-          firstChild: const SizedBox(width: double.infinity),
+          firstChild: const SizedBox(width: double.infinity, height: 0),
           secondChild: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const SizedBox(height: 8),
+
+              // Hijri Calendar
+              _PremiumEssentialTile(
+                icon: Icons.calendar_month_rounded,
+                iconColor:
+                    isDark ? const Color(0xFFFFB74D) : Colors.blue.shade600,
+                iconBg: isDark
+                    ? const Color(0xFFFFB74D).withOpacity(0.1)
+                    : const Color(0xFFE3F2FD),
+                title: "Hijri Calendar",
+                subtitle: "View Islamic events and dates",
+                onTap: () {
+                  MainNavigation.pushOnShell(
+                      context, const HijriCalendarScreen());
+                },
+                qt: qt,
+              ),
+              const SizedBox(height: 8),
+
+              // Qibla Compass
               _QiblaCompassCard(
                 qiblaDirection: widget.qiblaDirection,
                 qt: qt,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+
+              // Prayer Stats
               Consumer<PrayerTracker>(
                 builder: (context, tracker, _) {
                   final todayCount = tracker.todayPrayedCount;
@@ -1421,10 +1534,8 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
                   return _PremiumEssentialTile(
                     icon: Icons.mosque_rounded,
                     iconColor: Colors.green.shade600,
-                    iconBg: Colors.green.withOpacity(
-                      qt.brightness == Brightness.dark ? 0.12 : 0.08,
-                    ),
-                    title: "Prayer Stats",
+                    iconBg: Colors.green.withOpacity(isDark ? 0.1 : 0.08),
+                    title: "Prayer Journey",
                     subtitle: todayCount > 0
                         ? "$todayCount/5 today · $streak-day streak"
                         : "Check your prayer consistency",
@@ -1441,62 +1552,67 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
           crossFadeState: _isExpanded
               ? CrossFadeState.showSecond
               : CrossFadeState.showFirst,
-          duration: const Duration(milliseconds: 280),
-          firstCurve: Curves.easeInOut,
-          secondCurve: Curves.easeInOut,
-          sizeCurve: Curves.easeInOut,
+          duration: const Duration(milliseconds: 300),
+          firstCurve: Curves.easeInOutCubic,
+          secondCurve: Curves.easeInOutCubic,
+          sizeCurve: Curves.easeInOutCubic,
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
 
-        // ─── Modern Toggle Pill with subtle border and fill ───
+        // ── Expand / Collapse Pill ──
         GestureDetector(
           onTap: () {
-            HapticFeedback.lightImpact();
+            HapticFeedback.selectionClick();
             setState(() => _isExpanded = !_isExpanded);
           },
           behavior: HitTestBehavior.opaque,
           child: Center(
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
               decoration: BoxDecoration(
-                color: qt.emeraldDeep.withOpacity(0.05),
+                color: qt.emeraldDeep.withOpacity(_isExpanded ? 0.1 : 0.04),
                 borderRadius: BorderRadius.circular(100),
                 border: Border.all(
-                  color: qt.emeraldDeep.withOpacity(0.15),
-                  width: 1.0,
+                  color: qt.emeraldDeep.withOpacity(_isExpanded ? 0.25 : 0.12),
+                  width: 1,
                 ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    _isExpanded
-                        ? Icons.expand_less_rounded
-                        : Icons.apps_rounded,
-                    size: 16,
-                    color: qt.emeraldDeep,
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      _isExpanded
+                          ? Icons.expand_less_rounded
+                          : Icons.tune_rounded,
+                      key: ValueKey(_isExpanded),
+                      size: 15,
+                      color: qt.emeraldDeep,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     _isExpanded ? "Show Less" : "More Tools",
                     style: TextStyle(
                       color: qt.emeraldDeep,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.3,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4,
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 2),
                   AnimatedRotation(
                     turns: _isExpanded ? 0.5 : 0.0,
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeInOut,
+                    duration: const Duration(milliseconds: 280),
+                    curve: Curves.easeInOutCubic,
                     child: Icon(
                       Icons.keyboard_arrow_down_rounded,
-                      size: 18,
-                      color: qt.emeraldDeep,
+                      size: 16,
+                      color: qt.emeraldDeep.withOpacity(0.7),
                     ),
                   ),
                 ],
@@ -1505,6 +1621,46 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// NEW BADGE WIDGET
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _NewBadge extends StatelessWidget {
+  const _NewBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF26A69A), Color(0xFF00796B)],
+        ),
+        borderRadius: BorderRadius.circular(100),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF26A69A).withOpacity(0.4),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: const Text(
+        "NEW",
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 8.5,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.9,
+          height: 1.2,
+        ),
+      ),
     );
   }
 }
@@ -2215,68 +2371,66 @@ class _EssentialCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: RepaintBoundary(
-        child: GestureDetector(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            onTap();
-          },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            height: 160,
-            decoration: BoxDecoration(
-              color: qt.cardBg,
-              borderRadius: BorderRadius.circular(24),
-              // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
-              border: Border.all(
-                color: qt.borderGlass.withOpacity(0.12),
-                width: 1.0,
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          height: 160,
+          decoration: BoxDecoration(
+            color: qt.cardBg,
+            borderRadius: BorderRadius.circular(24),
+            // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
+            border: Border.all(
+              color: qt.borderGlass.withOpacity(0.12),
+              width: 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 15,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: iconColor, size: 24),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 15,
-                  offset: const Offset(0, 4),
-                )
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(icon, color: iconColor, size: 24),
+              const Spacer(),
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: qt.textPrimary,
+                  letterSpacing: -0.2,
                 ),
-                const Spacer(),
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: qt.textPrimary,
-                    letterSpacing: -0.2,
-                  ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: qt.textMuted,
+                  height: 1.25,
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: qt.textMuted,
-                    height: 1.25,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
