@@ -1,8 +1,7 @@
 // lib/screens/quran_virtues_screen.dart
 //
 // Premium screen for Quran Virtues (Fadāʾil al-Qurʾān).
-// Scroll-linked frosted-glass header, clean emerald calligraphy,
-// Apple-inspired card hierarchy, per-hadith share via share_plus.
+// Apple-inspired card hierarchy, emerald calligraphy, glassmorphic headers.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -54,107 +53,6 @@ List<int> _relatedSurahNums(String bookNum) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PRE-COMPUTED COLOUR & DECORATION CACHE
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _Pal {
-  _Pal(QuranTheme qt) {
-    final d = qt.brightness == Brightness.dark;
-    isDark = d;
-
-    // ── Backgrounds ──
-    appBg = d ? const Color(0xFF0C0C0E) : const Color(0xFFF2F2F7);
-    cardBg = d ? const Color(0xFF1A1A1C) : const Color(0xFFFFFFFF);
-    cardBorder = d ? const Color(0x14FFFFFF) : const Color(0x0C000000);
-    cardShadowColor = d ? Colors.transparent : const Color(0x08000000);
-    divider = d ? const Color(0x12FFFFFF) : const Color(0x10000000);
-    btnBg = d ? const Color(0x1AFFFFFF) : const Color(0x0A000000);
-
-    // ── Text ──
-    textPrimary = qt.textPrimary;
-    textSecondary = qt.textSecondary;
-    textMuted = qt.textMuted;
-    iconColor = d ? const Color(0xFFE5E5EA) : const Color(0xFF3A3A3C);
-
-    // ── Emerald accent ──
-    emerald = d ? qt.emeraldLight : qt.emeraldDeep;
-    emeraldTint = emerald.withOpacity(d ? 0.12 : 0.07);
-    emeraldBorder = emerald.withOpacity(d ? 0.10 : 0.06);
-    emeraldBlockBg = emerald.withOpacity(d ? 0.05 : 0.025);
-    emeraldDiamond = emerald.withOpacity(d ? 0.25 : 0.20);
-
-    // ── Pre-built decorations ──
-    final bdr = Border.all(color: cardBorder);
-    final shadow = d
-        ? null
-        : [
-            BoxShadow(
-              color: cardShadowColor,
-              blurRadius: 14,
-              offset: const Offset(0, 2),
-            )
-          ];
-
-    cardDec = BoxDecoration(
-      color: cardBg,
-      borderRadius: BorderRadius.circular(16),
-      border: bdr,
-      boxShadow: shadow,
-    );
-
-    virtueCardDec = BoxDecoration(
-      color: cardBg,
-      borderRadius: BorderRadius.circular(16),
-      border: bdr,
-      boxShadow: shadow,
-    );
-
-    emeraldBlockDec = BoxDecoration(
-      color: emeraldBlockBg,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: emeraldBorder),
-    );
-
-    numBadgeDec = BoxDecoration(
-      color: emeraldTint,
-      borderRadius: BorderRadius.circular(10),
-    );
-
-    pillDec = BoxDecoration(
-      color: emeraldTint,
-      borderRadius: BorderRadius.circular(100),
-    );
-
-    btnDec = BoxDecoration(
-      color: btnBg,
-      borderRadius: BorderRadius.circular(12),
-    );
-
-    shareBtnDec = BoxDecoration(
-      color: btnBg,
-      shape: BoxShape.circle,
-    );
-
-    relatedCardDec = BoxDecoration(
-      color: cardBg,
-      borderRadius: BorderRadius.circular(14),
-      border: bdr,
-    );
-  }
-
-  late final bool isDark;
-  late final Color appBg, cardBg, cardBorder, cardShadowColor;
-  late final Color divider, btnBg;
-  late final Color textPrimary, textSecondary, textMuted, iconColor;
-  late final Color emerald, emeraldTint, emeraldBorder, emeraldBlockBg;
-  late final Color emeraldDiamond;
-
-  late final BoxDecoration cardDec, virtueCardDec, emeraldBlockDec;
-  late final BoxDecoration numBadgeDec, pillDec, btnDec, shareBtnDec;
-  late final BoxDecoration relatedCardDec;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
 // SHARE HELPER
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -187,20 +85,35 @@ class QuranVirtuesScreen extends StatefulWidget {
   State<QuranVirtuesScreen> createState() => _QuranVirtuesScreenState();
 }
 
-class _QuranVirtuesScreenState extends State<QuranVirtuesScreen> {
+class _QuranVirtuesScreenState extends State<QuranVirtuesScreen>
+    with SingleTickerProviderStateMixin {
   late Future<List<QuranVirtueChapter>> _chaptersFuture;
   late ScrollController _scrollController;
+  late AnimationController _headerAnimController;
 
   @override
   void initState() {
     super.initState();
     _chaptersFuture = QuranVirtuesDb.instance.loadAllChapters();
     _scrollController = ScrollController();
+    _headerAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final offset = _scrollController.offset;
+    final t = (offset / 80.0).clamp(0.0, 1.0);
+    _headerAnimController.value = t;
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _headerAnimController.dispose();
     super.dispose();
   }
 
@@ -216,15 +129,16 @@ class _QuranVirtuesScreenState extends State<QuranVirtuesScreen> {
   @override
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
-    final p = _Pal(qt);
+    final isDark = qt.brightness == Brightness.dark;
     final statusBarHeight = MediaQuery.of(context).padding.top;
     const double appBarHeight = 56.0;
 
     return Scaffold(
-      backgroundColor: p.appBg,
+      backgroundColor:
+          isDark ? const Color(0xFF0C0C0E) : const Color(0xFFF2F2F7),
       body: Stack(
         children: [
-          // ── Scrollable content (NO extra top gap so it slides under header) ──
+          // ── Scrollable content ──
           FutureBuilder<List<QuranVirtueChapter>>(
             future: _chaptersFuture,
             builder: (context, snapshot) {
@@ -234,7 +148,7 @@ class _QuranVirtuesScreenState extends State<QuranVirtuesScreen> {
                     width: 22,
                     height: 22,
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation(p.emerald),
+                      valueColor: AlwaysStoppedAnimation(qt.emeraldLight),
                       strokeWidth: 1.5,
                     ),
                   ),
@@ -243,97 +157,106 @@ class _QuranVirtuesScreenState extends State<QuranVirtuesScreen> {
 
               final chapters = snapshot.data ?? [];
 
-              return ListView(
+              return ListView.builder(
                 controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(),
-                // Flush against the header bottom so it scrolls behind it
                 padding: EdgeInsets.fromLTRB(
-                  20,
-                  statusBarHeight + appBarHeight,
-                  20,
+                  22,
+                  statusBarHeight + appBarHeight + 8,
+                  22,
                   40,
                 ),
-                children: [
-                  // Hero section (NO fading logic, just scrolls up naturally)
-                  _MainHeroSection(p: p),
-                  const SizedBox(height: 28),
-
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Text(
-                      'Chapters',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: p.textMuted,
-                        letterSpacing: 0.3,
+                itemCount: chapters.isEmpty ? 1 : chapters.length + 2,
+                addRepaintBoundaries: true,
+                cacheExtent: 500,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return RepaintBoundary(
+                      child: _MainHeroSection(isDark: isDark),
+                    );
+                  }
+                  if (index == 1) {
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(2, 4, 2, 18),
+                      child: Text(
+                        'Chapters',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: qt.textMuted,
+                          letterSpacing: 0.3,
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                    );
+                  }
 
-                  if (snapshot.hasError)
-                    _ErrorCard(error: snapshot.error, p: p)
-                  else if (chapters.isEmpty)
-                    _EmptyCard(p: p)
-                  else
-                    ...chapters.asMap().entries.map((e) => _ChapterCard(
-                          chapter: e.value,
-                          index: e.key,
-                          p: p,
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    VirtueDetailScreen(chapter: e.value),
-                              ),
-                            );
-                          },
-                        )),
-                ],
+                  if (snapshot.hasError) {
+                    return _ErrorCard(error: snapshot.error, qt: qt);
+                  }
+                  if (chapters.isEmpty) {
+                    return _EmptyCard(qt: qt);
+                  }
+
+                  final chapterIndex = index - 2;
+                  final chapter = chapters[chapterIndex];
+
+                  return RepaintBoundary(
+                    child: _ChapterCard(
+                      chapter: chapter,
+                      index: chapterIndex,
+                      isDark: isDark,
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                VirtueDetailScreen(chapter: chapter),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
               );
             },
           ),
 
           // ── Frosted Glass Header ──
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: AnimatedBuilder(
-              animation: _scrollController,
-              builder: (context, child) {
-                final offset = _scrollController.hasClients
-                    ? _scrollController.offset
-                    : 0.0;
-                final t = (offset / 80.0).clamp(0.0, 1.0);
-                final titleSize = 24.0 - (8.0 * t);
+          AnimatedBuilder(
+            animation: _headerAnimController,
+            builder: (context, child) {
+              final t = _headerAnimController.value;
+              final titleSize = 24.0 - (8.0 * t);
+              final glassOpacity = t * 0.88;
 
-                // Simulated Glass Effect: 0% opaque at top -> 88% opaque when scrolled
-                // Avoids BackdropFilter to maintain 60fps on older devices
-                final glassOpacity = t * 0.88;
-
-                return Container(
+              return Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
                   padding: EdgeInsets.fromLTRB(20, statusBarHeight, 20, 0),
                   height: statusBarHeight + appBarHeight,
                   decoration: BoxDecoration(
-                    color: p.appBg.withOpacity(glassOpacity),
+                    color: (isDark
+                            ? const Color(0xFF0C0C0E)
+                            : const Color(0xFFF2F2F7))
+                        .withValues(alpha: glassOpacity),
                     border: Border(
                       bottom: BorderSide(
-                        color: p.isDark
-                            ? const Color(0xFFFFFFFF).withOpacity(t * 0.08)
-                            : const Color(0xFF000000).withOpacity(t * 0.05),
+                        color: isDark
+                            ? const Color(0xFFFFFFFF)
+                                .withValues(alpha: t * 0.08)
+                            : const Color(0xFF000000)
+                                .withValues(alpha: t * 0.05),
                       ),
                     ),
                   ),
                   child: Row(
                     children: [
-                      _actionBtn(
-                        Icon(Icons.arrow_back_ios_new_rounded,
-                            size: 16, color: p.iconColor),
-                        p: p,
+                      _ActionButton(
+                        icon: Icons.arrow_back_ios_new_rounded,
+                        isDark: isDark,
                         onTap: () {
                           if (!MainNavigation.popShell(context)) {
                             Navigator.maybePop(context);
@@ -349,21 +272,21 @@ class _QuranVirtuesScreenState extends State<QuranVirtuesScreen> {
                           style: TextStyle(
                             fontSize: titleSize,
                             fontWeight: FontWeight.w700,
-                            color: p.textPrimary,
+                            color: qt.textPrimary,
                             letterSpacing: -0.5 + (0.3 * t),
                           ),
                         ),
                       ),
-                      _actionBtn(
-                        Icon(Icons.tune_rounded, size: 18, color: p.iconColor),
-                        p: p,
+                      _ActionButton(
+                        icon: Icons.tune_rounded,
+                        isDark: isDark,
                         onTap: _openSettings,
                       ),
                     ],
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -372,39 +295,41 @@ class _QuranVirtuesScreenState extends State<QuranVirtuesScreen> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MAIN HERO SECTION — No fading, scrolls natively behind header
+// MAIN HERO SECTION
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _MainHeroSection extends StatelessWidget {
-  final _Pal p;
+  final bool isDark;
 
-  const _MainHeroSection({required this.p});
+  const _MainHeroSection({required this.isDark});
 
   @override
   Widget build(BuildContext context) {
+    final qt = QuranTheme.of(context);
+
     return Padding(
-      padding: const EdgeInsets.only(top: 20, bottom: 10, left: 4, right: 4),
+      padding: const EdgeInsets.fromLTRB(2, 20, 2, 10),
       child: Column(
         children: [
           Text(
             'فَضَائِلُ الْقُرْآنِ',
             style: TextStyle(
               fontFamily: 'QPC Hafs',
-              fontSize: 26,
-              color: p.emerald,
+              fontSize: 32,
+              color: isDark ? qt.emeraldGlow : qt.emeraldDeep,
               height: 1.6,
               letterSpacing: 0.5,
             ),
           ),
           const SizedBox(height: 16),
-          _DiamondDivider(p: p),
+          _DiamondDivider(color: isDark ? qt.emeraldGlow : qt.emeraldDeep),
           const SizedBox(height: 16),
           Text(
             'An authenticated collection of Prophet ﷺ hadith highlighting the unique virtues, rewards, and protections of various sūrahs and āyāt.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: p.textMuted,
+              color: qt.textMuted,
               height: 1.55,
             ),
           ),
@@ -415,88 +340,137 @@ class _MainHeroSection extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// CHAPTER CARD
+// CHAPTER CARD — EXACTLY matches QuranHomeScreen _SurahTile sizing
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _ChapterCard extends StatelessWidget {
   final QuranVirtueChapter chapter;
   final int index;
-  final _Pal p;
+  final bool isDark;
   final VoidCallback onTap;
 
   const _ChapterCard({
     required this.chapter,
     required this.index,
-    required this.p,
+    required this.isDark,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final qt = QuranTheme.of(context);
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 10),
       child: GestureDetector(
         onTap: onTap,
+        behavior: HitTestBehavior.opaque,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: p.cardDec,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: !isDark
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 12,
+                      offset: const Offset(0, 3),
+                    )
+                  ]
+                : null,
+          ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: p.numBadgeDec,
-                alignment: Alignment.center,
+              // De-emphasized number — just small muted text, 28 width
+              SizedBox(
+                width: 28,
                 child: Text(
                   '${index + 1}',
                   style: TextStyle(
-                    color: p.emerald,
+                    color: qt.emeraldDeep.withValues(alpha: 0.55),
                     fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 6),
+              // Name + metadata column
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // Primary: English title — matches surah.nameEnglish style
                     Text(
                       chapter.englishTitle,
                       style: TextStyle(
-                        fontSize: 15,
+                        color: qt.emeraldDeep,
                         fontWeight: FontWeight.w600,
-                        color: p.textPrimary,
-                        letterSpacing: -0.2,
+                        fontSize: 16,
+                        height: 1.15,
                       ),
                     ),
-                    if (chapter.arabicTitle.isNotEmpty) ...[
-                      const SizedBox(height: 2),
+                    const SizedBox(height: 7),
+                    // Secondary: Arabic title — matches meaning style
+                    if (chapter.arabicTitle.isNotEmpty)
                       Text(
                         chapter.arabicTitle,
-                        style: TextStyle(fontSize: 13, color: p.textMuted),
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'QPC Hafs',
+                          color: qt.textSecondary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          height: 1.35,
+                        ),
                       ),
-                    ],
+                    const SizedBox(height: 5),
+                    // Tertiary: virtue count — matches ayahs style
+                    Text(
+                      '${chapter.virtueCount} narrations',
+                      style: TextStyle(
+                        color: qt.textMuted.withValues(alpha: 0.8),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: 0.15,
+                        height: 1.2,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: p.pillDec,
-                child: Text(
-                  '${chapter.virtueCount}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: p.emerald,
+              const SizedBox(width: 12),
+              // Trailing: count pill + chevron
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: qt.emeraldDeep.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${chapter.virtueCount}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: qt.emeraldDeep,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: qt.textMuted.withValues(alpha: 0.4),
+                    size: 20,
+                  ),
+                ],
               ),
-              const SizedBox(width: 4),
-              Icon(Icons.chevron_right_rounded,
-                  color: p.textMuted.withOpacity(0.4), size: 20),
             ],
           ),
         ),
@@ -506,7 +480,7 @@ class _ChapterCard extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// DETAIL SCREEN
+// DETAIL SCREEN — Full screen push, NOT modal
 // ═══════════════════════════════════════════════════════════════════════════
 
 class VirtueDetailScreen extends StatefulWidget {
@@ -518,97 +492,119 @@ class VirtueDetailScreen extends StatefulWidget {
   State<VirtueDetailScreen> createState() => _VirtueDetailScreenState();
 }
 
-class _VirtueDetailScreenState extends State<VirtueDetailScreen> {
+class _VirtueDetailScreenState extends State<VirtueDetailScreen>
+    with SingleTickerProviderStateMixin {
   late ScrollController _scrollController;
+  late AnimationController _headerAnimController;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
+    _headerAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final offset = _scrollController.offset;
+    final t = (offset / 80.0).clamp(0.0, 1.0);
+    _headerAnimController.value = t;
   }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _headerAnimController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
-    final p = _Pal(qt);
+    final isDark = qt.brightness == Brightness.dark;
     final statusBarHeight = MediaQuery.of(context).padding.top;
     const double appBarHeight = 56.0;
     final chapter = widget.chapter;
 
     return Scaffold(
-      backgroundColor: p.appBg,
+      backgroundColor:
+          isDark ? const Color(0xFF0C0C0E) : const Color(0xFFF2F2F7),
       body: Stack(
         children: [
           // ── Scrollable content ──
-          // Flat ListView(children:) — the proven structure that avoids any
-          // ParentDataWidget issues while scrolling. Heavy model parsing is
-          // already off the UI thread (compute isolate in the DB layer) and
-          // the palette is reused, so first-frame cost stays minimal.
-          ListView(
+          ListView.builder(
             controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
-            // Flush against the header bottom so it scrolls behind it
             padding: EdgeInsets.fromLTRB(
-              20,
-              statusBarHeight + appBarHeight,
-              20,
+              22,
+              statusBarHeight + appBarHeight + 8,
+              22,
               40,
             ),
-            children: [
-              // Hero — scrolls natively up behind glass header
-              _DetailHeroSection(chapter: chapter, p: p),
-              const SizedBox(height: 8),
-              ...chapter.virtues.asMap().entries.map((e) => _VirtueCard(
-                    virtue: e.value,
-                    index: e.key,
-                    total: chapter.virtues.length,
-                    p: p,
-                    chapterTitle: chapter.englishTitle,
-                  )),
-            ],
+            itemCount: chapter.virtues.length + 2,
+            addRepaintBoundaries: true,
+            cacheExtent: 500,
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return RepaintBoundary(
+                  child: _DetailHeroSection(chapter: chapter, isDark: isDark),
+                );
+              }
+              if (index == 1) {
+                return const SizedBox(height: 8);
+              }
+              final virtueIndex = index - 2;
+              return RepaintBoundary(
+                child: _VirtueCard(
+                  virtue: chapter.virtues[virtueIndex],
+                  index: virtueIndex,
+                  total: chapter.virtues.length,
+                  chapterTitle: chapter.englishTitle,
+                  isDark: isDark,
+                ),
+              );
+            },
           ),
 
           // ── Frosted Glass Header ──
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: AnimatedBuilder(
-              animation: _scrollController,
-              builder: (context, child) {
-                final offset = _scrollController.hasClients
-                    ? _scrollController.offset
-                    : 0.0;
-                final t = (offset / 80.0).clamp(0.0, 1.0);
-                final titleSize = 22.0 - (6.0 * t);
+          AnimatedBuilder(
+            animation: _headerAnimController,
+            builder: (context, child) {
+              final t = _headerAnimController.value;
+              final titleSize = 22.0 - (6.0 * t);
+              final glassOpacity = t * 0.88;
 
-                final glassOpacity = t * 0.88;
-
-                return Container(
+              return Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
                   padding: EdgeInsets.fromLTRB(20, statusBarHeight, 20, 0),
                   height: statusBarHeight + appBarHeight,
                   decoration: BoxDecoration(
-                    color: p.appBg.withOpacity(glassOpacity),
+                    color: (isDark
+                            ? const Color(0xFF0C0C0E)
+                            : const Color(0xFFF2F2F7))
+                        .withValues(alpha: glassOpacity),
                     border: Border(
                       bottom: BorderSide(
-                        color: p.isDark
-                            ? const Color(0xFFFFFFFF).withOpacity(t * 0.08)
-                            : const Color(0xFF000000).withOpacity(t * 0.05),
+                        color: isDark
+                            ? const Color(0xFFFFFFFF)
+                                .withValues(alpha: t * 0.08)
+                            : const Color(0xFF000000)
+                                .withValues(alpha: t * 0.05),
                       ),
                     ),
                   ),
                   child: Row(
                     children: [
-                      _actionBtn(
-                        Icon(Icons.arrow_back_ios_new_rounded,
-                            size: 16, color: p.iconColor),
-                        p: p,
+                      _ActionButton(
+                        icon: Icons.arrow_back_ios_new_rounded,
+                        isDark: isDark,
                         onTap: () => Navigator.pop(context),
                       ),
                       Expanded(
@@ -623,7 +619,7 @@ class _VirtueDetailScreenState extends State<VirtueDetailScreen> {
                               style: TextStyle(
                                 fontSize: titleSize,
                                 fontWeight: FontWeight.w700,
-                                color: p.textPrimary,
+                                color: qt.textPrimary,
                                 letterSpacing: -0.4 + (0.2 * t),
                               ),
                             ),
@@ -636,15 +632,17 @@ class _VirtueDetailScreenState extends State<VirtueDetailScreen> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                      fontSize: 11, color: p.textMuted),
+                                    fontSize: 11,
+                                    color: qt.textMuted,
+                                  ),
                                 ),
                               ),
                           ],
                         ),
                       ),
-                      _actionBtn(
-                        Icon(Icons.tune_rounded, size: 18, color: p.iconColor),
-                        p: p,
+                      _ActionButton(
+                        icon: Icons.tune_rounded,
+                        isDark: isDark,
                         onTap: () {
                           showModalBottomSheet(
                             context: context,
@@ -656,9 +654,9 @@ class _VirtueDetailScreenState extends State<VirtueDetailScreen> {
                       ),
                     ],
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -667,52 +665,70 @@ class _VirtueDetailScreenState extends State<VirtueDetailScreen> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// DETAIL HERO SECTION — No fading, scrolls natively behind header
+// DETAIL HERO SECTION — With surahName calligraphy font
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _DetailHeroSection extends StatelessWidget {
   final QuranVirtueChapter chapter;
-  final _Pal p;
+  final bool isDark;
 
   const _DetailHeroSection({
     required this.chapter,
-    required this.p,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
+    final qt = QuranTheme.of(context);
+    final surahNums = _relatedSurahNums(chapter.bookNum);
+    final hasSurahs = surahNums.isNotEmpty;
+
     return Padding(
-      padding: const EdgeInsets.only(top: 20, bottom: 4, left: 4, right: 4),
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
       child: Column(
         children: [
-          if (chapter.arabicTitle.isNotEmpty) ...[
-            Text(
-              chapter.arabicTitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'QPC Hafs',
-                fontSize: 28,
-                color: p.emerald,
-                height: 1.8,
-                letterSpacing: 0.5,
-              ),
+          // ── Surah calligraphy names ──
+          if (hasSurahs) ...[
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 16,
+              runSpacing: 8,
+              children: surahNums.map((s) {
+                final surahCode =
+                    'surah${s.toString().padLeft(3, '0')}surah-icon';
+                return Text(
+                  surahCode,
+                  style: TextStyle(
+                    fontFamily: 'surahName',
+                    fontSize: 44,
+                    color: isDark ? qt.emeraldGlow : qt.emeraldDeep,
+                    height: 1.2,
+                  ),
+                );
+              }).toList(),
             ),
             const SizedBox(height: 14),
           ],
+          // ── Narration count pill ──
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: p.pillDec,
+            decoration: BoxDecoration(
+              color: qt.emeraldDeep.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(100),
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.auto_stories_rounded, size: 14, color: p.emerald),
+                Icon(Icons.auto_stories_rounded,
+                    size: 14, color: qt.emeraldDeep),
                 const SizedBox(width: 6),
                 Text(
                   '${chapter.virtueCount} Narrations',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: p.emerald,
+                    color: qt.emeraldDeep,
                     letterSpacing: 0.2,
                   ),
                 ),
@@ -720,12 +736,13 @@ class _DetailHeroSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          _DiamondDivider(p: p),
-          if (_relatedSurahNums(chapter.bookNum).isNotEmpty) ...[
+          _DiamondDivider(color: isDark ? qt.emeraldGlow : qt.emeraldDeep),
+          // ── Related Surah section (Read/Info chips) ──
+          if (hasSurahs) ...[
             const SizedBox(height: 18),
             _RelatedSurahSection(
-              surahNums: _relatedSurahNums(chapter.bookNum),
-              p: p,
+              surahNums: surahNums,
+              isDark: isDark,
             ),
           ],
         ],
@@ -735,97 +752,126 @@ class _DetailHeroSection extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// VIRTUE CARD
+// VIRTUE CARD — Multi-line reference support, premium redesign
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _VirtueCard extends StatelessWidget {
   final QuranVirtue virtue;
   final int index;
   final int total;
-  final _Pal p;
   final String chapterTitle;
+  final bool isDark;
 
   const _VirtueCard({
     required this.virtue,
     required this.index,
     required this.total,
-    required this.p,
     required this.chapterTitle,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
+    final qt = QuranTheme.of(context);
     final settings = HadithReaderSettingsProvider.of(context, listen: true);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: p.virtueCardDec,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.black.withValues(alpha: 0.04),
+          ),
+          boxShadow: !isDark
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
+                  )
+                ]
+              : null,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header row
             Row(
               children: [
-                Text(
-                  '${index + 1}',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: p.emerald,
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: qt.emeraldDeep.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ),
-                Text(
-                  ' of $total',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: p.textMuted,
+                  child: Text(
+                    '${index + 1} of $total',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: qt.emeraldDeep,
+                    ),
                   ),
                 ),
                 const Spacer(),
-
-                // Share Button
+                // Share
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.selectionClick();
                     _shareHadith(virtue, chapterTitle);
                   },
                   child: Container(
-                    width: 30,
-                    height: 30,
-                    decoration: p.shareBtnDec,
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : const Color(0xFFF2F2F7),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     alignment: Alignment.center,
                     child: Icon(
                       Icons.share_rounded,
-                      size: 14,
-                      color: p.textMuted,
+                      size: 15,
+                      color: qt.textMuted,
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
-
                 if (virtue.grade.isNotEmpty)
-                  _GradeBadge(grade: virtue.grade, isDark: p.isDark),
+                  _GradeBadge(grade: virtue.grade, isDark: isDark),
               ],
             ),
+            // Title
             if (virtue.title.isNotEmpty) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               Text(
                 virtue.title,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: p.textPrimary,
+                  color: qt.textPrimary,
                   height: 1.35,
                   letterSpacing: -0.3,
                 ),
               ),
             ],
+            // Arabic
             if (settings.showArabic && virtue.arabicText.isNotEmpty) ...[
-              const SizedBox(height: 14),
-              _ArabicBlock(text: virtue.arabicText, p: p),
+              const SizedBox(height: 16),
+              _ArabicBlock(
+                text: virtue.arabicText,
+                arabicFontSize: settings.arabicFontSize,
+                isDark: isDark,
+              ),
             ],
+            // English
             if (settings.showEnglish && virtue.englishText.isNotEmpty) ...[
               const SizedBox(height: 14),
               Text(
@@ -836,35 +882,42 @@ class _VirtueCard extends StatelessWidget {
                     .join('\n\n'),
                 style: TextStyle(
                   fontSize: settings.translationFontSize,
-                  color: p.textSecondary,
+                  color: qt.textSecondary,
                   height: 1.65,
                   letterSpacing: -0.1,
                 ),
               ),
             ],
+            // Reference footer — multi-line support with Column instead of Row
             if (virtue.localNum.isNotEmpty) ...[
-              const SizedBox(height: 14),
-              Container(height: 0.5, color: p.divider),
-              const SizedBox(height: 10),
-              Wrap(
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 5,
-                runSpacing: 2, // Adds a tiny bit of space between wrapped lines
+              const SizedBox(height: 16),
+              Container(height: 0.5, color: qt.borderGlass),
+              const SizedBox(height: 12),
+              // Using Column + Wrap instead of Row to allow wrapping
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.tag_rounded,
-                      size: 12, color: p.textMuted.withOpacity(0.6)),
-                  // NOTE: Do NOT wrap the Text in Flexible/Expanded here — a
-                  // Wrap only accepts WrapParentData, and Flexible requires a
-                  // Flex ancestor, which throws ParentDataWidget at layout time.
-                  Text(
-                    'Hadith #${virtue.localNum}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: p.textMuted,
-                      letterSpacing: 0.2,
-                      height: 1.4, // Ensures nice line spacing if it wraps
-                    ),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      Icon(
+                        Icons.tag_rounded,
+                        size: 12,
+                        color: qt.textMuted.withValues(alpha: 0.6),
+                      ),
+                      Text(
+                        'Hadith #${virtue.localNum}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: qt.textMuted,
+                          letterSpacing: 0.2,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -882,16 +935,33 @@ class _VirtueCard extends StatelessWidget {
 
 class _ArabicBlock extends StatelessWidget {
   final String text;
-  final _Pal p;
+  final double arabicFontSize;
+  final bool isDark;
 
-  const _ArabicBlock({required this.text, required this.p});
+  const _ArabicBlock({
+    required this.text,
+    required this.arabicFontSize,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final qt = QuranTheme.of(context);
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 10),
-      decoration: p.emeraldBlockDec,
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.03)
+            : qt.emeraldDeep.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : qt.emeraldDeep.withValues(alpha: 0.08),
+        ),
+      ),
       child: Column(
         children: [
           Text(
@@ -899,15 +969,15 @@ class _ArabicBlock extends StatelessWidget {
             textAlign: TextAlign.right,
             textDirection: TextDirection.rtl,
             style: TextStyle(
-              fontFamily: 'QPC Hafs',
-              fontSize: 20,
+              fontFamily: 'IndoPak',
+              fontSize: arabicFontSize,
               height: 1.8,
-              color: p.textPrimary,
+              color: qt.textPrimary,
               letterSpacing: 0.5,
             ),
           ),
           const SizedBox(height: 10),
-          _DiamondDivider(p: p),
+          _DiamondDivider(color: isDark ? qt.emeraldGlow : qt.emeraldDeep),
         ],
       ),
     );
@@ -919,28 +989,28 @@ class _ArabicBlock extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _DiamondDivider extends StatelessWidget {
-  final _Pal p;
+  final Color color;
 
-  const _DiamondDivider({required this.p});
+  const _DiamondDivider({required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Container(height: 0.5, width: 36, color: p.emeraldDiamond),
+        Container(height: 0.5, width: 36, color: color.withValues(alpha: 0.3)),
         Transform.rotate(
           angle: 0.7854,
           child: Container(
-            height: 4,
-            width: 4,
+            height: 5,
+            width: 5,
             decoration: BoxDecoration(
-              color: p.emerald,
+              color: color,
               shape: BoxShape.circle,
             ),
           ),
         ),
-        Container(height: 0.5, width: 36, color: p.emeraldDiamond),
+        Container(height: 0.5, width: 36, color: color.withValues(alpha: 0.3)),
       ],
     );
   }
@@ -959,21 +1029,22 @@ class _GradeBadge extends StatelessWidget {
   Color get _color {
     final lower = grade.toLowerCase();
     if (lower.contains('sahih') || lower.contains('authentic')) {
-      return Colors.green.shade600;
+      return const Color(0xFF10B981);
     } else if (lower.contains('hasan') || lower.contains('good')) {
-      return Colors.orange.shade600;
+      return const Color(0xFFF59E0B);
     } else if (lower.contains('daif') || lower.contains('weak')) {
-      return Colors.red.shade400;
+      return const Color(0xFFEF4444);
     }
     return Colors.grey.shade500;
   }
 
   @override
   Widget build(BuildContext context) {
+    final color = _color;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: _color.withOpacity(isDark ? 0.15 : 0.10),
+        color: color.withValues(alpha: isDark ? 0.15 : 0.10),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -981,7 +1052,7 @@ class _GradeBadge extends StatelessWidget {
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: _color,
+          color: color,
           letterSpacing: 0.2,
         ),
       ),
@@ -990,14 +1061,14 @@ class _GradeBadge extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// RELATED SURAH SECTION
+// RELATED SURAH SECTION — Redesigned as compact action chips
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _RelatedSurahSection extends StatelessWidget {
   final List<int> surahNums;
-  final _Pal p;
+  final bool isDark;
 
-  const _RelatedSurahSection({required this.surahNums, required this.p});
+  const _RelatedSurahSection({required this.surahNums, required this.isDark});
 
   SurahInfo? _safeInfo(int s) {
     try {
@@ -1020,31 +1091,34 @@ class _RelatedSurahSection extends StatelessWidget {
     );
   }
 
-  Widget _chip(
+  Widget _actionChip(
     BuildContext context,
     int surah,
     bool info,
     IconData icon,
     String label,
+    QuranTheme qt,
   ) {
     return GestureDetector(
       onTap: () => _open(context, surah, info),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: p.emeraldTint,
-          borderRadius: BorderRadius.circular(8),
+          color: qt.emeraldDeep.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: p.emerald),
-            const SizedBox(width: 4),
+            Icon(icon, size: 14, color: qt.emeraldDeep),
+            const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: p.emerald,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: qt.emeraldDeep,
               ),
             ),
           ],
@@ -1055,6 +1129,8 @@ class _RelatedSurahSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final qt = QuranTheme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1063,21 +1139,40 @@ class _RelatedSurahSection extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: p.textMuted,
+            color: qt.textMuted,
             letterSpacing: 0.3,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         ...surahNums.map((s) {
           final info = _safeInfo(s);
           final name = info?.nameEnglish.isNotEmpty == true
               ? info!.nameEnglish
               : 'سورة $s';
           return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: 10),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: p.relatedCardDec,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.04)
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : Colors.black.withValues(alpha: 0.04),
+                ),
+                boxShadow: !isDark
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 12,
+                          offset: const Offset(0, 3),
+                        )
+                      ]
+                    : null,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -1089,20 +1184,37 @@ class _RelatedSurahSection extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: p.textPrimary,
+                            color: qt.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 3),
                         Text(
                           'Surah $s',
-                          style: TextStyle(fontSize: 12, color: p.textMuted),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: qt.textMuted,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  _chip(context, s, false, Icons.book_rounded, 'Read'),
+                  _actionChip(
+                    context,
+                    s,
+                    false,
+                    Icons.book_rounded,
+                    'Read',
+                    qt,
+                  ),
                   const SizedBox(width: 8),
-                  _chip(context, s, true, Icons.info_outline_rounded, 'Info'),
+                  _actionChip(
+                    context,
+                    s,
+                    true,
+                    Icons.info_outline_rounded,
+                    'Info',
+                    qt,
+                  ),
                 ],
               ),
             ),
@@ -1119,25 +1231,30 @@ class _RelatedSurahSection extends StatelessWidget {
 
 class _ErrorCard extends StatelessWidget {
   final Object? error;
-  final _Pal p;
+  final QuranTheme qt;
 
-  const _ErrorCard({this.error, required this.p});
+  const _ErrorCard({this.error, required this.qt});
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      margin: const EdgeInsets.only(top: 40),
       padding: const EdgeInsets.all(24),
-      decoration: p.cardDec,
+      decoration: BoxDecoration(
+        color: qt.cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: qt.borderGlass),
+      ),
       child: Column(
         children: [
-          Icon(Icons.error_outline_rounded, size: 36, color: p.textMuted),
+          Icon(Icons.error_outline_rounded, size: 36, color: qt.textMuted),
           const SizedBox(height: 12),
           Text(
             'Unable to load virtues',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: p.textPrimary,
+              color: qt.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -1145,7 +1262,7 @@ class _ErrorCard extends StatelessWidget {
             error?.toString() ?? 'Unknown error',
             style: TextStyle(
               fontSize: 12,
-              color: p.textMuted,
+              color: qt.textMuted,
               fontFamily: 'monospace',
             ),
           ),
@@ -1156,25 +1273,30 @@ class _ErrorCard extends StatelessWidget {
 }
 
 class _EmptyCard extends StatelessWidget {
-  final _Pal p;
+  final QuranTheme qt;
 
-  const _EmptyCard({required this.p});
+  const _EmptyCard({required this.qt});
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      margin: const EdgeInsets.only(top: 40),
       padding: const EdgeInsets.all(24),
-      decoration: p.cardDec,
+      decoration: BoxDecoration(
+        color: qt.cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: qt.borderGlass),
+      ),
       child: Column(
         children: [
-          Icon(Icons.auto_stories_outlined, size: 36, color: p.textMuted),
+          Icon(Icons.auto_stories_outlined, size: 36, color: qt.textMuted),
           const SizedBox(height: 12),
           Text(
             'No virtues found',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: p.textPrimary,
+              color: qt.textPrimary,
             ),
           ),
         ],
@@ -1187,14 +1309,46 @@ class _EmptyCard extends StatelessWidget {
 // SHARED HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
 
-Widget _actionBtn(Widget child, {required _Pal p, VoidCallback? onTap}) {
-  return GestureDetector(
-    onTap: onTap,
-    child: Container(
-      width: 40,
-      height: 40,
-      decoration: p.btnDec,
-      child: Center(child: child),
-    ),
-  );
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final bool isDark;
+  final VoidCallback? onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.isDark,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final qt = QuranTheme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: !isDark
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  )
+                ]
+              : null,
+        ),
+        child: Center(
+          child: Icon(
+            icon,
+            size: 16,
+            color: isDark ? Colors.white : const Color(0xFF3A3A3C),
+          ),
+        ),
+      ),
+    );
+  }
 }

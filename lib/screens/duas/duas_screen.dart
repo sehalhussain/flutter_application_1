@@ -553,7 +553,7 @@ class _DuasScreenState extends State<DuasScreen>
                               color: Colors.white70, size: 18),
                           const SizedBox(width: 10),
                           Text(
-                            'Search supplications, benefits, titles...',
+                            'Search duas, benefits, titles...',
                             style: TextStyle(
                                 color: Colors.white.withOpacity(0.6),
                                 fontSize: 13),
@@ -1040,7 +1040,7 @@ class _SegmentCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '$chapters chapters • $duaCount supps',
+              '$chapters chapters • $duaCount duas',
               style: TextStyle(color: qt.textMuted, fontSize: 11),
               textAlign: TextAlign.center,
             ),
