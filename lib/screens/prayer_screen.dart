@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/prayer_service.dart';
+import '../services/prayer_notification_service.dart';
 import '../providers/prayer_tracker_provider.dart';
+import '../providers/prayer_notification_provider.dart';
 import '../constants/quran_theme.dart';
 import '../constants/locations.dart';
 import 'package:intl/intl.dart';
@@ -90,6 +92,11 @@ class _PrayerScreenState extends State<PrayerScreen>
     );
     _mainScrollController = ScrollController();
     _mainScrollController.addListener(_onScroll);
+
+    // Reschedule notifications for today when the prayer screen is opened
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PrayerNotificationService.instance.rescheduleToday();
+    });
   }
 
   @override
@@ -105,7 +112,11 @@ class _PrayerScreenState extends State<PrayerScreen>
   /// Safe listener for bound controllers pointing to scroll updates
   void _onScroll() {}
 
-  void _onPrayerServiceChanged() => _fetchCalendar();
+  void _onPrayerServiceChanged() {
+    _fetchCalendar();
+    // Reschedule notifications when location/calculation method changes
+    PrayerNotificationService.instance.rescheduleToday();
+  }
 
   Future<void> _fetchCalendar(
       {bool selectLastDay = false, int? targetDay}) async {
@@ -372,6 +383,7 @@ class _PrayerScreenState extends State<PrayerScreen>
         isDark ? Colors.white.withOpacity(0.04) : const Color(0xFFFFFFFF);
 
     final tracker = context.watch<PrayerTracker>();
+    final notifProvider = context.watch<PrayerNotificationProvider>();
     final prayerService = context.watch<PrayerService>();
     final monthName = DateFormat('MMMM').format(_displayDate);
     final yearNum = _displayDate.year.toString();
@@ -522,8 +534,8 @@ class _PrayerScreenState extends State<PrayerScreen>
                     ),
                     const SizedBox(height: 14),
                     RepaintBoundary(
-                      child: _buildPrayerTimesCard(
-                          qt, tracker, cardBg, cardShadow, isDark),
+                      child: _buildPrayerTimesCard(qt, tracker, notifProvider,
+                          cardBg, cardShadow, isDark),
                     ),
                     const SizedBox(height: 24),
                     RepaintBoundary(
@@ -736,8 +748,13 @@ class _PrayerScreenState extends State<PrayerScreen>
     );
   }
 
-  Widget _buildPrayerTimesCard(QuranTheme qt, PrayerTracker tracker,
-      Color cardBg, List<BoxShadow>? cardShadow, bool isDark) {
+  Widget _buildPrayerTimesCard(
+      QuranTheme qt,
+      PrayerTracker tracker,
+      PrayerNotificationProvider notifProvider,
+      Color cardBg,
+      List<BoxShadow>? cardShadow,
+      bool isDark) {
     final prayerOrder = ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
     final prayerMeta = _getCurrentAndNextPrayer(_selectedDay?['timings']);
     final currentPrayer = prayerMeta['current'];
@@ -976,6 +993,44 @@ class _PrayerScreenState extends State<PrayerScreen>
                                   : qt.textSecondary,
                         ),
                       ),
+                      // Notification bell icon for prayer times (not Sunrise)
+                      if (!isSunrise) ...[
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            notifProvider.toggle(prayer);
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: notifProvider.isEnabled(prayer)
+                                  ? qt.emeraldDeep.withOpacity(0.12)
+                                  : Colors.transparent,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: notifProvider.isEnabled(prayer)
+                                    ? qt.emeraldDeep.withOpacity(0.3)
+                                    : (isDark
+                                        ? Colors.white.withOpacity(0.08)
+                                        : Colors.black.withOpacity(0.06)),
+                                width: 1,
+                              ),
+                            ),
+                            child: Icon(
+                              notifProvider.isEnabled(prayer)
+                                  ? Icons.notifications_active_rounded
+                                  : Icons.notifications_none_rounded,
+                              size: 14,
+                              color: notifProvider.isEnabled(prayer)
+                                  ? qt.emeraldDeep
+                                  : qt.textMuted.withOpacity(0.5),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

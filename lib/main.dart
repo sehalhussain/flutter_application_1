@@ -9,7 +9,9 @@ import 'providers/hadith_reader_settings_provider.dart';
 import 'providers/dua_settings_provider.dart';
 import 'providers/dua_progress_provider.dart';
 import 'providers/prayer_tracker_provider.dart';
+import 'providers/prayer_notification_provider.dart';
 import 'services/prayer_service.dart';
+import 'services/prayer_notification_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/menu_screen.dart';
 import 'screens/quran/quran_home_screen.dart';
@@ -23,6 +25,12 @@ void main() async {
 
   // Initialize PrayerService before app runs
   await PrayerService.instance.initLocation();
+
+  // Initialize notification service
+  await PrayerNotificationService.instance.init();
+
+  // Reschedule any enabled prayer notifications for today
+  PrayerNotificationService.instance.rescheduleToday();
 
   await JustAudioBackground.init(
     androidNotificationChannelId: 'com.kitably.app.channel.audio',
@@ -46,6 +54,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => DuaSettings()..load()),
         ChangeNotifierProvider(create: (_) => DuaProgress()..load()),
         ChangeNotifierProvider(create: (_) => PrayerTracker()..load()),
+        ChangeNotifierProvider(
+            create: (_) => PrayerNotificationProvider()..load()),
         // Expose PrayerService as a ChangeNotifier so screens can react to changes
         ChangeNotifierProvider.value(value: PrayerService.instance),
       ],
