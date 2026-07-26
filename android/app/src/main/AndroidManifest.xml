@@ -1,74 +1,134 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-<uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.WAKE_LOCK" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-<uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- Location Permissions -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    
+    <!-- Network -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- NOTIFICATION PERMISSIONS                                              -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    
+    <!-- Required: Allows app to post notifications (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    
+    <!-- Required: Wake device from Doze mode to show notifications -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    
+    <!-- Required: Reschedule notifications after device reboot -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    
+    <!-- USE_EXACT_ALARM: For alarm/timer apps (higher priority, no user approval needed on Android 13+) -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- AUDIO SERVICE PERMISSIONS (existing)                                  -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
-<application
-    android:label="Kitably"
-    android:name="${applicationName}"
-    android:icon="@mipmap/ic_launcher">
+    <application
+        android:label="Kitably"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher">
 
-    <activity
-        android:name="com.ryanheise.audioservice.AudioServiceActivity"
-        android:exported="true"
-        android:launchMode="singleTop"
-        android:theme="@style/LaunchTheme"
-        android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-        android:hardwareAccelerated="true"
-        android:windowSoftInputMode="adjustResize">
+        <!-- Main Activity -->
+        <activity
+            android:name="com.ryanheise.audioservice.AudioServiceActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
+                
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Audio Service -->
+        <service 
+            android:name="com.ryanheise.audioservice.AudioService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="true"
+            tools:ignore="Instantiatable">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
+
+        <receiver 
+            android:name="com.ryanheise.audioservice.MediaButtonReceiver"
+            android:exported="true"
+            tools:ignore="Instantiatable">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- NOTIFICATION RECEIVERS - CRITICAL FOR SCHEDULED NOTIFICATIONS     -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        
+        <!-- 
+            ScheduledNotificationReceiver: 
+            Fires when a scheduled notification's time arrives.
+            Without this, scheduled notifications WILL NOT appear.
+        -->
+        <receiver 
+            android:exported="false" 
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        
+        <!-- 
+            ScheduledNotificationBootReceiver: 
+            Re-registers all scheduled notifications after device reboot.
+            Without this, notifications stop working after phone restart.
+            
+            The intent filters catch various boot scenarios:
+            - BOOT_COMPLETED: Standard Android boot
+            - MY_PACKAGE_REPLACED: App updated
+            - QUICKBOOT_POWERON: HTC/Xiaomi fast boot
+            - LOCKED_BOOT_COMPLETED: Direct boot (Android 7.0+)
+        -->
+        <receiver 
+            android:exported="false" 
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- FLUTTER CONFIGURATION                                              -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
         
         <meta-data
-            android:name="io.flutter.embedding.android.NormalTheme"
-            android:resource="@style/NormalTheme" />
-            
-        <intent-filter>
-            <action android:name="android.intent.action.MAIN" />
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent-filter>
-    </activity>
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="true" />
 
-    <service 
-        android:name="com.ryanheise.audioservice.AudioService"
-        android:foregroundServiceType="mediaPlayback"
-        android:exported="true"
-        tools:ignore="Instantiatable">
-        <intent-filter>
-            <action android:name="android.media.browse.MediaBrowserService" />
-        </intent-filter>
-    </service>
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
 
-    <receiver 
-        android:name="com.ryanheise.audioservice.MediaButtonReceiver"
-        android:exported="true"
-        tools:ignore="Instantiatable">
-        <intent-filter>
-            <action android:name="android.intent.action.MEDIA_BUTTON" />
-        </intent-filter>
-    </receiver>
-
-    <meta-data
-        android:name="io.flutter.embedding.android.EnableImpeller"
-        android:value="true" />
-
-    <meta-data
-        android:name="flutterEmbedding"
-        android:value="2" />
-</application>
-
-<queries>
-    <intent>
-        <action android:name="android.intent.action.PROCESS_TEXT" />
-        <data android:mimeType="text/plain" />
-    </intent>
-</queries>
-
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain" />
+        </intent>
+    </queries>
 
 </manifest>

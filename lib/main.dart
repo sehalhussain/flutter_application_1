@@ -29,8 +29,21 @@ void main() async {
   // Initialize notification service
   await PrayerNotificationService.instance.init();
 
-  // Reschedule any enabled prayer notifications for today
-  PrayerNotificationService.instance.rescheduleToday();
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Set up "Mark as Prayed" callback from notification action button
+  // This will be called when user taps "✓ Prayed" in the notification
+  // ═══════════════════════════════════════════════════════════════════════════
+  PrayerNotificationService.instance.onMarkPrayed = (prayer) {
+    // We can't directly access the PrayerTracker here since it's in the widget tree.
+    // Instead, we store it in a static variable that the MainNavigation can pick up.
+    _PendingPrayerAction.pendingAction = prayer;
+    debugPrint('🔔 Notification action: Mark $prayer as prayed');
+  };
+
+  // Note: rescheduleToday() is NOT called here because:
+  // 1. Permissions might not be granted yet
+  // 2. It will be called from MainNavigation which has access to the provider
+  // 3. The provider's load() method will check permission state
 
   await JustAudioBackground.init(
     androidNotificationChannelId: 'com.kitably.app.channel.audio',
@@ -62,6 +75,42 @@ void main() async {
       child: const AsSalahApp(),
     ),
   );
+}
+
+/// Holds a pending prayer action from a notification tap.
+/// MainNavigation checks this on resume and processes it.
+class _PendingPrayerAction {
+  static String? pendingAction;
+  static DateTime? actionTime;
+
+  /// Consume the pending action (returns it and clears)
+  static String? consume() {
+    final action = pendingAction;
+    pendingAction = null;
+    actionTime = null;
+    return action;
+  }
+
+  /// Check if there's a pending action that's less than 30 seconds old
+  static String? consumeIfFresh() {
+    if (pendingAction == null) return null;
+    if (actionTime == null) return consume();
+
+    final age = DateTime.now().difference(actionTime!).inSeconds;
+    if (age < 30) {
+      return consume();
+    } else {
+      // Too old, discard
+      pendingAction = null;
+      actionTime = null;
+      return null;
+    }
+  }
+
+  static void set(String prayer) {
+    pendingAction = prayer;
+    actionTime = DateTime.now();
+  }
 }
 
 class AsSalahApp extends StatelessWidget {
@@ -306,7 +355,7 @@ class _SplashScreen extends StatelessWidget {
   }
 }
 
-// ---- Main Navigation (modified: global bottom nav on all screens except Quran) ----
+// ---- Main Navigation ----
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
@@ -349,12 +398,127 @@ class MainNavigation extends StatefulWidget {
   State<MainNavigation> createState() => MainNavigationState();
 }
 
-class MainNavigationState extends State<MainNavigation> {
+class MainNavigationState extends State<MainNavigation>
+    with WidgetsBindingObserver {
   int _tabIndex = 0;
 
   /// Stack of screens pushed on top of the tab content.
-  /// The bottom nav bar remains visible for all screens in this stack.
   final List<Widget> _screenStack = [];
+
+  /// Track if we've done initial notification reschedule
+  bool _initialNotificationRescheduleDone = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
+    // Initial notification reschedule after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _doInitialNotificationReschedule();
+      _processPendingNotificationAction();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // App Lifecycle - Reschedule notifications when app comes to foreground
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // App came to foreground - reschedule notifications and process actions
+        _rescheduleNotificationsIfNeeded();
+        _processPendingNotificationAction();
+        break;
+
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        // No action needed
+        break;
+    }
+  }
+
+  /// Initial reschedule - called once after first frame
+  void _doInitialNotificationReschedule() {
+    if (_initialNotificationRescheduleDone) return;
+    _initialNotificationRescheduleDone = true;
+
+    final notifProvider = context.read<PrayerNotificationProvider>();
+    if (notifProvider.permissionsGranted) {
+      PrayerNotificationService.instance.rescheduleToday();
+    }
+  }
+
+  /// Reschedule notifications when app resumes
+  /// Uses a debounce to avoid multiple rapid reschedules
+  DateTime? _lastRescheduleTime;
+
+  void _rescheduleNotificationsIfNeeded() {
+    // Debounce: don't reschedule more than once per 30 seconds
+    final now = DateTime.now();
+    if (_lastRescheduleTime != null &&
+        now.difference(_lastRescheduleTime!).inSeconds < 30) {
+      return;
+    }
+    _lastRescheduleTime = now;
+
+    final notifProvider = context.read<PrayerNotificationProvider>();
+    if (notifProvider.permissionsGranted) {
+      PrayerNotificationService.instance.rescheduleToday();
+    }
+  }
+
+  /// Process a pending "Mark as Prayed" action from a notification
+  void _processPendingNotificationAction() {
+    final prayer = _PendingPrayerAction.consumeIfFresh();
+    if (prayer == null) return;
+
+    // Get today's date key
+    final now = DateTime.now();
+    final todayKey =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
+    // Handle post-midnight Isha (belongs to yesterday)
+    String effectiveKey = todayKey;
+    if (prayer == 'Isha' && now.hour < 5) {
+      final yesterday = now.subtract(const Duration(days: 1));
+      effectiveKey =
+          '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
+    }
+
+    final tracker = context.read<PrayerTracker>();
+    final beforeCount = tracker.prayedCountForDate(effectiveKey);
+
+    tracker.togglePrayerForDate(effectiveKey, prayer).then((_) {
+      final afterCount = tracker.prayedCountForDate(effectiveKey);
+      if (beforeCount == 4 && afterCount == 5) {
+        // All 5 prayers completed - could show a celebration
+        HapticFeedback.mediumImpact();
+        debugPrint('🎉 All 5 prayers completed for $effectiveKey!');
+      }
+
+      // Navigate to prayer tab to show the update
+      if (mounted) {
+        goToTab(1);
+      }
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Navigation
+  // ═══════════════════════════════════════════════════════════════════════════
 
   void goToTab(int tab) {
     setState(() {
