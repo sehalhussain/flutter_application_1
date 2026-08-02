@@ -114,8 +114,9 @@ class _PrayerScreenState extends State<PrayerScreen>
 
   void _onPrayerServiceChanged() {
     _fetchCalendar();
-    // Reschedule notifications when location/calculation method changes
-    PrayerNotificationService.instance.rescheduleToday();
+    // Force reschedule notifications when location/calculation method changes
+    // (old notifications have wrong times and must be cancelled first)
+    PrayerNotificationService.instance.forceRescheduleToday();
   }
 
   Future<void> _fetchCalendar(
@@ -997,9 +998,65 @@ class _PrayerScreenState extends State<PrayerScreen>
                       if (!isSunrise) ...[
                         const SizedBox(width: 8),
                         GestureDetector(
-                          onTap: () {
+                          onTap: () async {
                             HapticFeedback.lightImpact();
-                            notifProvider.toggle(prayer);
+                            final success = await notifProvider.toggle(prayer);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                              if (success && notifProvider.successMessage != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(
+                                          notifProvider.isEnabled(prayer)
+                                              ? Icons.notifications_active_rounded
+                                              : Icons.notifications_off_rounded,
+                                          color: Colors.white.withOpacity(0.9),
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(notifProvider.successMessage!),
+                                      ],
+                                    ),
+                                    backgroundColor: qt.emeraldDeep,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12)),
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 12),
+                                    duration: const Duration(seconds: 2),
+                                    elevation: 6,
+                                  ),
+                                );
+                              } else if (!success && notifProvider.errorMessage != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.error_outline_rounded,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(notifProvider.errorMessage!),
+                                        ),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.redAccent,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12)),
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 12),
+                                    duration: const Duration(seconds: 3),
+                                    elevation: 6,
+                                  ),
+                                );
+                              }
+                            }
                           },
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),

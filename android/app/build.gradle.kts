@@ -34,7 +34,7 @@ android {
         // 3. This must be unique on the Play Store!
         applicationId = "com.sehalhussain.kitably"
         minSdk = flutter.minSdkVersion
-        targetSdk = 35
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

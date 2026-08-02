@@ -2,7 +2,7 @@
 
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data'; // <-- ADDED for Int64List
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +25,11 @@ const String _channelId = 'prayer_times_channel';
 const String _channelName = 'Prayer Times';
 const String _channelDescription = 'Notifications for daily prayer times';
 const String _groupId = 'prayer_times_group';
+
+/// Number of days ahead to schedule prayer notifications.
+/// iOS has a 64-notification limit, so we schedule fewer days.
+/// Android has no hard limit, so we schedule more days for reliability.
+int get _schedulingHorizonDays => Platform.isIOS ? 12 : 30;
 
 const Map<String, String> _prayerDisplayNames = {
   'Fajr': 'Fajr',
@@ -51,11 +56,11 @@ const Map<String, String> _prayerArabicNames = {
 };
 
 const Map<String, String> _prayerReminders = {
-  'Fajr': 'The dawn prayer brings blessings to your day',
-  'Dhuhr': 'Take a moment for the midday prayer',
-  'Asr': 'The afternoon prayer, a time of reflection',
-  'Maghrib': 'As the sun sets, answer the call to prayer',
-  'Isha': 'End your day with peace through prayer',
+  'Fajr': 'Start your day with the dawn prayer',
+  'Dhuhr': 'Take a moment for your midday prayer',
+  'Asr': 'Pause and reflect with the afternoon prayer',
+  'Maghrib': 'As the sun sets, take a moment to pray',
+  'Isha': 'End your day with peace and prayer',
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -72,6 +77,7 @@ class PrayerNotificationService {
 
   bool _initialized = false;
   bool _permissionsGranted = false;
+  bool _useExactAlarms = true;
 
   void Function(String prayer)? onMarkPrayed;
 
@@ -113,7 +119,10 @@ class PrayerNotificationService {
 
       _permissionsGranted = await _checkPermissions();
 
-      await _plugin.cancelAll();
+      // NOTE: We intentionally do NOT cancel all notifications here.
+      // Scheduled notifications persist across app restarts, which is
+      // essential for multi-day scheduling. The rescheduleToday() method
+      // will extend the schedule as needed when the app opens.
 
       _initialized = true;
       debugPrint(
@@ -212,10 +221,8 @@ class PrayerNotificationService {
         AndroidFlutterLocalNotificationsPlugin>();
     if (androidPlugin == null) return;
 
-    // FIX 1: Added required named parameter 'channelId:'
     await androidPlugin.deleteNotificationChannel(channelId: _channelId);
 
-    // FIX 2: Removed 'const' keyword and used Int64List.fromList for vibrationPattern
     final channel = AndroidNotificationChannel(
       _channelId,
       _channelName,
@@ -240,7 +247,6 @@ class PrayerNotificationService {
           IOSFlutterLocalNotificationsPlugin>();
       if (iosPlugin != null) {
         final result = await iosPlugin.checkPermissions();
-        // FIX 3: Explicit == true check prevents 'Object' return type error
         return result == true;
       }
       return false;
@@ -249,7 +255,6 @@ class PrayerNotificationService {
           AndroidFlutterLocalNotificationsPlugin>();
       if (androidPlugin != null) {
         final result = await androidPlugin.areNotificationsEnabled();
-        // FIX 3: Explicit != false handles null (pre-Android 13) safely
         return result != false;
       }
       return true;
@@ -273,7 +278,6 @@ class PrayerNotificationService {
           badge: true,
           sound: true,
         );
-        // FIX 3: Explicit == true check
         _permissionsGranted = result == true;
       } else {
         _permissionsGranted = false;
@@ -348,16 +352,12 @@ class PrayerNotificationService {
     await prefs.setBool('$_prefsKeyEnabled$prayer', enabled);
 
     if (enabled) {
-      await prefs.remove(_prefsKeyLastScheduleDate);
-
-      final scheduled = await _scheduleTodayForPrayer(prayer);
-      if (!scheduled) {
-        await _scheduleTomorrowForPrayer(prayer);
-      }
-      await _showTestNotification(prayer);
+      // Schedule for the next N days to ensure notifications fire even
+      // if the user doesn't open the app for several days.
+      await _schedulePrayerForNDays(prayer, _schedulingHorizonDays);
     } else {
-      await _cancelTodayForPrayer(prayer);
-      await _cancelTomorrowForPrayer(prayer);
+      // Cancel all future scheduled notifications for this prayer
+      await _cancelAllFutureForPrayer(prayer);
     }
 
     return true;
@@ -365,80 +365,108 @@ class PrayerNotificationService {
 
   // ── Reschedule All ──────────────────────────────────────────────────────
 
+  // ── Reschedule All ──────────────────────────────────────────────────────
+  
   Future<void> rescheduleToday() async {
     if (!_initialized || !_permissionsGranted) return;
+
+    // Refresh timezone details to handle travel/timezone shifts dynamically
+    await _initializeTimezone();
 
     final enabledStates = await getAllEnabledStates();
     final enabledPrayers =
         enabledStates.entries.where((e) => e.value).map((e) => e.key).toList();
 
-    if (enabledPrayers.isEmpty) return;
-
-    final timings = await PrayerService.instance.getTodayTimings();
-    if (timings == null || timings['timings'] == null) return;
-
-    final prefs = await SharedPreferences.getInstance();
-    final lastScheduleDate = prefs.getString(_prefsKeyLastScheduleDate);
-    final todayStr = _todayDateKey();
-
-    if (lastScheduleDate == todayStr) return;
-
-    final tomorrowStr = _tomorrowDateKey();
-    final now = DateTime.now();
-    int scheduledCount = 0;
-
-    for (final prayer in enabledPrayers) {
-      if (!_prayerDisplayNames.containsKey(prayer)) continue;
-
-      final parsedTime = _parsePrayerTime(timings['timings'][prayer]);
-      if (parsedTime == null) continue;
-
-      final prayerTime = DateTime(
-        now.year,
-        now.month,
-        now.day,
-        parsedTime.hour,
-        parsedTime.minute,
-      );
-
-      await _cancelNotif(_notifId(todayStr, prayer));
-      await _cancelNotif(_notifId(tomorrowStr, prayer));
-
-      bool success;
-      if (prayerTime.isAfter(now.add(const Duration(minutes: 1)))) {
-        success = await _scheduleNotif(
-          id: _notifId(todayStr, prayer),
-          prayer: prayer,
-          scheduledDate: prayerTime,
-        );
-      } else {
-        final tomorrow = now.add(const Duration(days: 1));
-        final tomorrowPrayerTime = DateTime(
-          tomorrow.year,
-          tomorrow.month,
-          tomorrow.day,
-          parsedTime.hour,
-          parsedTime.minute,
-        );
-        success = await _scheduleNotif(
-          id: _notifId(tomorrowStr, prayer),
-          prayer: prayer,
-          scheduledDate: tomorrowPrayerTime,
-        );
-      }
-
-      if (success) scheduledCount++;
+    if (enabledPrayers.isEmpty) {
+      // Cancel the refresh reminder if no notifications are active
+      await _cancelNotif(999999);
+      return;
     }
 
+    final now = DateTime.now();
+
+    // Get timings for the next N days (shared across all prayers)
+    final timings = await _getTimingsForDateRange(now, _schedulingHorizonDays);
+
+    int scheduledCount = 0;
+    for (final prayer in enabledPrayers) {
+      scheduledCount += await _schedulePrayerForNDays(
+        prayer,
+        _schedulingHorizonDays,
+        timingsCache: timings,
+      );
+    }
+
+    // Schedule a keep-alive reminder notification on the 10th day for iOS
+    // to prevent notifications from running out if they don't open the app.
+    if (Platform.isIOS && scheduledCount > 0) {
+      await _scheduleRefreshReminder(_schedulingHorizonDays);
+    }
+
+    // Update the last schedule date to the furthest scheduled date
     if (scheduledCount > 0) {
-      await prefs.setString(_prefsKeyLastScheduleDate, todayStr);
+      final prefs = await SharedPreferences.getInstance();
+      final targetEnd = now.add(Duration(days: _schedulingHorizonDays));
+      await prefs.setString(
+          _prefsKeyLastScheduleDate, _dateKeyFromDate(targetEnd));
     }
   }
 
   Future<void> forceRescheduleToday() async {
+    // Refresh timezone details
+    await _initializeTimezone();
+    // Cancel all existing prayer notifications (times are now wrong)
+    await _cancelAllPrayerNotifications();
+    // Clear the last schedule date
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_prefsKeyLastScheduleDate);
+    // Reschedule from scratch
     await rescheduleToday();
+  }
+
+  /// Schedules a reminder notification on the (horizon - 2) day to prompt the user
+  /// to open the app, ensuring their notifications don't run out.
+  Future<void> _scheduleRefreshReminder(int days) async {
+    final targetDay = days - 2;
+    if (targetDay <= 0) return;
+
+    final reminderTime = DateTime.now().add(Duration(days: targetDay));
+    final scheduledDate = DateTime(
+      reminderTime.year,
+      reminderTime.month,
+      reminderTime.day,
+      10, // 10:00 AM local time
+      0,
+    );
+
+    final id = 999999;
+    await _cancelNotif(id);
+
+    final tzScheduledDate = tz.TZDateTime.from(scheduledDate, tz.local);
+    if (tzScheduledDate.isBefore(tz.TZDateTime.now(tz.local))) return;
+
+    const androidDetails = AndroidNotificationDetails(
+      'prayer_times_reminder_channel',
+      'App Reminders',
+      channelDescription: 'Reminders to open the app and refresh prayer timings',
+      importance: Importance.low,
+      priority: Priority.low,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentSound: true,
+    );
+
+    await _plugin.zonedSchedule(
+      id: id,
+      title: '🕌 Keep your prayer notifications active',
+      body: 'Open Kitably to update prayer times and keep receiving daily notifications.',
+      scheduledDate: tzScheduledDate,
+      notificationDetails: const NotificationDetails(android: androidDetails, iOS: iosDetails),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      payload: 'refresh_reminder',
+    );
   }
 
   // ── Time Parsing ─────────────────────────────────────────────────────────
@@ -474,74 +502,124 @@ class PrayerNotificationService {
 
   // ── Schedule Single Prayer ──────────────────────────────────────────────
 
-  Future<bool> _scheduleTodayForPrayer(String prayer) async {
-    if (!_initialized || !_permissionsGranted) return false;
+  /// Gets prayer timings for a range of dates starting from [startDate].
+  /// Returns a map keyed by date key (YYYY-MM-DD) → prayer timings map.
+  Future<Map<String, Map<String, String>>> _getTimingsForDateRange(
+    DateTime startDate,
+    int days,
+  ) async {
+    final result = <String, Map<String, String>>{};
 
-    final timings = await PrayerService.instance.getTodayTimings();
-    if (timings == null || timings['timings'] == null) return false;
-
-    final parsedTime = _parsePrayerTime(timings['timings'][prayer]);
-    if (parsedTime == null) return false;
-
-    final now = DateTime.now();
-    final prayerTime = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      parsedTime.hour,
-      parsedTime.minute,
-    );
-
-    if (prayerTime.isBefore(now.add(const Duration(minutes: 1)))) {
-      return false;
+    // Group dates by month to minimize calendar API calls
+    final Map<int, List<DateTime>> byMonth = {};
+    for (int i = 0; i < days; i++) {
+      final date = startDate.add(Duration(days: i));
+      final monthKey = date.year * 100 + date.month;
+      byMonth.putIfAbsent(monthKey, () => []).add(date);
     }
 
-    final todayStr = _todayDateKey();
-    await _cancelNotif(_notifId(todayStr, prayer));
+    for (final entry in byMonth.entries) {
+      final year = entry.key ~/ 100;
+      final month = entry.key % 100;
+      final calendar =
+          await PrayerService.instance.getCalendarByMonth(year, month);
+      if (calendar == null) continue;
 
-    return await _scheduleNotif(
-      id: _notifId(todayStr, prayer),
-      prayer: prayer,
-      scheduledDate: prayerTime,
-    );
+      for (final date in entry.value) {
+        // Calendar uses DD-MM-YYYY format for gregorian date
+        final calDateStr =
+            '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
+
+        for (final day in calendar) {
+          if (day['date']['gregorian']['date'] == calDateStr) {
+            final dateKey = _dateKeyFromDate(date);
+            result[dateKey] = Map<String, String>.from(day['timings']);
+            break;
+          }
+        }
+      }
+    }
+
+    return result;
   }
 
-  Future<bool> _scheduleTomorrowForPrayer(String prayer) async {
-    if (!_initialized || !_permissionsGranted) return false;
+  /// Schedules notifications for [prayer] across the next [days] days.
+  /// Uses [timingsCache] if provided to avoid redundant calendar fetches.
+  /// Returns the number of notifications successfully scheduled.
+  Future<int> _schedulePrayerForNDays(
+    String prayer,
+    int days, {
+    Map<String, Map<String, String>>? timingsCache,
+  }) async {
+    if (!_initialized || !_permissionsGranted) return 0;
+    if (!_prayerDisplayNames.containsKey(prayer)) return 0;
 
-    final timings = await PrayerService.instance.getTodayTimings();
-    if (timings == null || timings['timings'] == null) return false;
+    final now = DateTime.now();
 
-    final parsedTime = _parsePrayerTime(timings['timings'][prayer]);
-    if (parsedTime == null) return false;
+    // Get timings for the date range
+    final timings = timingsCache ?? await _getTimingsForDateRange(now, days);
 
-    final tomorrow = DateTime.now().add(const Duration(days: 1));
-    final prayerTime = DateTime(
-      tomorrow.year,
-      tomorrow.month,
-      tomorrow.day,
-      parsedTime.hour,
-      parsedTime.minute,
-    );
+    int scheduledCount = 0;
 
-    final tomorrowStr = _tomorrowDateKey();
-    await _cancelNotif(_notifId(tomorrowStr, prayer));
+    for (int offset = 0; offset < days; offset++) {
+      final date = now.add(Duration(days: offset));
+      final dateKey = _dateKeyFromDate(date);
 
-    return await _scheduleNotif(
-      id: _notifId(tomorrowStr, prayer),
-      prayer: prayer,
-      scheduledDate: prayerTime,
-    );
+      final dayTimings = timings[dateKey];
+      if (dayTimings == null) continue;
+
+      final parsedTime = _parsePrayerTime(dayTimings[prayer]);
+      if (parsedTime == null) continue;
+
+      final prayerTime = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        parsedTime.hour,
+        parsedTime.minute,
+      );
+
+      // Only schedule if the prayer time is in the future
+      if (!prayerTime.isAfter(now.add(const Duration(minutes: 1)))) {
+        continue;
+      }
+
+      await _cancelNotif(_notifId(dateKey, prayer));
+      final success = await _scheduleNotif(
+        id: _notifId(dateKey, prayer),
+        prayer: prayer,
+        scheduledDate: prayerTime,
+      );
+      if (success) scheduledCount++;
+    }
+
+    return scheduledCount;
   }
 
   // ── Cancel ───────────────────────────────────────────────────────────────
 
-  Future<void> _cancelTodayForPrayer(String prayer) async {
-    await _cancelNotif(_notifId(_todayDateKey(), prayer));
+  /// Cancels all future scheduled notifications for a specific prayer.
+  /// Iterates through the next 14 days (buffer beyond scheduling horizon).
+  Future<void> _cancelAllFutureForPrayer(String prayer) async {
+    final now = DateTime.now();
+    for (int offset = 0; offset <= _schedulingHorizonDays + 2; offset++) {
+      final date = now.add(Duration(days: offset));
+      final dateKey = _dateKeyFromDate(date);
+      await _cancelNotif(_notifId(dateKey, prayer));
+    }
   }
 
-  Future<void> _cancelTomorrowForPrayer(String prayer) async {
-    await _cancelNotif(_notifId(_tomorrowDateKey(), prayer));
+  /// Cancels all scheduled prayer notifications for all prayers.
+  /// Used when location/calculation method changes (forceRescheduleToday).
+  Future<void> _cancelAllPrayerNotifications() async {
+    final now = DateTime.now();
+    for (final prayer in _prayerDisplayNames.keys) {
+      for (int offset = 0; offset <= _schedulingHorizonDays + 2; offset++) {
+        final date = now.add(Duration(days: offset));
+        final dateKey = _dateKeyFromDate(date);
+        await _cancelNotif(_notifId(dateKey, prayer));
+      }
+    }
   }
 
   Future<void> cancelAll() async {
@@ -550,59 +628,9 @@ class PrayerNotificationService {
     await prefs.remove(_prefsKeyLastScheduleDate);
   }
 
-  // ── Test Notification ────────────────────────────────────────────────────
-
-  Future<void> _showTestNotification(String prayer) async {
-    if (!_initialized || !_permissionsGranted) return;
-
-    final displayName = _prayerDisplayNames[prayer] ?? prayer;
-    final arabicName = _prayerArabicNames[prayer] ?? '';
-
-    // FIX 2: Removed 'const', used Int64List.fromList
-    final androidDetails = AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: _channelDescription,
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-      playSound: true,
-      enableVibration: true,
-      vibrationPattern: Int64List.fromList([0, 400, 200, 400]),
-      category: AndroidNotificationCategory.alarm,
-      timeoutAfter: 300000,
-      groupKey: _groupId,
-      autoCancel: true,
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    final details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    final body = arabicName.isNotEmpty
-        ? '$arabicName \u2022 You\'ll be reminded at prayer time'
-        : 'You\'ll be reminded at $displayName prayer time';
-
-    await _plugin.show(
-      id: _notifId('test', prayer),
-      title: '\u2705 $displayName Notifications Enabled',
-      body: body,
-      notificationDetails: details,
-      payload: '$_payloadPrefix$prayer',
-    );
-  }
-
   // ── Scheduled Notification Details ──────────────────────────────────────
 
   NotificationDetails _buildScheduledNotificationDetails() {
-    // FIX 2: Removed 'const', used Int64List.fromList
     final androidDetails = AndroidNotificationDetails(
       _channelId,
       _channelName,
@@ -652,7 +680,6 @@ class PrayerNotificationService {
     try {
       final displayName = _prayerDisplayNames[prayer] ?? prayer;
       final emoji = _prayerEmojis[prayer] ?? '\u{1F54C}';
-      final arabicName = _prayerArabicNames[prayer] ?? '';
       final reminder = _prayerReminders[prayer] ?? '';
 
       final hour = scheduledDate.hour;
@@ -668,19 +695,47 @@ class PrayerNotificationService {
       }
 
       final title = '$emoji $displayName Prayer';
-      final body = arabicName.isNotEmpty
-          ? '$arabicName \u2022 $timeStr\n$reminder'
-          : '$timeStr \u2022 $reminder';
+      final body = 'Time to pray \u2022 $timeStr\n$reminder';
 
-      await _plugin.zonedSchedule(
-        id: id,
-        title: title,
-        body: body,
-        scheduledDate: tzScheduledDate,
-        notificationDetails: _buildScheduledNotificationDetails(),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        payload: '$_payloadPrefix$prayer',
-      );
+      final details = _buildScheduledNotificationDetails();
+
+      // Use exact alarms on Android for precise prayer time delivery.
+      // Falls back to inexact if the OS denies exact alarm permission.
+      if (!Platform.isAndroid || !_useExactAlarms) {
+        await _plugin.zonedSchedule(
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: tzScheduledDate,
+          notificationDetails: details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          payload: '$_payloadPrefix$prayer',
+        );
+      } else {
+        try {
+          await _plugin.zonedSchedule(
+            id: id,
+            title: title,
+            body: body,
+            scheduledDate: tzScheduledDate,
+            notificationDetails: details,
+            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+            payload: '$_payloadPrefix$prayer',
+          );
+        } catch (e) {
+          debugPrint('Exact alarm denied, falling back to inexact: $e');
+          _useExactAlarms = false;
+          await _plugin.zonedSchedule(
+            id: id,
+            title: title,
+            body: body,
+            scheduledDate: tzScheduledDate,
+            notificationDetails: details,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            payload: '$_payloadPrefix$prayer',
+          );
+        }
+      }
 
       return true;
     } catch (e) {
@@ -699,14 +754,9 @@ class PrayerNotificationService {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  String _todayDateKey() {
-    final now = DateTime.now();
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-  }
-
-  String _tomorrowDateKey() {
-    final tomorrow = DateTime.now().add(const Duration(days: 1));
-    return '${tomorrow.year}-${tomorrow.month.toString().padLeft(2, '0')}-${tomorrow.day.toString().padLeft(2, '0')}';
+  /// Returns a date key (YYYY-MM-DD) for the given [date].
+  String _dateKeyFromDate(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   Future<DateTime?> getScheduledTime(String prayer) async {
