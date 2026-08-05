@@ -12,6 +12,7 @@ import 'providers/prayer_tracker_provider.dart';
 import 'providers/prayer_notification_provider.dart';
 import 'services/prayer_service.dart';
 import 'services/prayer_notification_service.dart';
+import 'services/whats_new_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/menu_screen.dart';
 import 'screens/quran/quran_home_screen.dart';
@@ -19,6 +20,7 @@ import 'screens/prayer_screen.dart';
 import 'screens/duas/duas_screen.dart';
 import 'constants/quran_theme.dart';
 import 'widgets/prayer_setup_dialog.dart';
+import 'widgets/whats_new_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,6 +30,9 @@ void main() async {
 
   // Initialize notification service
   await PrayerNotificationService.instance.init();
+
+  // Initialize What's New service (version tracking + nudge state)
+  await WhatsNewService.instance.init();
 
   // ═══════════════════════════════════════════════════════════════════════════
   // Set up "Mark as Prayed" callback from notification action button
@@ -71,6 +76,8 @@ void main() async {
             create: (_) => PrayerNotificationProvider()..load()),
         // Expose PrayerService as a ChangeNotifier so screens can react to changes
         ChangeNotifierProvider.value(value: PrayerService.instance),
+        // Expose WhatsNewService for update detection and nudge state
+        ChangeNotifierProvider.value(value: WhatsNewService.instance),
       ],
       child: const AsSalahApp(),
     ),
@@ -191,6 +198,23 @@ class _SplashWrapperState extends State<_SplashWrapper>
     final prayerService = PrayerService.instance;
     if (!prayerService.hasCompletedSetup) {
       await showPrayerSetupDialog(context);
+    }
+
+    // Check for app update and show "What's New" if needed
+    await _showWhatsNewIfNeeded();
+  }
+
+  /// Show the "What's New" dialog if the app was just updated.
+  Future<void> _showWhatsNewIfNeeded() async {
+    if (!mounted) return;
+
+    final isUpdate = await WhatsNewService.instance.checkForUpdate();
+    if (isUpdate && mounted) {
+      final showMe = await showWhatsNewDialog(context);
+      if (showMe && mounted) {
+        // Navigate to Prayer tab
+        MainNavigation.goToTabStatic(context, 1);
+      }
     }
   }
 
@@ -552,6 +576,8 @@ class MainNavigationState extends State<MainNavigation>
   @override
   Widget build(BuildContext context) {
     final qt = QuranTheme.of(context);
+    final whatsNew = context.watch<WhatsNewService>();
+    final showPrayerNudge = whatsNew.shouldShowPrayerNudge;
 
     // Screens list for the nav tabs (Quran at index 2 is pushed via root Navigator)
     final screens = [
@@ -601,6 +627,10 @@ class MainNavigationState extends State<MainNavigation>
                   MaterialPageRoute(builder: (_) => const QuranHomeScreen()),
                 );
               } else {
+                // Clear prayer nudge when user taps Prayer tab
+                if (i == 1 && showPrayerNudge) {
+                  whatsNew.clearPrayerNudge();
+                }
                 goToTab(i);
               }
             },
@@ -613,28 +643,36 @@ class MainNavigationState extends State<MainNavigation>
               fontSize: 11,
             ),
             unselectedLabelStyle: const TextStyle(fontSize: 11),
-            items: const [
-              BottomNavigationBarItem(
+            items: [
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.home_filled),
                 activeIcon: Icon(Icons.home_filled),
                 label: "Home",
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.access_time),
-                activeIcon: Icon(Icons.access_time),
+                icon: _NudgeBadge(
+                  show: showPrayerNudge,
+                  color: qt.emeraldDeep,
+                  child: const Icon(Icons.access_time),
+                ),
+                activeIcon: _NudgeBadge(
+                  show: showPrayerNudge,
+                  color: qt.emeraldDeep,
+                  child: const Icon(Icons.access_time),
+                ),
                 label: "Prayer",
               ),
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.book),
                 activeIcon: Icon(Icons.menu_book_rounded),
                 label: "Quran",
               ),
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.auto_awesome_rounded),
                 activeIcon: Icon(Icons.auto_awesome_rounded),
                 label: "Duas",
               ),
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.grid_view_rounded),
                 activeIcon: Icon(Icons.grid_view_rounded),
                 label: "Menu",
@@ -643,6 +681,95 @@ class MainNavigationState extends State<MainNavigation>
           ),
         ),
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Nudge badge — a pulsing dot that draws attention to a nav item.
+// ─────────────────────────────────────────────────────────────────────────────
+class _NudgeBadge extends StatefulWidget {
+  final bool show;
+  final Color color;
+  final Widget child;
+
+  const _NudgeBadge({
+    required this.show,
+    required this.color,
+    required this.child,
+  });
+
+  @override
+  State<_NudgeBadge> createState() => _NudgeBadgeState();
+}
+
+class _NudgeBadgeState extends State<_NudgeBadge>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.4).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    if (widget.show) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(_NudgeBadge oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.show && !oldWidget.show) {
+      _controller.repeat(reverse: true);
+    } else if (!widget.show && oldWidget.show) {
+      _controller.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.show) return widget.child;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        widget.child,
+        Positioned(
+          top: -2,
+          right: -4,
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: widget.color,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.color.withOpacity(0.5),
+                    blurRadius: 4,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

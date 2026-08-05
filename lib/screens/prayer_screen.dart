@@ -8,6 +8,7 @@ import '../services/prayer_service.dart';
 import '../services/prayer_notification_service.dart';
 import '../providers/prayer_tracker_provider.dart';
 import '../providers/prayer_notification_provider.dart';
+import '../services/whats_new_service.dart';
 import '../constants/quran_theme.dart';
 import '../constants/locations.dart';
 import 'package:intl/intl.dart';
@@ -386,6 +387,8 @@ class _PrayerScreenState extends State<PrayerScreen>
     final tracker = context.watch<PrayerTracker>();
     final notifProvider = context.watch<PrayerNotificationProvider>();
     final prayerService = context.watch<PrayerService>();
+    final whatsNew = context.watch<WhatsNewService>();
+    final showBellHighlight = whatsNew.shouldShowBellHighlight;
     final monthName = DateFormat('MMMM').format(_displayDate);
     final yearNum = _displayDate.year.toString();
 
@@ -534,6 +537,11 @@ class _PrayerScreenState extends State<PrayerScreen>
                       ],
                     ),
                     const SizedBox(height: 14),
+                    if (showBellHighlight)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: _buildNotificationBanner(qt, whatsNew),
+                      ),
                     RepaintBoundary(
                       child: _buildPrayerTimesCard(qt, tracker, notifProvider,
                           cardBg, cardShadow, isDark),
@@ -742,6 +750,76 @@ class _PrayerScreenState extends State<PrayerScreen>
               fontSize: 18,
               fontWeight: FontWeight.w600,
               color: qt.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationBanner(QuranTheme qt, WhatsNewService whatsNew) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: qt.emeraldDeep.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: qt.emeraldDeep.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: qt.emeraldDeep.withOpacity(0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.notifications_active_rounded,
+              color: qt.emeraldDeep,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'New! Prayer Notifications',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: qt.emeraldDeep,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Tap the bell icon → to get reminded when prayer time starts',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: qt.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              whatsNew.clearBellHighlight();
+            },
+            child: Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Icon(
+                Icons.close_rounded,
+                size: 18,
+                color: qt.textMuted,
+              ),
             ),
           ),
         ],
@@ -1000,17 +1078,28 @@ class _PrayerScreenState extends State<PrayerScreen>
                         GestureDetector(
                           onTap: () async {
                             HapticFeedback.lightImpact();
+                            // Clear what's new bell highlight on first interaction
+                            if (context
+                                .read<WhatsNewService>()
+                                .shouldShowBellHighlight) {
+                              context
+                                  .read<WhatsNewService>()
+                                  .clearBellHighlight();
+                            }
                             final success = await notifProvider.toggle(prayer);
                             if (mounted) {
-                              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                              if (success && notifProvider.successMessage != null) {
+                              ScaffoldMessenger.of(context)
+                                  .hideCurrentSnackBar();
+                              if (success &&
+                                  notifProvider.successMessage != null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Row(
                                       children: [
                                         Icon(
                                           notifProvider.isEnabled(prayer)
-                                              ? Icons.notifications_active_rounded
+                                              ? Icons
+                                                  .notifications_active_rounded
                                               : Icons.notifications_off_rounded,
                                           color: Colors.white.withOpacity(0.9),
                                           size: 18,
@@ -1022,14 +1111,16 @@ class _PrayerScreenState extends State<PrayerScreen>
                                     backgroundColor: qt.emeraldDeep,
                                     behavior: SnackBarBehavior.floating,
                                     shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12)),
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
                                     margin: const EdgeInsets.symmetric(
                                         horizontal: 20, vertical: 12),
                                     duration: const Duration(seconds: 2),
                                     elevation: 6,
                                   ),
                                 );
-                              } else if (!success && notifProvider.errorMessage != null) {
+                              } else if (!success &&
+                                  notifProvider.errorMessage != null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Row(
@@ -1041,14 +1132,16 @@ class _PrayerScreenState extends State<PrayerScreen>
                                         ),
                                         const SizedBox(width: 8),
                                         Expanded(
-                                          child: Text(notifProvider.errorMessage!),
+                                          child:
+                                              Text(notifProvider.errorMessage!),
                                         ),
                                       ],
                                     ),
                                     backgroundColor: Colors.redAccent,
                                     behavior: SnackBarBehavior.floating,
                                     shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12)),
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
                                     margin: const EdgeInsets.symmetric(
                                         horizontal: 20, vertical: 12),
                                     duration: const Duration(seconds: 3),
