@@ -2,7 +2,7 @@ name: kitably
 description: "A premium Islamic prayer and Quran app."
 publish_to: 'none'
 
-version: 1.2.4+20
+version: 1.2.5+22
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

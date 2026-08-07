@@ -287,6 +287,11 @@ class PrayerNotificationService {
           AndroidFlutterLocalNotificationsPlugin>();
       if (androidPlugin != null) {
         final result = await androidPlugin.requestNotificationsPermission();
+        try {
+          await androidPlugin.requestExactAlarmsPermission();
+        } catch (e) {
+          debugPrint('Failed to request exact alarms permission: $e');
+        }
         _permissionsGranted = result == true;
       } else {
         _permissionsGranted = true;

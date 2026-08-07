@@ -21,8 +21,8 @@
     <!-- Required: Reschedule notifications after device reboot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     
-    <!-- USE_EXACT_ALARM: For alarm/timer apps (higher priority, no user approval needed on Android 13+) -->
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- SCHEDULE_EXACT_ALARM: For scheduling precise notifications/alarms (Google Play approved) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     
     <!-- ═══════════════════════════════════════════════════════════════════ -->
     <!-- AUDIO SERVICE PERMISSIONS (existing)                                  -->
