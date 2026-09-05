@@ -24,6 +24,7 @@ import 'quran/quran_home_screen.dart';
 import 'quran/quran_reader_screen.dart';
 import 'duas/duas_screen.dart';
 import 'hijri_calendar_screen.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_islamic_icons/flutter_islamic_icons.dart';
 import 'prayer_stats_screen.dart';
 import '../providers/prayer_tracker_provider.dart';
@@ -1331,7 +1332,7 @@ class _EssentialsSection extends StatefulWidget {
 }
 
 class _EssentialsSectionState extends State<_EssentialsSection> {
-  bool _isExpanded = false;
+  bool _showQibla = false;
   bool _showNewBadge = true;
 
   @override
@@ -1349,7 +1350,6 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
   @override
   Widget build(BuildContext context) {
     final qt = widget.qt;
-    final isDark = qt.brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1402,223 +1402,188 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
         ),
         const SizedBox(height: 18),
 
-        // ── Row: Holy Quran + Authentic Duas ──
-        Row(
+        // ── Feature Grid: the 4 core destinations ──
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          childAspectRatio: 1.05,
           children: [
-            Expanded(
-              child: _EssentialCard(
-                title: "Holy Quran",
-                subtitle: "Read, Listen & Reflect",
-                color: qt.emeraldDeep.withOpacity(isDark ? 0.12 : 0.07),
-                icon: Icons.book_rounded,
-                iconColor: isDark
-                    ? const Color.fromARGB(255, 155, 255, 213)
-                    : qt.emeraldDeep,
-                onTap: () async {
-                  await QuranService.instance.loadSurahList();
-                  if (!context.mounted) return;
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const QuranHomeScreen()),
-                  ).then((_) => widget.onRefreshAyah());
-                },
-                qt: qt,
-              ),
+            _ModernFeatureCard(
+              title: "Holy Quran",
+              subtitle: "Read, Listen & Reflect",
+              icon: Icons.menu_book_rounded,
+              svgAsset: 'assets/icons/Quran.svg',
+              accent: const Color(0xFFC69854),
+              qt: qt,
+              onTap: () async {
+                await QuranService.instance.loadSurahList();
+                if (!context.mounted) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const QuranHomeScreen()),
+                ).then((_) => widget.onRefreshAyah());
+              },
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _EssentialCard(
-                title: "Authentic Duas",
-                subtitle: "Dua for Every Moment",
-                color: isDark
-                    ? const Color(0xFFFFB74D).withOpacity(0.08)
-                    : const Color.fromARGB(255, 252, 245, 233),
-                icon: FlutterIslamicIcons.solidPrayingPerson,
-                iconColor: isDark
-                    ? const Color.fromARGB(255, 155, 255, 213)
-                    : const Color(0xFFFFB74D),
-                onTap: () {
-                  MainNavigation.pushOnShell(context, const DuasScreen());
-                },
-                qt: qt,
-              ),
+            _ModernFeatureCard(
+              title: "Authentic Duas",
+              subtitle: "Dua for Every Moment",
+              icon: FlutterIslamicIcons.solidPrayingPerson,
+              accent: const Color(0xFFC48A7D),
+              qt: qt,
+              onTap: () {
+                MainNavigation.pushOnShell(context, const DuasScreen());
+              },
             ),
-          ],
-        ),
-        const SizedBox(height: 10),
-
-        // ── Hadith Library ──
-        _PremiumEssentialTile(
-          icon: FlutterIslamicIcons.solidMohammad,
-          iconColor: isDark ? const Color(0xFFFFB74D) : Colors.blue.shade600,
-          iconBg: isDark
-              ? const Color(0xFFFFB74D).withOpacity(0.1)
-              : const Color(0xFFE3F2FD),
-          title: "Hadith Library",
-          subtitle: "Browse authentic narrations",
-          onTap: () {
-            MainNavigation.pushOnShell(context, const HadithHomeScreen());
-          },
-          qt: qt,
-        ),
-        const SizedBox(height: 8),
-
-        // ── Virtues of the Quran + NEW Badge ──
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            _PremiumEssentialTile(
-              icon: FlutterIslamicIcons.solidQuran,
-              iconColor:
-                  isDark ? const Color(0xFF4DB6AC) : const Color(0xFF00695C),
-              iconBg: isDark
-                  ? const Color(0xFF4DB6AC).withOpacity(0.1)
-                  : const Color(0xFFE0F2F1),
+            _ModernFeatureCard(
+              title: "Hadith Library",
+              subtitle: "Authentic narrations",
+              icon: FlutterIslamicIcons.solidMohammad,
+              accent: const Color(0xFF3B82F6),
+              qt: qt,
+              onTap: () {
+                MainNavigation.pushOnShell(context, const HadithHomeScreen());
+              },
+            ),
+            _ModernFeatureCard(
               title: "Fadāʾil al-Qurʾān",
-              subtitle: "Virtues of Quranic Sūrahs & Āyāt",
+              subtitle: "Virtues of Sūrahs & Āyāt",
+              icon: FlutterIslamicIcons.solidQuran,
+              accent: const Color(0xFF14B8A6),
+              qt: qt,
+              badge: _showNewBadge ? const _NewBadge() : null,
               onTap: () async {
                 await _NewBadgeManager.markVirtuesOpen();
                 if (!context.mounted) return;
                 MainNavigation.pushOnShell(context, const QuranVirtuesScreen());
-                _loadBadgeState(); // Updates badge state without needing .then()
+                _loadBadgeState();
               },
-              qt: qt,
             ),
-            if (_showNewBadge)
-              Positioned(
-                top: -5,
-                right: 14,
-                child: _NewBadge(),
-              ),
           ],
         ),
 
-        // ── Expandable: Hijri Calendar + Qibla + Prayer Stats ──
-        AnimatedCrossFade(
-          firstChild: const SizedBox(width: double.infinity, height: 0),
-          secondChild: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
+        const SizedBox(height: 22),
 
-              // Hijri Calendar
-              _PremiumEssentialTile(
-                icon: Icons.calendar_month_rounded,
-                iconColor:
-                    isDark ? const Color(0xFFFFB74D) : Colors.blue.shade600,
-                iconBg: isDark
-                    ? const Color(0xFFFFB74D).withOpacity(0.1)
-                    : const Color(0xFFE3F2FD),
-                title: "Hijri Calendar",
-                subtitle: "View Islamic events and dates",
-                onTap: () {
-                  MainNavigation.pushOnShell(
-                      context, const HijriCalendarScreen());
-                },
-                qt: qt,
-              ),
-              const SizedBox(height: 8),
-
-              // Qibla Compass
-              _QiblaCompassCard(
-                qiblaDirection: widget.qiblaDirection,
-                qt: qt,
-              ),
-              const SizedBox(height: 8),
-
-              // Prayer Stats
-              Consumer<PrayerTracker>(
-                builder: (context, tracker, _) {
-                  final todayCount = tracker.todayPrayedCount;
-                  final streak = tracker.currentStreak;
-                  return _PremiumEssentialTile(
-                    icon: Icons.mosque_rounded,
-                    iconColor: Colors.green.shade600,
-                    iconBg: Colors.green.withOpacity(isDark ? 0.1 : 0.08),
-                    title: "Prayer Journey",
-                    subtitle: todayCount > 0
-                        ? "$todayCount/5 today · $streak-day streak"
-                        : "Check your prayer consistency",
-                    onTap: () {
-                      MainNavigation.pushOnShell(
-                          context, const PrayerStatsScreen());
-                    },
-                    qt: qt,
-                  );
-                },
-              ),
-            ],
-          ),
-          crossFadeState: _isExpanded
-              ? CrossFadeState.showSecond
-              : CrossFadeState.showFirst,
-          duration: const Duration(milliseconds: 300),
-          firstCurve: Curves.easeInOutCubic,
-          secondCurve: Curves.easeInOutCubic,
-          sizeCurve: Curves.easeInOutCubic,
-        ),
-
-        const SizedBox(height: 20),
-
-        // ── Expand / Collapse Pill ──
-        GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            setState(() => _isExpanded = !_isExpanded);
-          },
-          behavior: HitTestBehavior.opaque,
-          child: Center(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeInOutCubic,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+        // ── Quick Actions Header ──
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
-                color: qt.emeraldDeep.withOpacity(_isExpanded ? 0.1 : 0.04),
-                borderRadius: BorderRadius.circular(100),
+                color: qt.emeraldLight.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(7),
                 border: Border.all(
-                  color: qt.emeraldDeep.withOpacity(_isExpanded ? 0.25 : 0.12),
-                  width: 1,
+                  color: qt.emeraldLight.withOpacity(0.1),
+                  width: 0.5,
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: Icon(
-                      _isExpanded
-                          ? Icons.expand_less_rounded
-                          : Icons.tune_rounded,
-                      key: ValueKey(_isExpanded),
-                      size: 15,
-                      color: qt.emeraldDeep,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _isExpanded ? "Show Less" : "More Tools",
-                    style: TextStyle(
-                      color: qt.emeraldDeep,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-                  AnimatedRotation(
-                    turns: _isExpanded ? 0.5 : 0.0,
-                    duration: const Duration(milliseconds: 280),
-                    curve: Curves.easeInOutCubic,
-                    child: Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      size: 16,
-                      color: qt.emeraldDeep.withOpacity(0.7),
-                    ),
-                  ),
-                ],
+              child: Icon(
+                Icons.bolt_rounded,
+                size: 11,
+                color: qt.emeraldLight,
               ),
             ),
+            const SizedBox(width: 10),
+            Text(
+              "UTILITY",
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: qt.textMuted,
+                letterSpacing: 1.6,
+              ),
+            ),
+            const Spacer(),
+            Expanded(
+              flex: 3,
+              child: Container(
+                height: 0.5,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      qt.textMuted.withOpacity(0.12),
+                      qt.textMuted.withOpacity(0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // ── Quick Actions Row (centers when it fits, scrolls when it grows) ──
+        LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minWidth: constraints.maxWidth,
+                ),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _ToolChip(
+                        icon: Icons.calendar_month_rounded,
+                        label: "Hijri Calendar",
+                        accent: const Color(0xFF3B82F6),
+                        qt: qt,
+                        onTap: () {
+                          MainNavigation.pushOnShell(
+                              context, const HijriCalendarScreen());
+                        },
+                      ),
+                      const SizedBox(width: 20),
+                      _ToolChip(
+                        icon: Icons.mosque_rounded,
+                        label: "Prayer Journey",
+                        accent: const Color(0xFF10B981),
+                        qt: qt,
+                        onTap: () {
+                          MainNavigation.pushOnShell(
+                              context, const PrayerStatsScreen());
+                        },
+                      ),
+                      const SizedBox(width: 20),
+                      _ToolChip(
+                        icon: Icons.explore_rounded,
+                        label: "Qibla Direction",
+                        accent: qt.emeraldDeep,
+                        qt: qt,
+                        isActive: _showQibla,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _showQibla = !_showQibla);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+
+        // ── Live Qibla Compass (toggled via the Qibla chip) ──
+        AnimatedCrossFade(
+          firstChild: const SizedBox(width: double.infinity, height: 0),
+          secondChild: Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: _QiblaCompassCard(
+              qiblaDirection: widget.qiblaDirection,
+              qt: qt,
+            ),
           ),
+          crossFadeState:
+              _showQibla ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 300),
+          sizeCurve: Curves.easeInOutCubic,
         ),
       ],
     );
@@ -2347,26 +2312,28 @@ class _HadithCard extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ESSENTIAL CARD — square tile style
+// MODERN FEATURE CARD — 2×2 grid tile with gradient icon chip
 // ═══════════════════════════════════════════════════════════════════════════
 
-class _EssentialCard extends StatelessWidget {
+class _ModernFeatureCard extends StatelessWidget {
   final String title;
   final String subtitle;
-  final Color color;
   final IconData icon;
-  final Color iconColor;
+  final String? svgAsset;
+  final Color accent;
   final VoidCallback onTap;
   final QuranTheme qt;
+  final Widget? badge;
 
-  const _EssentialCard({
+  const _ModernFeatureCard({
     required this.title,
     required this.subtitle,
-    required this.color,
     required this.icon,
-    required this.iconColor,
+    required this.accent,
     required this.onTap,
     required this.qt,
+    this.svgAsset,
+    this.badge,
   });
 
   @override
@@ -2377,59 +2344,99 @@ class _EssentialCard extends StatelessWidget {
           HapticFeedback.lightImpact();
           onTap();
         },
+        behavior: HitTestBehavior.opaque,
         child: Container(
-          padding: const EdgeInsets.all(16),
-          height: 160,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
           decoration: BoxDecoration(
-            color: qt.cardBg,
-            borderRadius: BorderRadius.circular(24),
-            // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
-            border: Border.all(
-              color: qt.borderGlass.withOpacity(0.12),
-              width: 1.0,
-            ),
+            color: qt.brightness == Brightness.dark
+                ? qt.cardBg.withOpacity(0.55)
+                : Colors.white.withOpacity(0.45),
+            borderRadius: BorderRadius.circular(22),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
-                blurRadius: 15,
-                offset: const Offset(0, 4),
-              )
+                color: Colors.black.withOpacity(
+                  qt.brightness == Brightness.dark ? 0.10 : 0.025,
+                ),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
+            clipBehavior: Clip.none,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(14),
+              Positioned.fill(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOutCubic,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            accent.withOpacity(0.16),
+                            accent.withOpacity(0.07),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: svgAsset != null
+                          ? SvgPicture.asset(
+                              svgAsset!,
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.contain,
+                            )
+                          : Icon(icon, size: 38, color: accent),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: qt.textPrimary,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: qt.textMuted,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
                 ),
-                child: Icon(icon, color: iconColor, size: 24),
               ),
-              const Spacer(),
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: qt.textPrimary,
-                  letterSpacing: -0.2,
+              if (badge != null)
+                Positioned(
+                  top: -6,
+                  right: -4,
+                  child: badge!,
+                )
+              else
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Icon(
+                    Icons.arrow_outward_rounded,
+                    size: 14,
+                    color: accent.withOpacity(0.55),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                subtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: qt.textMuted,
-                  height: 1.25,
-                ),
-              ),
             ],
           ),
         ),
@@ -2439,26 +2446,26 @@ class _EssentialCard extends StatelessWidget {
 }
 
 /// ═══════════════════════════════════════════════════════════════════════════
-// PREMIUM ESSENTIAL TILE — horizontal list tile style matching menu_screen
+// TOOL CHIP — compact pill for the Quick Tools row
 /// ═══════════════════════════════════════════════════════════════════════════
 
-class _PremiumEssentialTile extends StatelessWidget {
+class _ToolChip extends StatelessWidget {
   final IconData icon;
-  final Color iconColor;
-  final Color iconBg;
-  final String title;
-  final String subtitle;
+  final String label;
+  final Color accent;
+  final bool isActive;
+  final double width;
   final VoidCallback onTap;
   final QuranTheme qt;
 
-  const _PremiumEssentialTile({
+  const _ToolChip({
     required this.icon,
-    required this.iconColor,
-    required this.iconBg,
-    required this.title,
-    required this.subtitle,
+    required this.label,
+    required this.accent,
     required this.onTap,
     required this.qt,
+    this.isActive = false,
+    this.width = 96,
   });
 
   @override
@@ -2469,60 +2476,44 @@ class _PremiumEssentialTile extends StatelessWidget {
           HapticFeedback.lightImpact();
           onTap();
         },
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: qt.cardBg,
-            borderRadius: BorderRadius.circular(24),
-            // THE CHANGE: Switch hard border colors of cards to ultra-soft glass boundaries
-            border: Border.all(
-              color: qt.borderGlass.withOpacity(0.12),
-              width: 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.02),
-                blurRadius: 15,
-                offset: const Offset(0, 4),
-              )
-            ],
-          ),
-          child: Row(
+        child: SizedBox(
+          width: width,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: iconBg,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(icon, color: iconColor, size: 28),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: qt.textPrimary,
-                      ),
+              Center(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOutCubic,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        accent.withOpacity(isActive ? 0.24 : 0.16),
+                        accent.withOpacity(isActive ? 0.12 : 0.07),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: qt.textMuted,
-                      ),
-                    ),
-                  ],
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(icon, size: 28, color: accent),
                 ),
               ),
-              Icon(Icons.chevron_right_rounded, color: qt.textMuted),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: isActive ? accent : qt.textMuted,
+                  letterSpacing: 0.2,
+                  height: 1.25,
+                ),
+              ),
             ],
           ),
         ),

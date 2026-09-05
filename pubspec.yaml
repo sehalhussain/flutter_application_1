@@ -12,6 +12,8 @@ dependencies:
     sdk: flutter
   # State management
   provider: ^6.1.1
+  # SVG rendering
+  flutter_svg: ^2.0.10+1
   # Local storage for progress and settings
   shared_preferences: ^2.2.2
   # Audio for Quran recitation
