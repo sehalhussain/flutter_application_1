@@ -16,6 +16,7 @@ jobs:
 
       - name: Clean and Get Dependencies
         run: |
+          flutter clean
           flutter pub get
           cd ios
           rm -rf Pods
