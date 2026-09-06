@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hijri/hijri_calendar.dart';
 import '../providers/quran_settings_provider.dart';
+import '../providers/daily_ayah_notification_provider.dart';
 import '../services/prayer_service.dart';
 import '../services/translation_download_service.dart';
 import '../services/backup_service.dart';
@@ -22,6 +23,7 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<QuranSettings>();
+    final ayahNotif = context.watch<DailyAyahNotificationProvider>();
     final qt = QuranTheme.of(context);
     final isDark = qt.brightness == Brightness.dark;
 
@@ -80,6 +82,57 @@ class _MenuScreenState extends State<MenuScreen> {
             subtitle: _hijriLabel(),
             isConfigured: PrayerService.instance.hijriAdjustment != 0,
             onTap: () => _showHijriAdjustmentSheet(context, qt),
+          ),
+
+          const SizedBox(height: 30),
+          _buildSectionHeader("Daily Ayah Reminder"),
+          const SizedBox(height: 10),
+
+          _buildSwitchTile(
+            qt: qt,
+            isDark: isDark,
+            icon: Icons.menu_book_rounded,
+            title: "Daily Ayah Notification",
+            subtitle: "Receive a random ayah from the Quran every day",
+            value: ayahNotif.enabled,
+            onChanged: (val) async {
+              final success = await ayahNotif.toggle();
+              if (!success && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(ayahNotif.errorMessage ?? 'Failed.'),
+                    backgroundColor: Colors.redAccent,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                );
+              }
+            },
+          ),
+          const SizedBox(height: 10),
+
+          _buildPremiumTile(
+            qt,
+            icon: Icons.schedule_rounded,
+            title: "Ayah Reminder Time",
+            subtitle: _formatTime(ayahNotif.time),
+            isConfigured: ayahNotif.enabled,
+            onTap: () async {
+              final picked = await showTimePicker(
+                context: context,
+                initialTime: ayahNotif.time,
+                builder: (ctx, child) => MediaQuery(
+                  data: MediaQuery.of(ctx).copyWith(
+                    alwaysUse24HourFormat: false,
+                  ),
+                  child: child!,
+                ),
+              );
+              if (picked != null) {
+                await ayahNotif.setTime(picked);
+              }
+            },
           ),
 
           const SizedBox(height: 30),
@@ -222,6 +275,12 @@ class _MenuScreenState extends State<MenuScreen> {
         onTap: onTap,
       ),
     );
+  }
+
+  String _formatTime(TimeOfDay t) {
+    final period = t.hour < 12 ? 'AM' : 'PM';
+    final hour12 = t.hour == 0 ? 12 : (t.hour > 12 ? t.hour - 12 : t.hour);
+    return '$hour12:${t.minute.toString().padLeft(2, '0')} $period';
   }
 
   String _hijriLabel() {
@@ -1053,7 +1112,7 @@ class _MenuScreenState extends State<MenuScreen> {
                     fontSize: 14,
                     color: qt.textPrimary,
                     fontWeight: FontWeight.w500)),
-            trailing: const Text("1.2.5",
+            trailing: const Text("1.2.6",
                 style: TextStyle(
                     color: Colors.grey,
                     fontSize: 14,

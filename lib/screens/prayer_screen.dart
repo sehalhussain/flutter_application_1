@@ -1072,6 +1072,9 @@ class _PrayerScreenState extends State<PrayerScreen>
                                   : qt.textSecondary,
                         ),
                       ),
+                      // Sunrise has no bell — reserve identical space so its
+                      // time aligns with the other rows' times.
+                      if (isSunrise) const SizedBox(width: 8 + 28),
                       // Notification bell icon for prayer times (not Sunrise)
                       if (!isSunrise) ...[
                         const SizedBox(width: 8),

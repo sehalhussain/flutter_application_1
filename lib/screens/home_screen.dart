@@ -187,11 +187,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 onRefreshAyah: _refreshAyah,
                 qiblaDirection: PrayerService.instance.qiblaDirection,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 40),
 
               // --- ASMA UL HUSNA SLIDER ---
               _AsmaSlider(future: _namesFuture, qt: qt),
-              const SizedBox(height: 32),
+              const SizedBox(height: 40),
 
               // --- AYAH OF THE DAY ---
               _AyahSection(future: _ayahFuture, qt: qt),
@@ -893,22 +893,6 @@ class _PrayerCardState extends State<_PrayerCard>
               mainAxisSize: MainAxisSize.min,
               children: [
                 // ═══════════════════════════════════════════════════════
-                //  AYAH CITATION
-                // ═══════════════════════════════════════════════════════
-                Text(
-                  '"The Prayer is enjoined upon the believers at stated times." (Quran 4:103)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(0.7),
-                    fontWeight: FontWeight.w400,
-                    height: 1.4,
-                    fontStyle: FontStyle.italic,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-
-                // ═══════════════════════════════════════════════════════
                 //  NOW & NEXT DISPLAY
                 // ═══════════════════════════════════════════════════════
                 Row(
@@ -1355,50 +1339,10 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // ── Section Header ──
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: qt.emeraldLight.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(7),
-                border: Border.all(
-                  color: qt.emeraldLight.withOpacity(0.1),
-                  width: 0.5,
-                ),
-              ),
-              child: Icon(
-                Icons.grid_view_rounded,
-                size: 11,
-                color: qt.emeraldLight,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              "ESSENTIALS",
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: qt.textMuted,
-                letterSpacing: 1.6,
-              ),
-            ),
-            const Spacer(),
-            Expanded(
-              flex: 3,
-              child: Container(
-                height: 0.5,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      qt.textMuted.withOpacity(0.12),
-                      qt.textMuted.withOpacity(0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+        _SectionHeader(
+          icon: Icons.grid_view_rounded,
+          title: "ESSENTIALS",
+          qt: qt,
         ),
         const SizedBox(height: 18),
 
@@ -1467,50 +1411,10 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
         const SizedBox(height: 22),
 
         // ── Quick Actions Header ──
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                color: qt.emeraldLight.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(7),
-                border: Border.all(
-                  color: qt.emeraldLight.withOpacity(0.1),
-                  width: 0.5,
-                ),
-              ),
-              child: Icon(
-                Icons.bolt_rounded,
-                size: 11,
-                color: qt.emeraldLight,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              "UTILITY",
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: qt.textMuted,
-                letterSpacing: 1.6,
-              ),
-            ),
-            const Spacer(),
-            Expanded(
-              flex: 3,
-              child: Container(
-                height: 0.5,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      qt.textMuted.withOpacity(0.12),
-                      qt.textMuted.withOpacity(0),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+        _SectionHeader(
+          icon: Icons.bolt_rounded,
+          title: "UTILITY",
+          qt: qt,
         ),
         const SizedBox(height: 16),
 
@@ -1585,6 +1489,74 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
           duration: const Duration(milliseconds: 300),
           sizeCurve: Curves.easeInOutCubic,
         ),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION HEADER — shared style for all section titles
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final QuranTheme qt;
+  final Widget? trailing;
+
+  const _SectionHeader({
+    required this.icon,
+    required this.title,
+    required this.qt,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            color: qt.emeraldLight.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(7),
+            border: Border.all(
+              color: qt.emeraldLight.withOpacity(0.1),
+              width: 0.5,
+            ),
+          ),
+          child: Icon(
+            icon,
+            size: 11,
+            color: qt.emeraldLight,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: qt.textMuted,
+            letterSpacing: 1.6,
+          ),
+        ),
+        Expanded(
+          flex: trailing != null ? 2 : 3,
+          child: Container(
+            margin: EdgeInsets.only(left: 12, right: trailing != null ? 12 : 0),
+            height: 0.5,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  qt.textMuted.withOpacity(0.12),
+                  qt.textMuted.withOpacity(0),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (trailing != null) trailing!,
       ],
     );
   }
@@ -1676,48 +1648,31 @@ class _AsmaSliderState extends State<_AsmaSlider> {
     return Column(
       children: [
         // ── Section Header (View All Added Back) ──
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.auto_awesome_rounded,
-                    size: 14, color: qt.emeraldLight),
-                const SizedBox(width: 8),
-                Text(
-                  "ASMA UL HUSNA",
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: qt.textMuted,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ],
-            ),
-            GestureDetector(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                MainNavigation.pushOnShell(context, const AsmaListScreen());
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: qt.emeraldDeep.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Text(
-                  "View All",
-                  style: TextStyle(
-                    color: qt.emeraldDeep,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                  ),
+        _SectionHeader(
+          icon: Icons.auto_awesome_rounded,
+          title: "ASMA UL HUSNA",
+          qt: qt,
+          trailing: GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              MainNavigation.pushOnShell(context, const AsmaListScreen());
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: qt.emeraldDeep.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Text(
+                "View All",
+                style: TextStyle(
+                  color: qt.emeraldDeep,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
             ),
-          ],
+          ),
         ),
         const SizedBox(height: 16),
         FutureBuilder<List<AsmaName>>(
@@ -1866,20 +1821,10 @@ class _AyahSection extends StatelessWidget {
     return Column(
       children: [
         // Section Header
-        Row(
-          children: [
-            Icon(Icons.format_quote_rounded, size: 14, color: qt.emeraldLight),
-            const SizedBox(width: 8),
-            Text(
-              "GUIDANCE FROM QURAN",
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: qt.textMuted,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ],
+        _SectionHeader(
+          icon: Icons.format_quote_rounded,
+          title: "GUIDANCE FROM QURAN",
+          qt: qt,
         ),
         const SizedBox(height: 16),
         FutureBuilder<AyahData>(
@@ -2023,21 +1968,10 @@ class _HadithSection extends StatelessWidget {
     return Column(
       children: [
         // Section Header
-        Row(
-          children: [
-            Icon(FlutterIslamicIcons.solidMohammad,
-                size: 14, color: qt.emeraldLight),
-            const SizedBox(width: 8),
-            Text(
-              "GUIDANCE FROM SUNNAH",
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: qt.textMuted,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ],
+        _SectionHeader(
+          icon: FlutterIslamicIcons.solidMohammad,
+          title: "GUIDANCE FROM SUNNAH",
+          qt: qt,
         ),
         const SizedBox(height: 16),
         FutureBuilder<Hadith?>(

@@ -10,12 +10,16 @@ import 'providers/dua_settings_provider.dart';
 import 'providers/dua_progress_provider.dart';
 import 'providers/prayer_tracker_provider.dart';
 import 'providers/prayer_notification_provider.dart';
+import 'providers/daily_ayah_notification_provider.dart';
 import 'services/prayer_service.dart';
 import 'services/prayer_notification_service.dart';
+import 'services/daily_ayah_notification_service.dart';
 import 'services/whats_new_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/menu_screen.dart';
 import 'screens/quran/quran_home_screen.dart';
+import 'screens/quran/quran_reader_screen.dart';
+import 'services/quran_service.dart';
 import 'screens/prayer_screen.dart';
 import 'screens/duas/duas_screen.dart';
 import 'constants/quran_theme.dart';
@@ -28,8 +32,18 @@ void main() async {
   // Initialize PrayerService before app runs
   await PrayerService.instance.initLocation();
 
+  // Route daily-ayah notification taps through a pending action so the
+  // Quran reader can be opened once the widget tree is ready.
+  // NOTE: must be set BEFORE init(), because a cold start from a
+  // notification tap is processed inside init() via launch details.
+  DailyAyahNotificationService.instance.onOpenAyah = (surah, ayah) {
+    _PendingAyahAction.set(surah, ayah);
+    debugPrint('📖 Notification tap: open Quran at $surah:$ayah');
+  };
+
   // Initialize notification service
   await PrayerNotificationService.instance.init();
+  await DailyAyahNotificationService.instance.init();
 
   // Initialize What's New service (version tracking + nudge state)
   await WhatsNewService.instance.init();
@@ -74,6 +88,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => PrayerTracker()..load()),
         ChangeNotifierProvider(
             create: (_) => PrayerNotificationProvider()..load()),
+        ChangeNotifierProvider(
+            create: (_) => DailyAyahNotificationProvider()..load()),
         // Expose PrayerService as a ChangeNotifier so screens can react to changes
         ChangeNotifierProvider.value(value: PrayerService.instance),
         // Expose WhatsNewService for update detection and nudge state
@@ -117,6 +133,35 @@ class _PendingPrayerAction {
   static void set(String prayer) {
     pendingAction = prayer;
     actionTime = DateTime.now();
+  }
+}
+
+/// Holds a pending ayah reference from a daily-ayah notification tap.
+/// MainNavigation checks this on resume and opens the Quran reader.
+class _PendingAyahAction {
+  static int? surah;
+  static int? ayah;
+  static DateTime? actionTime;
+
+  static void set(int surahNumber, int ayahNumber) {
+    surah = surahNumber;
+    ayah = ayahNumber;
+    actionTime = DateTime.now();
+  }
+
+  /// Consume the pending reference if it's less than 30 seconds old.
+  static (int, int)? consumeIfFresh() {
+    if (surah == null || ayah == null) return null;
+    final s = surah!;
+    final a = ayah!;
+    final t = actionTime;
+    surah = null;
+    ayah = null;
+    actionTime = null;
+    if (t != null && DateTime.now().difference(t).inSeconds >= 30) {
+      return null;
+    }
+    return (s, a);
   }
 }
 
@@ -441,6 +486,7 @@ class MainNavigationState extends State<MainNavigation>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _doInitialNotificationReschedule();
       _processPendingNotificationAction();
+      _openPendingAyahNotification();
     });
   }
 
@@ -482,6 +528,7 @@ class MainNavigationState extends State<MainNavigation>
     final notifProvider = context.read<PrayerNotificationProvider>();
     if (notifProvider.permissionsGranted) {
       PrayerNotificationService.instance.rescheduleToday();
+      DailyAyahNotificationService.instance.reschedule();
     }
   }
 
@@ -501,6 +548,7 @@ class MainNavigationState extends State<MainNavigation>
     final notifProvider = context.read<PrayerNotificationProvider>();
     if (notifProvider.permissionsGranted) {
       PrayerNotificationService.instance.rescheduleToday();
+      DailyAyahNotificationService.instance.reschedule();
     }
   }
 
@@ -538,6 +586,30 @@ class MainNavigationState extends State<MainNavigation>
         goToTab(1);
       }
     });
+  }
+
+  /// Open the Quran reader for a pending daily-ayah notification tap.
+  Future<void> _openPendingAyahNotification() async {
+    final ref = _PendingAyahAction.consumeIfFresh();
+    if (ref == null || !mounted) return;
+    final (surah, ayah) = ref;
+
+    try {
+      final surahList = await QuranService.instance.loadSurahList();
+      if (!mounted || surahList.isEmpty) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => QuranReaderScreen(
+            surahNumber: surah,
+            initialAyah: ayah,
+            surahList: surahList,
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Failed to open ayah from notification: $e');
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
