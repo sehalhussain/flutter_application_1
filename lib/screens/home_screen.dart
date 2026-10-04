@@ -1347,65 +1347,80 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
         const SizedBox(height: 18),
 
         // ── Feature Grid: the 4 core destinations ──
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 1.05,
-          children: [
-            _ModernFeatureCard(
-              title: "Holy Quran",
-              subtitle: "Read, Listen & Reflect",
-              icon: Icons.menu_book_rounded,
-              svgAsset: 'assets/icons/Quran.svg',
-              accent: const Color(0xFFC69854),
-              qt: qt,
-              onTap: () async {
-                await QuranService.instance.loadSurahList();
-                if (!context.mounted) return;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const QuranHomeScreen()),
-                ).then((_) => widget.onRefreshAyah());
-              },
-            ),
-            _ModernFeatureCard(
-              title: "Authentic Duas",
-              subtitle: "Dua for Every Moment",
-              icon: FlutterIslamicIcons.solidPrayingPerson,
-              accent: const Color(0xFFC48A7D),
-              qt: qt,
-              onTap: () {
-                MainNavigation.pushOnShell(context, const DuasScreen());
-              },
-            ),
-            _ModernFeatureCard(
-              title: "Hadith Library",
-              subtitle: "Authentic narrations",
-              icon: FlutterIslamicIcons.solidMohammad,
-              accent: const Color(0xFF3B82F6),
-              qt: qt,
-              onTap: () {
-                MainNavigation.pushOnShell(context, const HadithHomeScreen());
-              },
-            ),
-            _ModernFeatureCard(
-              title: "Fadāʾil al-Qurʾān",
-              subtitle: "Virtues of Sūrahs & Āyāt",
-              icon: FlutterIslamicIcons.solidQuran,
-              accent: const Color(0xFF14B8A6),
-              qt: qt,
-              badge: _showNewBadge ? const _NewBadge() : null,
-              onTap: () async {
-                await _NewBadgeManager.markVirtuesOpen();
-                if (!context.mounted) return;
-                MainNavigation.pushOnShell(context, const QuranVirtuesScreen());
-                _loadBadgeState();
-              },
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final double width = constraints.maxWidth;
+            // Phones keep the classic 2×2 grid. Tablets/wide screens switch
+            // to a single row of 4 so the tiles stay a comfortable size
+            // instead of inflating into huge, empty squares.
+            final int columns = width < 600 ? 2 : 4;
+            final double tileWidth = (width - (columns - 1) * 16) / columns;
+
+            return GridView(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: columns,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                // Fixed, sensible tile height: content scales with the tile
+                // width rather than the tile growing without bound.
+                mainAxisExtent: (tileWidth / 1.05).clamp(150.0, 210.0),
+              ),
+              children: [
+              _ModernFeatureCard(
+                title: "Holy Quran",
+                subtitle: "Read, Listen & Reflect",
+                icon: Icons.menu_book_rounded,
+                svgAsset: 'assets/icons/Quran.svg',
+                accent: const Color(0xFFC69854),
+                qt: qt,
+                onTap: () async {
+                  await QuranService.instance.loadSurahList();
+                  if (!context.mounted) return;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const QuranHomeScreen()),
+                  ).then((_) => widget.onRefreshAyah());
+                },
+              ),
+              _ModernFeatureCard(
+                title: "Authentic Duas",
+                subtitle: "Dua for Every Moment",
+                icon: FlutterIslamicIcons.solidPrayingPerson,
+                accent: const Color(0xFFC48A7D),
+                qt: qt,
+                onTap: () {
+                  MainNavigation.pushOnShell(context, const DuasScreen());
+                },
+              ),
+              _ModernFeatureCard(
+                title: "Hadith Library",
+                subtitle: "Authentic narrations",
+                icon: FlutterIslamicIcons.solidMohammad,
+                accent: const Color(0xFF3B82F6),
+                qt: qt,
+                onTap: () {
+                  MainNavigation.pushOnShell(context, const HadithHomeScreen());
+                },
+              ),
+              _ModernFeatureCard(
+                title: "Fadāʾil al-Qurʾān",
+                subtitle: "Virtues of Sūrahs & Āyāt",
+                icon: FlutterIslamicIcons.solidQuran,
+                accent: const Color(0xFF14B8A6),
+                qt: qt,
+                badge: _showNewBadge ? const _NewBadge() : null,
+                onTap: () async {
+                  await _NewBadgeManager.markVirtuesOpen();
+                  if (!context.mounted) return;
+                  MainNavigation.pushOnShell(context, const QuranVirtuesScreen());
+                  _loadBadgeState();
+                },
+              ),
+              ],
+            );
+          },
         ),
 
         const SizedBox(height: 22),
@@ -1418,60 +1433,38 @@ class _EssentialsSectionState extends State<_EssentialsSection> {
         ),
         const SizedBox(height: 16),
 
-        // ── Quick Actions Row (centers when it fits, scrolls when it grows) ──
-        LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              clipBehavior: Clip.none,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minWidth: constraints.maxWidth,
-                ),
-                child: Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _ToolChip(
-                        icon: Icons.calendar_month_rounded,
-                        label: "Hijri Calendar",
-                        accent: const Color(0xFF3B82F6),
-                        qt: qt,
-                        onTap: () {
-                          MainNavigation.pushOnShell(
-                              context, const HijriCalendarScreen());
-                        },
-                      ),
-                      const SizedBox(width: 20),
-                      _ToolChip(
-                        icon: Icons.mosque_rounded,
-                        label: "Prayer Journey",
-                        accent: const Color(0xFF10B981),
-                        qt: qt,
-                        onTap: () {
-                          MainNavigation.pushOnShell(
-                              context, const PrayerStatsScreen());
-                        },
-                      ),
-                      const SizedBox(width: 20),
-                      _ToolChip(
-                        icon: Icons.explore_rounded,
-                        label: "Qibla Direction",
-                        accent: qt.emeraldDeep,
-                        qt: qt,
-                        isActive: _showQibla,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setState(() => _showQibla = !_showQibla);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
+        // ── Utility Bar — one grouped card, three equal segments ──
+        // Equal-width segments always fill the row, so the bar aligns with
+        // the grid above on phones and tablets alike (no floating chips with
+        // dead space around them).
+        _UtilityBar(
+          qt: qt,
+          items: [
+            _UtilityItem(
+              icon: Icons.calendar_month_rounded,
+              label: "Hijri Calendar",
+              accent: const Color(0xFF3B82F6),
+              onTap: () => MainNavigation.pushOnShell(
+                  context, const HijriCalendarScreen()),
+            ),
+            _UtilityItem(
+              icon: Icons.mosque_rounded,
+              label: "Prayer Journey",
+              accent: const Color(0xFF10B981),
+              onTap: () => MainNavigation.pushOnShell(
+                  context, const PrayerStatsScreen()),
+            ),
+            _UtilityItem(
+              icon: Icons.explore_rounded,
+              label: "Qibla Direction",
+              accent: qt.emeraldDeep,
+              isActive: _showQibla,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _showQibla = !_showQibla);
+              },
+            ),
+          ],
         ),
 
         // ── Live Qibla Compass (toggled via the Qibla chip) ──
@@ -2279,100 +2272,113 @@ class _ModernFeatureCard extends StatelessWidget {
           onTap();
         },
         behavior: HitTestBehavior.opaque,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-          decoration: BoxDecoration(
-            color: qt.brightness == Brightness.dark
-                ? qt.cardBg.withOpacity(0.55)
-                : Colors.white.withOpacity(0.45),
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(
-                  qt.brightness == Brightness.dark ? 0.10 : 0.025,
-                ),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Positioned.fill(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeInOutCubic,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            accent.withOpacity(0.16),
-                            accent.withOpacity(0.07),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: svgAsset != null
-                          ? SvgPicture.asset(
-                              svgAsset!,
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.contain,
-                            )
-                          : Icon(icon, size: 38, color: accent),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Scale the icon and typography with the tile width so wide
+            // (tablet) tiles don't look empty and small tiles stay readable.
+            final double w = constraints.maxWidth;
+            final double iconSize = (w * 0.26).clamp(34.0, 54.0);
+            final double iconPad = (w * 0.10).clamp(12.0, 20.0);
+            final double titleSize = (w * 0.090).clamp(13.0, 17.5);
+            final double subtitleSize = (w * 0.072).clamp(10.5, 13.0);
+            final double iconTextGap = (w * 0.065).clamp(8.0, 14.0);
+
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              decoration: BoxDecoration(
+                color: qt.brightness == Brightness.dark
+                    ? qt.cardBg.withOpacity(0.55)
+                    : Colors.white.withOpacity(0.45),
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(
+                      qt.brightness == Brightness.dark ? 0.10 : 0.025,
                     ),
-                    const SizedBox(height: 10),
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        color: qt.textPrimary,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        color: qt.textMuted,
-                        height: 1.25,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (badge != null)
-                Positioned(
-                  top: -6,
-                  right: -4,
-                  child: badge!,
-                )
-              else
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: Icon(
-                    Icons.arrow_outward_rounded,
-                    size: 14,
-                    color: accent.withOpacity(0.55),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
                   ),
-                ),
-            ],
-          ),
+                ],
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned.fill(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeInOutCubic,
+                          padding: EdgeInsets.all(iconPad),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                accent.withOpacity(0.16),
+                                accent.withOpacity(0.07),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: svgAsset != null
+                              ? SvgPicture.asset(
+                                  svgAsset!,
+                                  width: iconSize,
+                                  height: iconSize,
+                                  fit: BoxFit.contain,
+                                )
+                              : Icon(icon, size: iconSize, color: accent),
+                        ),
+                        SizedBox(height: iconTextGap),
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: titleSize,
+                            fontWeight: FontWeight.w700,
+                            color: qt.textPrimary,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: subtitleSize,
+                            color: qt.textMuted,
+                            height: 1.25,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (badge != null)
+                    Positioned(
+                      top: -6,
+                      right: -4,
+                      child: badge!,
+                    )
+                  else
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Icon(
+                        Icons.arrow_outward_rounded,
+                        size: (w * 0.040).clamp(14.0, 19.0),
+                        color: accent.withOpacity(0.55),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
@@ -2380,78 +2386,160 @@ class _ModernFeatureCard extends StatelessWidget {
 }
 
 /// ═══════════════════════════════════════════════════════════════════════════
-// TOOL CHIP — compact pill for the Quick Tools row
+// UTILITY BAR — one grouped card holding equal-width action segments
 /// ═══════════════════════════════════════════════════════════════════════════
 
-class _ToolChip extends StatelessWidget {
+class _UtilityItem {
   final IconData icon;
   final String label;
   final Color accent;
   final bool isActive;
-  final double width;
   final VoidCallback onTap;
-  final QuranTheme qt;
 
-  const _ToolChip({
+  const _UtilityItem({
     required this.icon,
     required this.label,
     required this.accent,
     required this.onTap,
-    required this.qt,
     this.isActive = false,
-    this.width = 96,
   });
+}
+
+class _UtilityBar extends StatelessWidget {
+  final List<_UtilityItem> items;
+  final QuranTheme qt;
+
+  const _UtilityBar({required this.items, required this.qt});
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark = qt.brightness == Brightness.dark;
+
     return RepaintBoundary(
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onTap();
-        },
-        child: SizedBox(
-          width: width,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeInOutCubic,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        accent.withOpacity(isActive ? 0.24 : 0.16),
-                        accent.withOpacity(isActive ? 0.12 : 0.07),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Icon(icon, size: 28, color: accent),
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: isDark
+              ? qt.cardBg.withOpacity(0.55)
+              : Colors.white.withOpacity(0.45),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.10 : 0.025),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          // No IntrinsicHeight here — that would force the segments'
+          // LayoutBuilder to be measured speculatively. The segments all share
+          // the same width, so they naturally end up the same height.
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            for (int i = 0; i < items.length; i++) ...[
+              if (i > 0)
+                Container(
+                  width: 0.5,
+                  height: 40,
+                  color: qt.textMuted.withOpacity(0.18),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                maxLines: 2,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  color: isActive ? accent : qt.textMuted,
-                  letterSpacing: 0.2,
-                  height: 1.25,
-                ),
-              ),
+              Expanded(child: _UtilitySegment(item: items[i], qt: qt)),
             ],
-          ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class _UtilitySegment extends StatelessWidget {
+  final _UtilityItem item;
+  final QuranTheme qt;
+
+  const _UtilitySegment({required this.item, required this.qt});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Wide segments (tablets) lay out horizontally so they never become
+        // tall, sparse blocks; narrow ones (phones) stack icon over label.
+        final bool wide = constraints.maxWidth >= 180;
+        final double iconBox =
+            (constraints.maxWidth * 0.24).clamp(38.0, 52.0);
+        final double iconSize = (iconBox * 0.5).clamp(20.0, 26.0);
+
+        final Widget iconTile = AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOutCubic,
+          width: iconBox,
+          height: iconBox,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                item.accent.withOpacity(item.isActive ? 0.24 : 0.16),
+                item.accent.withOpacity(item.isActive ? 0.12 : 0.07),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Icon(item.icon, size: iconSize, color: item.accent),
+        );
+
+        final Widget labelText = Text(
+          item.label,
+          maxLines: wide ? 1 : 2,
+          textAlign: wide ? TextAlign.left : TextAlign.center,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+            color: item.isActive ? item.accent : qt.textMuted,
+            letterSpacing: 0.2,
+            height: 1.25,
+          ),
+        );
+
+        return GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            item.onTap();
+          },
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            decoration: BoxDecoration(
+              color: item.isActive
+                  ? item.accent.withOpacity(0.06)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(17),
+            ),
+            child: wide
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      iconTile,
+                      const SizedBox(width: 12),
+                      Flexible(child: labelText),
+                    ],
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      iconTile,
+                      const SizedBox(height: 8),
+                      labelText,
+                    ],
+                  ),
+          ),
+        );
+      },
     );
   }
 }
